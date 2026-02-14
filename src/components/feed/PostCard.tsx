@@ -17,14 +17,6 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
-const STICKER_COLORS = [
-  { bg: "bg-white", text: "text-black" },
-  { bg: "bg-black", text: "text-white" },
-  { bg: "bg-primary", text: "text-white" },
-  { bg: "bg-accent", text: "text-accent-foreground" },
-  { bg: "bg-white/20 backdrop-blur-md border border-white/20", text: "text-white" },
-];
-
 interface PostCardProps {
   id: string;
   author: {
@@ -217,13 +209,11 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                       transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` 
                     }}
                   >
-                    <div className={cn(
-                      "px-3 py-1.5 rounded-lg font-black text-sm shadow-xl drop-shadow-lg",
-                      STICKER_COLORS[s.colorIndex || 0].bg,
-                      STICKER_COLORS[s.colorIndex || 0].text
-                    )}>
-                      {s.text}
-                    </div>
+                    <img 
+                      src={s.imageUrl} 
+                      alt="Sticker" 
+                      className="w-16 h-16 object-contain drop-shadow-2xl" 
+                    />
                   </div>
                 ))}
               </div>

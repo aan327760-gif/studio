@@ -17,7 +17,9 @@ import {
   Sticker as StickerIcon,
   Trash2,
   RotateCw,
-  Maximize2
+  Maximize2,
+  Search,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,8 +27,8 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 const TEXT_COLORS = [
   "text-white", "text-black", "text-primary", "text-red-500", "text-yellow-400", 
@@ -44,34 +46,13 @@ const TEXT_EFFECTS = [
   { id: "effect-neon", name: "نيون داكن", icon: Moon },
 ];
 
-const STICKER_CATEGORIES = [
-  { id: "identity", label: "هوية", items: ["صوت حر", "بلا فلتر", "قولها بصراحة", "فكر مختلف", "خارج الصندوق", "رأي جريء", "بلا مجاملة", "الحقيقة أولًا", "نقاش مفتوح", "فكر قبل أن تحكم", "الحرية مسؤولية", "كلام ثقيل", "مواجهة", "بدون خوف", "وعي", "انتبه", "افهم الصورة", "الموضوع كبير", "لا تسكت", "اسمع الآخر"] },
-  { id: "interaction", label: "تفاعل", items: ["متفق", "غير موافق", "100٪ صح", "فيه مبالغة", "منطقي", "غير مقنع", "يحتاج دليل", "قوي جدًا", "عادي", "صادم", "ممتاز", "ضعيف", "يستحق الانتشار", "لازم نقاش", "شارك رأيك"] },
-  { id: "analysis", label: "تحليل", items: ["تحليل", "أرقام", "مصدر؟", "تدقيق", "رأي شخصي", "معلومة مهمة", "مقارنة", "خلف الكواليس", "قراءة عميقة", "زاوية أخرى", "نظرة مختلفة", "تفسير", "توضيح", "استنتاج", "توقعات"] },
-  { id: "political", label: "سياسي", items: ["شأن عام", "قرار مهم", "جدل", "أزمة", "قانون", "بيان رسمي", "عاجل", "حدث الآن", "ملف مفتوح", "مسؤولية", "انتخابات", "تصريح", "موقف", "سياسة", "قضية رأي عام"] },
-  { id: "human", label: "إنساني", items: ["تضامن", "دعم", "إنسانية", "قصة مؤثرة", "واقعي", "مؤلم", "فرحة", "أمل", "لا للعنف", "معًا أفضل"] },
-  { id: "life", label: "حياة", items: ["ضحك", "ترند", "لحظة جميلة", "يوميات", "ذكريات", "عفوي", "مزاج", "مفاجأة", "تحدي", "رهيب"] },
-  { id: "sports", label: "رياضة", items: ["بطل", "مباراة قوية", "هدف", "فوز", "خسارة"] },
-  { id: "future", label: "دعم", items: ["مدعوم", "محتوى مميز", "دعم مباشر", "شكراً للداعمين", "شراكة"] },
-  { id: "warning", label: "تنبيه", items: ["تحذير", "تحقق قبل النشر", "إشاعة؟", "غير مؤكد", "معلومات حساسة"] }
-];
-
-const STICKER_COLORS = [
-  { name: "White", bg: "bg-white", text: "text-black" },
-  { name: "Black", bg: "bg-black", text: "text-white" },
-  { name: "Primary", bg: "bg-primary", text: "text-white" },
-  { name: "Accent", bg: "bg-accent", text: "text-accent-foreground" },
-  { name: "Glass", bg: "bg-white/20 backdrop-blur-md border border-white/20", text: "text-white" },
-];
-
 interface StickerInstance {
   id: string;
-  text: string;
+  imageUrl: string;
   x: number;
   y: number;
   scale: number;
   rotation: number;
-  colorIndex: number;
 }
 
 function FinalizeMediaContent() {
@@ -86,7 +67,6 @@ function FinalizeMediaContent() {
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
   const [isStickerDialogOpen, setIsStickerDialogOpen] = useState(false);
   
-  // Text state
   const [textOverlay, setTextOverlay] = useState("");
   const [textColor, setTextColor] = useState("text-white");
   const [textEffect, setTextEffect] = useState("");
@@ -95,10 +75,10 @@ function FinalizeMediaContent() {
   const [textPos, setTextPos] = useState({ x: 50, y: 30 });
   const [isDraggingText, setIsDraggingText] = useState(false);
 
-  // Stickers state
   const [stickers, setStickers] = useState<StickerInstance[]>([]);
   const [activeStickerId, setActiveStickerId] = useState<string | null>(null);
   const [isDraggingSticker, setIsDraggingSticker] = useState<string | null>(null);
+  const [stickerSearch, setStickerSearch] = useState("");
 
   const handleNext = () => {
     const params = new URLSearchParams();
@@ -147,15 +127,14 @@ function FinalizeMediaContent() {
     }
   };
 
-  const addSticker = (text: string) => {
+  const addSticker = (imgUrl: string) => {
     const newSticker: StickerInstance = {
       id: Math.random().toString(36).substr(2, 9),
-      text,
+      imageUrl: imgUrl,
       x: 50,
       y: 50,
       scale: 1,
-      rotation: 0,
-      colorIndex: 0
+      rotation: 0
     };
     setStickers([...stickers, newSticker]);
     setActiveStickerId(newSticker.id);
@@ -172,6 +151,11 @@ function FinalizeMediaContent() {
     if (activeStickerId === id) setActiveStickerId(null);
   };
 
+  const filteredStickers = PlaceHolderImages.filter(img => 
+    img.id.startsWith('sticker-') && 
+    (img.description.toLowerCase().includes(stickerSearch.toLowerCase()) || stickerSearch === "")
+  );
+
   return (
     <div 
       className="flex flex-col h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden select-none touch-none"
@@ -182,16 +166,13 @@ function FinalizeMediaContent() {
       onTouchEnd={() => { setIsDraggingText(false); setIsDraggingSticker(null); }}
       onClick={() => setActiveStickerId(null)}
     >
-      {/* Preview Layer */}
       <div className="absolute inset-0 z-0">
         {imageUrl && <img src={imageUrl} alt="Finalize" className={cn("w-full h-full object-cover", filterClass)} />}
         {videoUrl && <video src={videoUrl} className="w-full h-full object-cover" autoPlay muted loop playsInline />}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/40" />
       </div>
 
-      {/* Interactive Overlay */}
       <div className="absolute inset-0 z-10 pointer-events-none">
-        {/* Text Layer */}
         {finalText && (
           <div 
             className={cn(
@@ -213,7 +194,6 @@ function FinalizeMediaContent() {
           </div>
         )}
 
-        {/* Stickers Layer */}
         {stickers.map((s) => (
           <div 
             key={s.id}
@@ -230,25 +210,22 @@ function FinalizeMediaContent() {
             onTouchStart={(e) => { e.stopPropagation(); setIsDraggingSticker(s.id); setActiveStickerId(s.id); }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={cn(
-              "px-4 py-2 rounded-xl font-black text-lg shadow-xl border border-white/10 whitespace-nowrap",
-              STICKER_COLORS[s.colorIndex].bg,
-              STICKER_COLORS[s.colorIndex].text
-            )}>
-              {s.text}
-            </div>
+            <img 
+              src={s.imageUrl} 
+              alt="Sticker" 
+              className="w-24 h-24 object-contain drop-shadow-2xl" 
+              draggable={false}
+            />
           </div>
         ))}
       </div>
 
-      {/* Header Controls */}
       <header className="relative z-50 p-4 flex justify-between items-center">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-black/40 backdrop-blur-md">
           <ArrowLeft className="h-7 w-7" />
         </Button>
       </header>
 
-      {/* Sidebar Tools */}
       <div className="relative z-50 flex-1 flex flex-col justify-center px-4 gap-4">
         {[
           { icon: Type, label: "الكتابة", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
@@ -267,7 +244,6 @@ function FinalizeMediaContent() {
         ))}
       </div>
 
-      {/* Sticker Toolbar (Dynamic) */}
       {activeStickerId && (
         <div className="relative z-50 p-4 bg-black/80 backdrop-blur-xl border-t border-white/10 animate-in slide-in-from-bottom-4" onClick={(e) => e.stopPropagation()}>
           <div className="space-y-4">
@@ -284,18 +260,7 @@ function FinalizeMediaContent() {
                 min={-180} max={180} step={1} 
                 onValueChange={([v]) => updateActiveSticker({ rotation: v })} 
               />
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex gap-2">
-                {STICKER_COLORS.map((c, i) => (
-                  <button 
-                    key={i} 
-                    className={cn("h-8 w-8 rounded-full border-2", c.bg, stickers.find(s => s.id === activeStickerId)?.colorIndex === i ? "border-white" : "border-transparent")}
-                    onClick={() => updateActiveSticker({ colorIndex: i })}
-                  />
-                ))}
-              </div>
-              <Button variant="destructive" size="icon" className="rounded-full h-8 w-8" onClick={() => removeSticker(activeStickerId)}>
+              <Button variant="destructive" size="icon" className="rounded-full h-8 w-8 shrink-0" onClick={() => removeSticker(activeStickerId)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -303,14 +268,12 @@ function FinalizeMediaContent() {
         </div>
       )}
 
-      {/* Bottom Action */}
       <footer className="relative z-50 p-6 flex justify-end">
         <Button onClick={handleNext} className="rounded-full bg-white text-black hover:bg-zinc-200 px-12 py-7 text-xl font-black shadow-2xl active:scale-95 transition-transform">
           التالي
         </Button>
       </footer>
 
-      {/* Text Dialog */}
       <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
         <DialogContent className="bg-zinc-950/98 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2.5rem] p-6 outline-none h-[85vh] flex flex-col">
           <DialogHeader><DialogTitle className="text-center font-black">أضف لمستك السينمائية</DialogTitle></DialogHeader>
@@ -353,34 +316,37 @@ function FinalizeMediaContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Stickers Dialog */}
       <Dialog open={isStickerDialogOpen} onOpenChange={setIsStickerDialogOpen}>
-        <DialogContent className="bg-zinc-950/98 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2.5rem] p-4 outline-none h-[80vh] flex flex-col">
-          <DialogHeader><DialogTitle className="text-center font-black">ملصقات بلا قيود</DialogTitle></DialogHeader>
-          <Tabs defaultValue="identity" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="bg-transparent border-b border-white/10 h-10 w-full justify-start overflow-x-auto no-scrollbar rounded-none">
-              {STICKER_CATEGORIES.map(cat => (
-                <TabsTrigger key={cat.id} value={cat.id} className="text-[10px] font-black px-4 data-[state=active]:text-primary data-[state=active]:bg-transparent">
-                  {cat.label}
-                </TabsTrigger>
+        <DialogContent className="bg-zinc-950/98 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[3rem] p-0 outline-none h-[75vh] flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-white/10">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+              <Input 
+                placeholder="Search stickers..." 
+                className="pl-10 bg-zinc-900 border-none rounded-full h-10" 
+                value={stickerSearch}
+                onChange={(e) => setStickerSearch(e.target.value)}
+              />
+            </div>
+          </div>
+          <ScrollArea className="flex-1 p-4">
+            <div className="grid grid-cols-3 gap-4 pb-10">
+              {filteredStickers.map((sticker) => (
+                <button 
+                  key={sticker.id} 
+                  className="aspect-square bg-zinc-900/50 hover:bg-zinc-800 rounded-2xl p-2 flex items-center justify-center transition-all active:scale-90"
+                  onClick={() => addSticker(sticker.imageUrl)}
+                >
+                  <img 
+                    src={sticker.imageUrl} 
+                    alt={sticker.description} 
+                    className="w-full h-full object-contain" 
+                    data-ai-hint={sticker.imageHint}
+                  />
+                </button>
               ))}
-            </TabsList>
-            {STICKER_CATEGORIES.map(cat => (
-              <TabsContent key={cat.id} value={cat.id} className="flex-1 overflow-y-auto mt-4 focus-visible:ring-0">
-                <div className="grid grid-cols-2 gap-2 pb-10">
-                  {cat.items.map((item, i) => (
-                    <button 
-                      key={i} 
-                      className="p-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl font-black text-xs text-center border border-white/5 active:scale-95 transition-all"
-                      onClick={() => addSticker(item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,28 +1,65 @@
+
 {
   "placeholderImages": [
     {
-      "id": "user-1",
-      "description": "Avatar of a person",
-      "imageUrl": "https://picsum.photos/seed/user1/150/150",
-      "imageHint": "person avatar"
+      "id": "sticker-sloth",
+      "description": "Cute sloth sticker",
+      "imageUrl": "https://picsum.photos/seed/sloth1/200/200",
+      "imageHint": "cute sloth"
     },
     {
-      "id": "post-1",
-      "description": "Scenery for a post",
-      "imageUrl": "https://picsum.photos/seed/post1/600/800",
-      "imageHint": "nature mountain"
+      "id": "sticker-heart-pink",
+      "description": "Pink glossy heart",
+      "imageUrl": "https://picsum.photos/seed/heart2/200/200",
+      "imageHint": "pink heart"
     },
     {
-      "id": "post-2",
-      "description": "City life photo",
-      "imageUrl": "https://picsum.photos/seed/post2/600/400",
-      "imageHint": "city life"
+      "id": "sticker-cat-balloon",
+      "description": "Cat with balloon",
+      "imageUrl": "https://picsum.photos/seed/catball/200/200",
+      "imageHint": "cat balloon"
     },
     {
-      "id": "community-1",
-      "description": "Arabic calligraphy or community theme",
-      "imageUrl": "https://picsum.photos/seed/comm1/400/200",
-      "imageHint": "arabic community"
+      "id": "sticker-bear-pumpkin",
+      "description": "Bear in pumpkin",
+      "imageUrl": "https://picsum.photos/seed/bearpump/200/200",
+      "imageHint": "bear pumpkin"
+    },
+    {
+      "id": "sticker-coffee",
+      "description": "Coffee cup sticker",
+      "imageUrl": "https://picsum.photos/seed/coffee/200/200",
+      "imageHint": "coffee cup"
+    },
+    {
+      "id": "sticker-fire-heart",
+      "description": "Heart on fire",
+      "imageUrl": "https://picsum.photos/seed/fireheart/200/200",
+      "imageHint": "fire heart"
+    },
+    {
+      "id": "sticker-dog-cute",
+      "description": "Cute puppy sticker",
+      "imageUrl": "https://picsum.photos/seed/puppy/200/200",
+      "imageHint": "cute puppy"
+    },
+    {
+      "id": "sticker-sparkles",
+      "description": "Magic sparkles",
+      "imageUrl": "https://picsum.photos/seed/sparkles/200/200",
+      "imageHint": "magic sparkles"
+    },
+    {
+      "id": "sticker-quote-weight",
+      "description": "Typography sticker: your words have weight",
+      "imageUrl": "https://picsum.photos/seed/quote1/200/200",
+      "imageHint": "typography quote"
+    },
+    {
+      "id": "sticker-camera-retro",
+      "description": "Retro camera sticker",
+      "imageUrl": "https://picsum.photos/seed/retrocam/200/200",
+      "imageHint": "retro camera"
     }
   ]
 }
