@@ -9,6 +9,7 @@
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
+        "bannerURL": { "type": "string", "description": "Profile cover image URL" },
         "bio": { "type": "string" },
         "phoneNumber": { "type": "string", "description": "Optional phone number" },
         "isPro": { "type": "boolean", "description": "Subscription status" },

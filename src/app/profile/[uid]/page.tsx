@@ -14,7 +14,8 @@ import {
   Loader2,
   UserPlus,
   UserCheck,
-  MessageSquare
+  MessageSquare,
+  Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -108,30 +109,27 @@ export default function UserProfilePage() {
     );
   }
 
-  // If profile is missing but it's the current user, show a "Welcome" or placeholder state
   if (!profile && !profileLoading) {
     return (
       <div className="h-screen bg-black flex flex-col items-center justify-center text-white p-4">
         <p className="text-zinc-500 mb-4">{isRtl ? "المستخدم غير موجود" : "User not found"}</p>
-        <div className="flex gap-2">
-          <Button onClick={() => router.push("/")} variant="outline" className="rounded-full">
-            {isRtl ? "العودة للرئيسية" : "Go Home"}
-          </Button>
-          {isOwnProfile && (
-            <Button onClick={handleLogout} variant="destructive" className="rounded-full">
-              {isRtl ? "تسجيل الخروج" : "Logout"}
-            </Button>
-          )}
-        </div>
+        <Button onClick={() => router.push("/")} variant="outline" className="rounded-full">
+          {isRtl ? "العودة للرئيسية" : "Go Home"}
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20">
-      <div className="relative h-40 w-full">
+      <div className="relative h-44 w-full">
         <div className="w-full h-full bg-zinc-900 overflow-hidden">
-           <img src={`https://picsum.photos/seed/${uid}/1200/400`} alt="Cover" className="w-full h-full object-cover opacity-50" />
+           {profile?.bannerURL ? (
+             <img src={profile.bannerURL} alt="Cover" className="w-full h-full object-cover" />
+           ) : (
+             <img src={`https://picsum.photos/seed/${uid}/1200/400`} alt="Default Cover" className="w-full h-full object-cover opacity-40 grayscale" />
+           )}
+           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
         </div>
         <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
           <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white" onClick={() => router.back()}>
@@ -139,9 +137,11 @@ export default function UserProfilePage() {
           </Button>
           <div className="flex gap-2">
             {isOwnProfile && (
-              <Button onClick={handleLogout} variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md hover:bg-red-500/40 text-white">
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <Link href="/settings">
+                <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </Link>
             )}
             <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white">
               <MoreHorizontal className="h-5 w-5" />
@@ -168,7 +168,7 @@ export default function UserProfilePage() {
           {isOwnProfile ? (
             <Link href="/profile/edit">
               <Button variant="outline" className="rounded-full font-bold px-6 border-zinc-700 hover:bg-zinc-800">
-                {isRtl ? "تعديل" : "Edit profile"}
+                {isRtl ? "تعديل الملف" : "Edit profile"}
               </Button>
             </Link>
           ) : (
@@ -240,7 +240,8 @@ export default function UserProfilePage() {
                   author={{
                     name: profile.displayName,
                     handle: profile.email?.split('@')[0],
-                    avatar: profile.photoURL
+                    avatar: profile.photoURL,
+                    uid: profile.uid
                   }}
                   content={post.content}
                   image={post.mediaUrl}
