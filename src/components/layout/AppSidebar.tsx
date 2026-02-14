@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, Search, Plus, Bell, User, Video, Mic, Image as ImageIcon, PenLine, X, StopCircle, LogOut } from "lucide-react";
+import { Home, Search, Plus, Bell, User, Video, Mic, Image as ImageIcon, PenLine, X, StopCircle, LogOut, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -28,27 +28,13 @@ export function AppSidebar() {
   const auth = useAuth();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
-  // Refs for file inputs
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      toast({
-        title: isRtl ? "تم تسجيل الخروج" : "Logged Out",
-      });
-      router.push("/auth");
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "Failed to sign out" });
-    }
-  };
 
   const navItems = [
     { icon: Home, href: "/", label: "Home" },
@@ -108,14 +94,13 @@ export function AppSidebar() {
       
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => {
-          if (prev >= 300) { // 5 minutes limit
+          if (prev >= 300) {
             handleStopRecording();
             return 300;
           }
           return prev + 1;
         });
       }, 1000);
-
     } catch (err) {
       toast({
         variant: "destructive",
@@ -141,6 +126,15 @@ export function AppSidebar() {
 
   const createOptions = [
     { 
+      icon: MessageSquare, 
+      label: isRtl ? "مساحات" : "Spaces", 
+      color: "bg-orange-500",
+      onClick: () => {
+        setIsSheetOpen(false);
+        router.push("/lamma");
+      }
+    },
+    { 
       icon: ImageIcon, 
       label: isRtl ? "الصور" : "Images", 
       color: "bg-green-500",
@@ -148,7 +142,7 @@ export function AppSidebar() {
     },
     { 
       icon: Video, 
-      label: isRtl ? "الفيديو" : "Videos", 
+      label: isRtl ? "فيديو" : "Videos", 
       color: "bg-blue-500",
       onClick: () => videoInputRef.current?.click()
     },
@@ -171,20 +165,8 @@ export function AppSidebar() {
 
   return (
     <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-black border-t border-zinc-800 z-50 px-4 py-2 flex justify-around items-center h-16 shadow-2xl">
-      <input 
-        type="file" 
-        accept="image/*" 
-        className="hidden" 
-        ref={imageInputRef} 
-        onChange={handleImageChange}
-      />
-      <input 
-        type="file" 
-        accept="video/*" 
-        className="hidden" 
-        ref={videoInputRef} 
-        onChange={handleVideoChange}
-      />
+      <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
+      <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
 
       {navItems.map((item) => {
         const isActive = pathname === item.href;
@@ -193,11 +175,7 @@ export function AppSidebar() {
           return (
             <Sheet key="create-sheet" open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-10 w-10 rounded-lg text-white hover:bg-white/10"
-                >
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-white hover:bg-white/10">
                   <Plus className="h-8 w-8" />
                 </Button>
               </SheetTrigger>
@@ -213,12 +191,7 @@ export function AppSidebar() {
                     <div className="text-4xl font-mono text-red-500 animate-pulse">
                       {formatTime(recordingTime)}
                     </div>
-                    <Button 
-                      variant="destructive" 
-                      size="lg" 
-                      className="rounded-full gap-2"
-                      onClick={handleStopRecording}
-                    >
+                    <Button variant="destructive" size="lg" className="rounded-full gap-2" onClick={handleStopRecording}>
                       <StopCircle className="h-6 w-6" />
                       {isRtl ? "إيقاف التسجيل" : "Stop Recording"}
                     </Button>
@@ -226,15 +199,8 @@ export function AppSidebar() {
                 ) : (
                   <div className="flex justify-around items-center gap-2">
                     {createOptions.map((opt, index) => (
-                      <div 
-                        key={index} 
-                        className="flex flex-col items-center gap-2 group cursor-pointer"
-                        onClick={opt.onClick}
-                      >
-                        <div className={cn(
-                          "h-14 w-14 rounded-full flex items-center justify-center text-white transition-transform group-active:scale-95 shadow-lg",
-                          opt.color
-                        )}>
+                      <div key={index} className="flex flex-col items-center gap-2 group cursor-pointer" onClick={opt.onClick}>
+                        <div className={cn("h-14 w-14 rounded-full flex items-center justify-center text-white transition-transform group-active:scale-95 shadow-lg", opt.color)}>
                           <opt.icon className="h-7 w-7" />
                         </div>
                         <span className="text-[10px] font-bold text-zinc-400 text-center leading-tight max-w-[60px]">
@@ -251,14 +217,7 @@ export function AppSidebar() {
 
         return (
           <Link key={item.href} href={item.href}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-12 w-12 rounded-full transition-all",
-                isActive ? "text-white" : "text-muted-foreground"
-              )}
-            >
+            <Button variant="ghost" size="icon" className={cn("h-12 w-12 rounded-full transition-all", isActive ? "text-white" : "text-muted-foreground")}>
               {item.isAvatar ? (
                 <Avatar className={cn("h-7 w-7 border", isActive ? "border-white" : "border-transparent")}>
                   <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/50/50"} />
