@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Heart, MessageCircle, MessageSquare, Repeat2, Share2, MoreHorizontal, Languages, Send, Loader2, X, Info, Trash2, Mic, PlayCircle } from "lucide-react";
+import { Heart, MessageCircle, MessageSquare, Repeat2, Share2, MoreHorizontal, Send, Loader2, X, Trash2, Mic } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -74,6 +74,8 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
           setIsLiked(likedBy.includes(user.uid));
         }
       }
+    }, (error) => {
+      // التعامل مع أخطاء الأذونات بصمت لعدم إزعاج المستخدم
     });
     return () => unsubscribe();
   }, [id, db, user]);
@@ -203,14 +205,14 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 </div>
               )}
 
-              {/* طبقة التعديلات (نصوص وملصقات) */}
+              {/* طبقة التعديلات (نصوص وملصقات) المصممة لـ "بلا قيود" */}
               <div className="absolute inset-0 pointer-events-none">
                 {mediaSettings?.textOverlay && (
                   <div className="absolute" style={{ left: `${mediaSettings.textX ?? 50}%`, top: `${mediaSettings.textY ?? 50}%`, transform: 'translate(-50%, -50%)' }}>
                     <span className={cn(
-                      "text-base font-black text-center px-3 py-1.5 rounded-lg drop-shadow-xl", 
+                      "text-base font-black text-center px-3 py-1.5 rounded-lg drop-shadow-2xl shadow-black", 
                       mediaSettings.textColor || "text-white", 
-                      mediaSettings.textBg ? "bg-black/50 backdrop-blur-md" : ""
+                      mediaSettings.textBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
                     )}>
                       {mediaSettings.textOverlay}
                     </span>
@@ -223,7 +225,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     transform: `translate(-50%, -50%) scale(${sticker.scale || 1}) rotate(${sticker.rotation || 0}deg)` 
                   }}>
                     <div className={cn(
-                      "px-3 py-1 rounded-md font-black text-[10px] shadow-lg border border-white/10", 
+                      "px-3 py-1.5 rounded-lg font-black text-[11px] shadow-2xl drop-shadow-md border border-white/15 whitespace-nowrap", 
                       sticker.color || "bg-white text-black"
                     )}>
                       {sticker.text}
@@ -252,43 +254,43 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     <span className="text-xs font-bold text-zinc-500 group-hover:text-primary">{comments.length}</span>
                   </div>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="h-[80vh] bg-zinc-950 border-zinc-800 rounded-t-[2rem] p-0 flex flex-col outline-none">
-                  <SheetHeader className="p-4 border-b border-zinc-900 sticky top-0 bg-zinc-950/80 backdrop-blur-md z-10">
+                <SheetContent side="bottom" className="h-[80vh] bg-zinc-950 border-zinc-800 rounded-t-[2.5rem] p-0 flex flex-col outline-none">
+                  <SheetHeader className="p-6 border-b border-zinc-900 sticky top-0 bg-zinc-950/80 backdrop-blur-md z-10">
                     <div className="flex justify-between items-center">
                       <SheetClose asChild><Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button></SheetClose>
-                      <SheetTitle className="text-white font-bold">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
+                      <SheetTitle className="text-white font-black">{isRtl ? "النقاشات" : "Discussions"}</SheetTitle>
                       <div className="w-10" />
                     </div>
                   </SheetHeader>
-                  <ScrollArea className="flex-1 p-4">
+                  <ScrollArea className="flex-1 p-6">
                     {commentsLoading ? (
                       <div className="flex justify-center p-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
                     ) : comments.length > 0 ? (
                       comments.map((comment: any) => (
-                        <div key={comment.id} className="flex gap-3 mb-6">
-                          <Avatar className="h-8 w-8"><AvatarImage src={comment.authorAvatar} /></Avatar>
-                          <div className="flex-1 bg-zinc-900/50 p-3 rounded-2xl">
-                            <p className="text-[11px] font-bold text-zinc-500 mb-1">@{comment.authorHandle}</p>
-                            <p className="text-sm text-zinc-200">{comment.text}</p>
+                        <div key={comment.id} className="flex gap-4 mb-6">
+                          <Avatar className="h-9 w-9 border border-zinc-800"><AvatarImage src={comment.authorAvatar} /></Avatar>
+                          <div className="flex-1 bg-zinc-900/40 p-4 rounded-2xl border border-white/5">
+                            <p className="text-[11px] font-black text-zinc-500 mb-1">@{comment.authorHandle}</p>
+                            <p className="text-sm text-zinc-100 leading-relaxed">{comment.text}</p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-40 opacity-20">
-                        <MessageSquare className="h-10 w-10 mb-2" />
-                        <p className="text-xs">{isRtl ? "لا توجد تعليقات بعد" : "No comments yet"}</p>
+                      <div className="flex flex-col items-center justify-center h-60 opacity-20">
+                        <MessageSquare className="h-12 w-12 mb-3" />
+                        <p className="text-sm font-bold">{isRtl ? "لا توجد نقاشات بعد" : "No discussions yet"}</p>
                       </div>
                     )}
                   </ScrollArea>
-                  <div className="p-4 border-t border-zinc-900 bg-zinc-950">
-                    <div className="flex gap-2 items-center">
+                  <div className="p-6 border-t border-zinc-900 bg-zinc-950 pb-10">
+                    <div className="flex gap-3 items-center">
                       <Input 
-                        placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} 
-                        className="bg-zinc-900 border-none rounded-full h-11" 
+                        placeholder={isRtl ? "أضف رأيك..." : "Add your opinion..."} 
+                        className="bg-zinc-900 border-none rounded-full h-12 px-6" 
                         value={newComment} 
                         onChange={(e) => setNewComment(e.target.value)} 
                       />
-                      <Button size="icon" className="rounded-full h-11 w-11 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}>
+                      <Button size="icon" className="rounded-full h-12 w-12 bg-primary shadow-xl" onClick={handleAddComment} disabled={!newComment.trim()}>
                         <Send className="h-5 w-5" />
                       </Button>
                     </div>
