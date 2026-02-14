@@ -12,7 +12,8 @@ import {
   Bot, 
   LayoutGrid,
   X,
-  Plus
+  Plus,
+  Mic
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +30,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const MAX_CHARS = 2500;
 
+const TOPICS = ["General", "News", "Entertainment", "Sports", "Tech", "Life"];
+
 function CreatePostContent() {
   const { isRtl } = useLanguage();
   const router = useRouter();
@@ -38,6 +41,7 @@ function CreatePostContent() {
   
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState("General");
   const [settings, setSettings] = useState({
     allowDownload: true,
     markSensitive: false,
@@ -46,9 +50,10 @@ function CreatePostContent() {
   
   const imageUrl = searchParams.get("image");
   const videoUrl = searchParams.get("video");
+  const audioUrl = searchParams.get("audio");
 
   const handleSubmit = async () => {
-    if (!content.trim() && !imageUrl && !videoUrl) return;
+    if (!content.trim() && !imageUrl && !videoUrl && !audioUrl) return;
 
     setIsSubmitting(true);
     try {
@@ -66,8 +71,8 @@ function CreatePostContent() {
 
       await addDoc(collection(db, "posts"), {
         content,
-        mediaUrl: imageUrl || videoUrl || null,
-        mediaType: imageUrl ? "image" : (videoUrl ? "video" : null),
+        mediaUrl: imageUrl || videoUrl || audioUrl || null,
+        mediaType: imageUrl ? "image" : (videoUrl ? "video" : (audioUrl ? "audio" : null)),
         authorId: user?.uid || "anonymous",
         author: {
           name: user?.displayName || "User",
@@ -75,7 +80,9 @@ function CreatePostContent() {
           avatar: user?.photoURL || "https://picsum.photos/seed/me/100/100"
         },
         likesCount: 0,
+        likedBy: [],
         createdAt: serverTimestamp(),
+        topic: selectedTopic,
         settings: settings
       });
 
@@ -111,7 +118,7 @@ function CreatePostContent() {
           <X className="h-6 w-6" />
         </Button>
         <h1 className="text-sm font-bold opacity-70">
-          {videoUrl ? "New video post" : (imageUrl ? "New image post" : "New post")}
+          {videoUrl ? "New video post" : (imageUrl ? "New image post" : (audioUrl ? "New voice post" : "New post"))}
         </h1>
         <Button 
           onClick={handleSubmit} 
@@ -141,7 +148,7 @@ function CreatePostContent() {
         </div>
 
         {/* Media Preview Section */}
-        {(imageUrl || videoUrl) && (
+        {(imageUrl || videoUrl || audioUrl) && (
           <div className="px-4 pb-6">
             <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-[3/4] w-40 shadow-xl group">
               {imageUrl && <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />}
@@ -155,6 +162,12 @@ function CreatePostContent() {
                   </div>
                 </div>
               )}
+              {audioUrl && (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-4 bg-zinc-900">
+                  <Mic className="h-12 w-12 text-primary animate-pulse" />
+                  <span className="text-xs font-bold text-zinc-500">Voice clip ready</span>
+                </div>
+              )}
               <Button variant="ghost" size="icon" className="absolute top-2 right-2 rounded-full bg-black/40 h-6 w-6 text-white" onClick={() => router.back()}>
                 <X className="h-4 w-4" />
               </Button>
@@ -164,12 +177,17 @@ function CreatePostContent() {
 
         {/* Toolbar Settings */}
         <div className="flex flex-col border-t border-zinc-900 pt-2 pb-24">
-          <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer">
+          <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer" onClick={() => {
+            const next = TOPICS[(TOPICS.indexOf(selectedTopic) + 1) % TOPICS.length];
+            setSelectedTopic(next);
+          }}>
             <div className="flex items-center gap-4">
               <LayoutGrid className="h-5 w-5 text-zinc-400" />
               <span className="text-sm font-medium">Topic</span>
             </div>
-            <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 font-normal hover:bg-zinc-800">Topic</Badge>
+            <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 font-normal hover:bg-zinc-800 uppercase tracking-tighter">
+              {selectedTopic}
+            </Badge>
           </div>
 
           <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer">

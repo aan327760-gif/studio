@@ -17,15 +17,16 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth, useUser, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export function AppSidebar() {
   const { isRtl, t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useUser();
-  const auth = useAuth();
+  const db = useFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -77,14 +78,17 @@ export function AppSidebar() {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       
-      const chunks: BlobPart[] = [];
+      const chunks: Blob[] = [];
       mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
-        toast({
-          title: isRtl ? "تم حفظ التسجيل" : "Recording Saved",
-          description: isRtl ? "تم حفظ مقطعك الصوتي بنجاح" : "Your voice message has been saved successfully.",
-        });
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64Audio = reader.result as string;
+          setIsSheetOpen(false);
+          router.push(`/create-post?audio=${encodeURIComponent(base64Audio)}`);
+        };
+        reader.readAsDataURL(blob);
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -94,9 +98,9 @@ export function AppSidebar() {
       
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => {
-          if (prev >= 300) {
+          if (prev >= 60) {
             handleStopRecording();
-            return 300;
+            return 60;
           }
           return prev + 1;
         });

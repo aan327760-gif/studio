@@ -33,14 +33,13 @@ export default function Home() {
 
   const followingPostsQuery = useMemoFirebase(() => {
     if (!currentUser || followingIds.length === 0) return null;
-    // Firestore limited to 10 in 'in' query, keeping it simple for MVP
     return query(
       collection(db, "posts"), 
       where("authorId", "in", followingIds.slice(0, 10)),
       orderBy("createdAt", "desc"),
       limit(20)
     );
-  }, [db, currentUser, followingIds.length]);
+  }, [db, currentUser, followingIds]);
   
   const { data: followingPosts, loading: followingLoading } = useCollection<any>(followingPostsQuery);
 
@@ -91,10 +90,11 @@ export default function Home() {
                     author={post.author || { name: "User", handle: "user", avatar: "" }}
                     content={post.content}
                     image={post.mediaUrl}
+                    mediaType={post.mediaType}
                     likes={post.likesCount || 0}
                     comments={0}
                     reposts={0}
-                    time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : post.createdAt}
+                    time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
                   />
                 ))}
               </div>
@@ -124,6 +124,7 @@ export default function Home() {
                     author={post.author || { name: "User", handle: "user", avatar: "" }}
                     content={post.content}
                     image={post.mediaUrl}
+                    mediaType={post.mediaType}
                     likes={post.likesCount || 0}
                     comments={0}
                     reposts={0}

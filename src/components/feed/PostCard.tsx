@@ -1,18 +1,19 @@
 
 "use client";
 
-import { Heart, MessageCircle, Repeat2, Share2, MoreHorizontal, Languages, Send, Loader2, X, Info, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
+import { Heart, MessageCircle, Repeat2, Share2, MoreHorizontal, Languages, Send, Loader2, X, Info, ThumbsUp, ThumbsDown, MessageSquare, Trash2, Mic } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
 import { useState, useEffect } from "react";
 import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, deleteDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import Link from "next/link";
+import { toast } from "@/hooks/use-toast";
 
 interface PostCardProps {
   id: string;
@@ -20,17 +21,18 @@ interface PostCardProps {
     name: string;
     handle: string;
     avatar: string;
-    uid?: string; // Added uid to props
+    uid?: string;
   };
   content: string;
   image?: string;
+  mediaType?: "image" | "video" | "audio";
   likes: number;
   comments: number;
   reposts: number;
   time: string;
 }
 
-export function PostCard({ id, author, content, image, likes: initialLikes, comments: initialCommentsCount, reposts, time }: PostCardProps) {
+export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, comments: initialCommentsCount, reposts, time }: PostCardProps) {
   const { isRtl } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const { user } = useUser();
@@ -41,7 +43,6 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
   const [newComment, setNewComment] = useState("");
   const [postAuthorId, setPostAuthorId] = useState<string | null>(author.uid || null);
 
-  // Fetch comments
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
     return query(collection(db, "posts", id, "comments"), orderBy("createdAt", "desc"), limit(50));
@@ -89,6 +90,22 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
     }
   };
 
+  const handleDelete = async () => {
+    if (!id || !db || !user || postAuthorId !== user.uid) return;
+    
+    if (confirm(isRtl ? "هل أنت متأكد من حذف هذا المنشور؟" : "Are you sure you want to delete this post?")) {
+      try {
+        await deleteDoc(doc(db, "posts", id));
+        toast({
+          title: isRtl ? "تم الحذف" : "Deleted",
+          description: isRtl ? "تم حذف المنشور بنجاح" : "Post deleted successfully",
+        });
+      } catch (error) {
+        console.error("Error deleting post:", error);
+      }
+    }
+  };
+
   const handleAddComment = async () => {
     if (!newComment.trim() || !user || !id) return;
     
@@ -125,7 +142,7 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
         <Link href={`/profile/${postAuthorId || '#'}`}>
           <Avatar className="h-10 w-10 border-none cursor-pointer">
             <AvatarImage src={author.avatar} />
-            <AvatarFallback>{author.name[0]}</AvatarFallback>
+            <AvatarFallback>{author.name?.[0] || "U"}</AvatarFallback>
           </Avatar>
         </Link>
         <div className="flex-1 overflow-hidden">
@@ -136,9 +153,16 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
             </div>
           </Link>
         </div>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
-          <MoreHorizontal className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {user && postAuthorId === user.uid && (
+            <Button variant="ghost" size="icon" onClick={handleDelete} className="text-zinc-600 hover:text-red-500 h-8 w-8">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
+            <MoreHorizontal className="h-5 w-5" />
+          </Button>
+        </div>
       </CardHeader>
 
       <CardContent className="p-0">
@@ -157,13 +181,30 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
         </div>
 
         {image && (
-          <div className="relative w-full bg-zinc-900 overflow-hidden px-4">
-            <img 
-              src={image} 
-              alt="Post content" 
-              className="w-full h-auto max-h-[500px] object-cover rounded-2xl border border-zinc-800"
-              loading="lazy"
-            />
+          <div className="px-4">
+            {mediaType === "audio" ? (
+              <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center animate-pulse">
+                  <Mic className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                   <audio controls src={image} className="w-full h-8 brightness-90 contrast-125" />
+                </div>
+              </div>
+            ) : mediaType === "video" ? (
+              <div className="relative w-full bg-zinc-900 overflow-hidden rounded-2xl border border-zinc-800">
+                <video src={image} controls className="w-full h-auto max-h-[500px]" />
+              </div>
+            ) : (
+              <div className="relative w-full bg-zinc-900 overflow-hidden">
+                <img 
+                  src={image} 
+                  alt="Post content" 
+                  className="w-full h-auto max-h-[500px] object-cover rounded-2xl border border-zinc-800"
+                  loading="lazy"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -241,18 +282,6 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
                               <p className={cn("text-sm text-zinc-200 leading-relaxed", isRtl ? "text-right" : "text-left")}>
                                 {comment.text}
                               </p>
-                              <div className={cn("flex items-center gap-6 pt-1 text-zinc-500", isRtl ? "flex-row" : "flex-row-reverse")}>
-                                <div className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
-                                  <ThumbsUp className="h-4 w-4" />
-                                  <span className="text-xs">0</span>
-                                </div>
-                                <div className="cursor-pointer hover:text-white transition-colors">
-                                  <ThumbsDown className="h-4 w-4" />
-                                </div>
-                                <div className="cursor-pointer hover:text-white transition-colors">
-                                  <MessageSquare className="h-4 w-4" />
-                                </div>
-                              </div>
                             </div>
                             <Link href={`/profile/${comment.authorId || '#'}`}>
                               <Avatar className="h-9 w-9 shrink-0 border border-zinc-800 shadow-sm cursor-pointer">
@@ -261,7 +290,6 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
                               </Avatar>
                             </Link>
                           </div>
-                          <div className={cn("absolute top-10 bottom-0 w-[1px] bg-zinc-800", isRtl ? "right-4" : "left-4")} />
                         </div>
                       ))
                     ) : (

@@ -5,22 +5,56 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, MessageSquare, Loader2 } from "lucide-react";
+import { Search, Plus, MessageSquare, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { collection, query, orderBy, limit, addDoc, serverTimestamp } from "firebase/firestore";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 
 export default function LammaPage() {
   const { t, isRtl } = useLanguage();
   const db = useFirestore();
+  const { user } = useUser();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDesc, setNewGroupDesc] = useState("");
 
   const groupsQuery = useMemoFirebase(() => {
     return query(collection(db, "groups"), limit(50));
   }, [db]);
 
   const { data: groups, loading } = useCollection<any>(groupsQuery);
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim() || !user) return;
+    
+    try {
+      await addDoc(collection(db, "groups"), {
+        name: newGroupName,
+        description: newGroupDesc,
+        createdBy: user.uid,
+        memberCount: 1,
+        icon: "🌍",
+        topic: "General",
+        createdAt: serverTimestamp()
+      });
+      
+      setIsCreateOpen(false);
+      setNewGroupName("");
+      setNewGroupDesc("");
+      toast({
+        title: isRtl ? "تم إنشاء المجموعة" : "Group Created",
+        description: isRtl ? "مبروك! مجموعتك جاهزة للدردشة" : "Congrats! Your group is ready for chat.",
+      });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to create group" });
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen max-w-7xl mx-auto">
@@ -30,10 +64,43 @@ export default function LammaPage() {
         <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-zinc-900 p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold">{t("lamma")}</h2>
-            <Button size="sm" className="rounded-full gap-2 bg-primary hover:bg-primary/90">
-              <Plus className="h-4 w-4" />
-              {isRtl ? "إنشاء لمة" : "Create Lamma"}
-            </Button>
+            
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="rounded-full gap-2 bg-primary hover:bg-primary/90">
+                  <Plus className="h-4 w-4" />
+                  {isRtl ? "إنشاء لمة" : "Create Lamma"}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                <DialogHeader>
+                  <DialogTitle>{isRtl ? "مجموعة جديدة" : "New Community"}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>{isRtl ? "اسم المجموعة" : "Group Name"}</Label>
+                    <Input 
+                      placeholder={isRtl ? "مثلاً: عشاق التكنولوجيا" : "e.g. Tech Enthusiasts"} 
+                      className="bg-zinc-900 border-zinc-800"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{isRtl ? "الوصف" : "Description"}</Label>
+                    <Input 
+                      placeholder={isRtl ? "عن ماذا تتحدث المجموعة؟" : "What is this group about?"} 
+                      className="bg-zinc-900 border-zinc-800"
+                      value={newGroupDesc}
+                      onChange={(e) => setNewGroupDesc(e.target.value)}
+                    />
+                  </div>
+                  <Button className="w-full bg-primary hover:bg-primary/90" onClick={handleCreateGroup}>
+                    {isRtl ? "إنشاء الآن" : "Create Now"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
