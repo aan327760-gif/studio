@@ -10,6 +10,7 @@
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
         "bio": { "type": "string" },
+        "phoneNumber": { "type": "string", "description": "Optional phone number" },
         "isPro": { "type": "boolean", "description": "Subscription status" },
         "language": { "type": "string", "enum": ["en", "ar"] }
       },

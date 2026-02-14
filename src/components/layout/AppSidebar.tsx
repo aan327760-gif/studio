@@ -1,14 +1,14 @@
 
 "use client";
 
-import { Home, Search, Plus, Bell, User, Video, Mic, Image as ImageIcon, PenLine, X, StopCircle } from "lucide-react";
+import { Home, Search, Plus, Bell, User, Video, Mic, Image as ImageIcon, PenLine, X, StopCircle, LogOut } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Sheet,
   SheetContent,
@@ -17,11 +17,15 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
+import { useAuth, useUser } from "@/firebase";
+import { signOut } from "firebase/auth";
 
 export function AppSidebar() {
   const { isRtl, t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useUser();
+  const auth = useAuth();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   // Refs for file inputs
@@ -34,12 +38,29 @@ export function AppSidebar() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: isRtl ? "تم تسجيل الخروج" : "Logged Out",
+      });
+      router.push("/auth");
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to sign out" });
+    }
+  };
+
   const navItems = [
     { icon: Home, href: "/", label: "Home" },
     { icon: Search, href: "/explore", label: "Search" },
     { icon: Plus, href: "#", label: "Add", special: true },
     { icon: Bell, href: "/notifications", label: "Notifications" },
-    { icon: User, href: "/profile", label: "Profile", isAvatar: true },
+    { 
+      icon: User, 
+      href: user ? "/profile" : "/auth", 
+      label: "Profile", 
+      isAvatar: true 
+    },
   ];
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,7 +171,6 @@ export function AppSidebar() {
 
   return (
     <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-black border-t border-zinc-800 z-50 px-4 py-2 flex justify-around items-center h-16 shadow-2xl">
-      {/* Hidden Inputs */}
       <input 
         type="file" 
         accept="image/*" 
@@ -241,8 +261,8 @@ export function AppSidebar() {
             >
               {item.isAvatar ? (
                 <Avatar className={cn("h-7 w-7 border", isActive ? "border-white" : "border-transparent")}>
-                  <AvatarImage src="https://picsum.photos/seed/me/50/50" />
-                  <AvatarFallback>U</AvatarFallback>
+                  <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/50/50"} />
+                  <AvatarFallback>{user?.displayName?.[0] || "U"}</AvatarFallback>
                 </Avatar>
               ) : (
                 <item.icon className={cn("h-7 w-7", isActive && "stroke-[2.5px]")} />
