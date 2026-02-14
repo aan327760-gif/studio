@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Send } from "lucide-react";
+import { X, Image as ImageIcon, Video, MapPin, Bot, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { moderateContent } from "@/ai/flows/content-moderation-assistant";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const MAX_CHARS = 2500;
 
@@ -52,55 +53,106 @@ export default function CreatePostPage() {
     }
   };
 
+  const progress = (content.length / MAX_CHARS) * 100;
+  const radius = 10;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-800">
-      <header className="p-4 flex items-center justify-between border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-md z-10">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => router.back()}
-            className="rounded-full hover:bg-white/10"
-          >
-            <ArrowLeft className={isRtl ? "rotate-180" : ""} />
-          </Button>
-          <h1 className="font-bold text-lg">{isRtl ? "منشور جديد" : "New Post"}</h1>
-        </div>
+    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative">
+      {/* Header */}
+      <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-10">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => router.back()}
+          className="rounded-full hover:bg-white/10 text-white"
+        >
+          <X className="h-6 w-6" />
+        </Button>
         <Button 
           onClick={handleSubmit} 
           disabled={!content.trim() || content.length > MAX_CHARS || isSubmitting}
-          className="rounded-full px-6 font-bold"
+          className="rounded-full px-6 font-bold bg-[#D1D5DB] text-black hover:bg-zinc-300 h-9"
         >
           {isSubmitting ? "..." : (isRtl ? "نشر" : "Post")}
         </Button>
       </header>
 
-      <main className="flex-1 p-4 flex flex-col gap-4">
+      {/* Main content */}
+      <main className="flex-1 p-4 flex gap-3">
+        <Avatar className="h-10 w-10 shrink-0">
+          <AvatarImage src="https://picsum.photos/seed/me/100/100" />
+          <AvatarFallback>U</AvatarFallback>
+        </Avatar>
         <Textarea
-          placeholder={isRtl ? "ماذا يدور في ذهنك؟ (2500 حرف)" : "What's on your mind? (2500 chars)"}
-          className="flex-1 bg-transparent border-none text-xl resize-none focus-visible:ring-0 p-0 placeholder:text-zinc-600"
+          placeholder={isRtl ? "قل شيئاً..." : "Say something..."}
+          className="flex-1 bg-transparent border-none text-lg resize-none focus-visible:ring-0 p-0 pt-2 placeholder:text-zinc-600 min-h-[300px]"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           maxLength={MAX_CHARS}
+          autoFocus
         />
-        
-        <div className="flex items-center justify-between py-4 border-t border-zinc-900">
-          <div className={cn(
-            "text-xs font-medium",
-            content.length > MAX_CHARS * 0.9 ? "text-orange-500" : "text-zinc-500"
-          )}>
-            {content.length.toLocaleString()} / {MAX_CHARS.toLocaleString()}
+      </main>
+
+      {/* Footer / Toolbar */}
+      <footer className="p-4 border-t border-zinc-900 bg-black sticky bottom-0 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white p-0 h-auto w-auto">
+            <ImageIcon className="h-6 w-6" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white p-0 h-auto w-auto">
+            <Video className="h-6 w-6" />
+          </Button>
+          <div className="flex items-center gap-1 px-3 py-1 bg-zinc-900 rounded-full text-xs font-medium text-zinc-400">
+             <span className="opacity-60">{isRtl ? "موضوع" : "Topic"}</span>
           </div>
-          <div className="flex gap-2">
-            <div className="h-1 w-24 bg-zinc-800 rounded-full overflow-hidden">
-               <div 
-                className="h-full bg-primary transition-all duration-300" 
-                style={{ width: `${(content.length / MAX_CHARS) * 100}%` }}
-               />
-            </div>
+          <Button variant="ghost" className="text-primary text-xs font-semibold p-0 h-auto hover:bg-transparent">
+             {isRtl ? "أضف موقعاً" : "Add location"}
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white p-0 h-auto w-auto">
+            <Bot className="h-6 w-6" />
+          </Button>
+          
+          {/* Circular Progress */}
+          <div className="relative h-6 w-6 flex items-center justify-center">
+            <svg className="h-6 w-6 -rotate-90">
+              <circle
+                cx="12"
+                cy="12"
+                r={radius}
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="transparent"
+                className="text-zinc-800"
+              />
+              <circle
+                cx="12"
+                cy="12"
+                r={radius}
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={offset}
+                strokeLinecap="round"
+                className={cn(
+                  "transition-all duration-300",
+                  content.length > MAX_CHARS * 0.9 ? "text-orange-500" : "text-primary"
+                )}
+              />
+            </svg>
+            {content.length > MAX_CHARS * 0.9 && (
+              <span className="absolute text-[8px] font-bold">
+                {MAX_CHARS - content.length}
+              </span>
+            )}
           </div>
         </div>
-      </main>
+      </footer>
     </div>
   );
 }
