@@ -1,0 +1,28 @@
+{
+  "placeholderImages": [
+    {
+      "id": "user-1",
+      "description": "Avatar of a person",
+      "imageUrl": "https://picsum.photos/seed/user1/150/150",
+      "imageHint": "person avatar"
+    },
+    {
+      "id": "post-1",
+      "description": "Scenery for a post",
+      "imageUrl": "https://picsum.photos/seed/post1/600/800",
+      "imageHint": "nature mountain"
+    },
+    {
+      "id": "post-2",
+      "description": "City life photo",
+      "imageUrl": "https://picsum.photos/seed/post2/600/400",
+      "imageHint": "city life"
+    },
+    {
+      "id": "community-1",
+      "description": "Arabic calligraphy or community theme",
+      "imageUrl": "https://picsum.photos/seed/comm1/400/200",
+      "imageHint": "arabic community"
+    }
+  ]
+}
