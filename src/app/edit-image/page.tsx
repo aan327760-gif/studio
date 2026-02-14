@@ -30,7 +30,10 @@ function ImageEditorContent() {
   }, [searchParams]);
 
   const handleDone = () => {
-    router.push(`/finalize-media?image=${encodeURIComponent(selectedImage || "")}`);
+    const params = new URLSearchParams();
+    params.set("image", selectedImage || "");
+    params.set("filter", activeFilter.class);
+    router.push(`/finalize-media?${params.toString()}`);
   };
 
   if (!selectedImage) {
@@ -64,7 +67,7 @@ function ImageEditorContent() {
 
       {/* Main Preview */}
       <main className="flex-1 flex items-center justify-center p-2">
-        <div className={cn("relative w-full aspect-[3/4] overflow-hidden rounded-lg", activeFilter.class)}>
+        <div className={cn("relative w-full aspect-[3/4] overflow-hidden rounded-lg transition-all duration-300", activeFilter.class)}>
           <img 
             src={selectedImage} 
             alt="Preview" 

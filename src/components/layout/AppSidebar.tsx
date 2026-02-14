@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, Search, Plus, Bell, User, Video, Mic, Image as ImageIcon, PenLine, X, StopCircle, MessageSquare } from "lucide-react";
+import { Home, Search, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, X, StopCircle, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -40,7 +40,7 @@ export function AppSidebar() {
     if (!user) return null;
     return query(collection(db, "notifications"), where("userId", "==", user.uid), where("read", "==", false));
   }, [db, user]);
-  const { data: unreadNotifs } = useCollection<any>(unreadNotifsQuery);
+  const { data: unreadNotifs = [] } = useCollection<any>(unreadNotifsQuery);
 
   const navItems = [
     { icon: Home, href: "/", label: "Home" },
@@ -58,6 +58,7 @@ export function AppSidebar() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // استخدام URL.createObjectURL بدلاً من Base64 للمعاينة لضمان السرعة في الهواتف
       const imageUrl = URL.createObjectURL(file);
       setIsSheetOpen(false);
       router.push(`/edit-image?image=${encodeURIComponent(imageUrl)}`);

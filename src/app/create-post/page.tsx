@@ -27,7 +27,6 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 const MAX_CHARS = 2500;
 const TOPICS = ["General", "News", "Entertainment", "Sports", "Tech", "Life"];
 
-// دالة مساعدة لتحويل الرابط المحلي (Blob URL) إلى Base64 قبل الرفع
 async function urlToBase64(url: string): Promise<string> {
   const response = await fetch(url);
   const blob = await response.blob();
@@ -58,13 +57,14 @@ function CreatePostContent() {
   const imageUrl = searchParams.get("image");
   const videoUrl = searchParams.get("video");
   const audioUrl = searchParams.get("audio");
+  const filterClass = searchParams.get("filter") || "filter-none";
+  const textOverlay = searchParams.get("textOverlay") || "";
 
   const handleSubmit = async () => {
     if (!content.trim() && !imageUrl && !videoUrl && !audioUrl) return;
 
     setIsSubmitting(true);
     try {
-      // 1. Content Moderation
       const moderationResult = await moderateContent({ text: content || "Media Post" });
       
       if (!moderationResult.isAppropriate) {
@@ -77,7 +77,6 @@ function CreatePostContent() {
         return;
       }
 
-      // 2. Media Upload to Cloudinary if exists
       let finalMediaUrl = null;
       let mediaType: "image" | "video" | "audio" | null = null;
 
@@ -95,11 +94,14 @@ function CreatePostContent() {
         mediaType = 'audio';
       }
 
-      // 3. Save to Firestore
       await addDoc(collection(db, "posts"), {
         content,
         mediaUrl: finalMediaUrl,
         mediaType: mediaType,
+        mediaSettings: {
+          filter: filterClass,
+          textOverlay: textOverlay
+        },
         authorId: user?.uid || "anonymous",
         author: {
           name: user?.displayName || "User",
@@ -144,7 +146,7 @@ function CreatePostContent() {
           <X className="h-6 w-6" />
         </Button>
         <h1 className="text-sm font-bold opacity-70">
-          {videoUrl ? "New video post" : (imageUrl ? "New image post" : (audioUrl ? "New voice post" : "New post"))}
+          New post
         </h1>
         <Button 
           onClick={handleSubmit} 
@@ -173,16 +175,20 @@ function CreatePostContent() {
 
         {(imageUrl || videoUrl || audioUrl) && (
           <div className="px-4 pb-6">
-            <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-[3/4] w-40 shadow-xl group">
-              {imageUrl && <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />}
+            <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-[3/4] w-48 shadow-xl group">
+              {imageUrl && (
+                <div className="relative w-full h-full">
+                  <img src={imageUrl} alt="Preview" className={cn("w-full h-full object-cover", filterClass)} />
+                  {textOverlay && (
+                    <div className="absolute inset-0 flex items-center justify-center p-2">
+                      <span className="text-white text-xs font-black text-center drop-shadow-md break-words">{textOverlay}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               {videoUrl && (
                 <div className="relative w-full h-full">
                   <video src={videoUrl} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                    <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center">
-                      <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
-                    </div>
-                  </div>
                 </div>
               )}
               {audioUrl && (
