@@ -4,12 +4,13 @@
 import { useEffect } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
-import { Heart, UserPlus, MessageSquare, Repeat2, Settings, Loader2, Trash2 } from "lucide-react";
+import { Heart, UserPlus, MessageSquare, Repeat2, Settings, Loader2, Trash2, Hammer } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, limit, doc, deleteDoc, updateDoc, writeBatch, getDocs } from "firebase/firestore";
+import { cn } from "@/lib/utils";
 
 export default function NotificationsPage() {
   const { isRtl } = useLanguage();
@@ -28,7 +29,6 @@ export default function NotificationsPage() {
 
   const { data: notifications, loading } = useCollection<any>(notificationsQuery);
 
-  // تحديث التنبيهات لتصبح "مقروءة" عند فتح الصفحة
   useEffect(() => {
     const markAllAsRead = async () => {
       if (!currentUser || !db || notifications.length === 0) return;
@@ -134,8 +134,9 @@ export default function NotificationsPage() {
               </div>
             )}
           </TabsContent>
-          <TabsContent value="mentions" className="p-20 text-center text-zinc-500 text-sm">
-             {isRtl ? "لا توجد إشارات حالياً" : "Nothing to see here — yet"}
+          <TabsContent value="mentions" className="p-20 text-center text-zinc-500 text-sm flex flex-col items-center gap-4">
+             <Hammer className="h-10 w-10 opacity-20" />
+             <p>{isRtl ? "نظام الإشارات قيد التطوير" : "Mentions system is under development"}</p>
           </TabsContent>
         </main>
       </Tabs>
@@ -143,8 +144,4 @@ export default function NotificationsPage() {
       <AppSidebar />
     </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
 }

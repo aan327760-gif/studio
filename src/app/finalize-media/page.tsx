@@ -10,11 +10,13 @@ import {
   Music, 
   FastForward, 
   Layers, 
-  Grid2X2 
+  Grid2X2,
+  Hammer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 function FinalizeMediaContent() {
   const router = useRouter();
@@ -27,6 +29,13 @@ function FinalizeMediaContent() {
     if (imageUrl) params.set("image", imageUrl);
     if (videoUrl) params.set("video", videoUrl);
     router.push(`/create-post?${params.toString()}`);
+  };
+
+  const handleUnderDev = () => {
+    toast({
+      title: "Under Development",
+      description: "Creative tools will be available in the next update.",
+    });
   };
 
   return (
@@ -72,13 +81,20 @@ function FinalizeMediaContent() {
           { icon: Layers, label: "Filters" },
           { icon: Grid2X2, label: "Blur" },
         ].map((action) => (
-          <div key={action.label} className="flex items-center gap-4 group cursor-pointer w-fit">
+          <div 
+            key={action.label} 
+            className="flex items-center gap-4 group cursor-pointer w-fit"
+            onClick={handleUnderDev}
+          >
             <div className="h-10 w-10 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md group-hover:bg-black/40 transition-all shadow-sm border border-white/10">
               <action.icon className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm font-semibold text-white drop-shadow-lg">
-              {action.label}
-            </span>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-white drop-shadow-lg">
+                {action.label}
+              </span>
+              <span className="text-[7px] text-primary font-bold uppercase drop-shadow-md">Under Dev</span>
+            </div>
           </div>
         ))}
       </div>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppSidebar } from "@/components/layout/AppSidebar";
@@ -12,16 +13,26 @@ import {
   ArrowLeft,
   Moon,
   Lock,
-  EyeOff
+  EyeOff,
+  Hammer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export default function SettingsPage() {
   const { language, setLanguage, isRtl } = useLanguage();
   const router = useRouter();
+
+  const handleUnderDev = () => {
+    toast({
+      title: isRtl ? "قيد التطوير" : "Under Development",
+      description: isRtl ? "هذه الميزة ستتوفر قريباً." : "This feature will be available soon.",
+    });
+  };
 
   const menuItems = [
     { 
@@ -33,12 +44,14 @@ export default function SettingsPage() {
     { 
       title: isRtl ? "الخصوصية" : "Privacy", 
       icon: ShieldCheck, 
-      onClick: () => {} 
+      onClick: handleUnderDev,
+      isDev: true
     },
     { 
       title: isRtl ? "التنبيهات" : "Notifications", 
       icon: BellRing, 
-      onClick: () => {} 
+      onClick: handleUnderDev,
+      isDev: true
     },
   ];
 
@@ -69,7 +82,12 @@ export default function SettingsPage() {
                       <div className="h-8 w-8 rounded-full bg-zinc-900 flex items-center justify-center">
                         <item.icon className="h-4 w-4 text-zinc-400" />
                       </div>
-                      <span className="text-sm font-medium">{item.title}</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{item.title}</span>
+                        {item.isDev && (
+                          <span className="text-[8px] text-primary font-bold uppercase">{isRtl ? "قيد التطوير" : "Under Dev"}</span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {item.value && <span className="text-xs text-zinc-500">{item.value}</span>}
@@ -92,9 +110,12 @@ export default function SettingsPage() {
                   <div className="h-8 w-8 rounded-full bg-zinc-900 flex items-center justify-center">
                     <Lock className="h-4 w-4 text-zinc-400" />
                   </div>
-                  <span className="text-sm font-medium">{isRtl ? "حساب خاص" : "Private Account"}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{isRtl ? "حساب خاص" : "Private Account"}</span>
+                    <span className="text-[8px] text-primary font-bold uppercase">{isRtl ? "قيد التطوير" : "Under Dev"}</span>
+                  </div>
                 </div>
-                <Switch />
+                <Switch disabled />
               </div>
               <Separator className="bg-zinc-900" />
               <div className="flex items-center justify-between p-4">
@@ -104,7 +125,7 @@ export default function SettingsPage() {
                   </div>
                   <span className="text-sm font-medium">{isRtl ? "إخفاء عدد الإعجابات" : "Hide Like Counts"}</span>
                 </div>
-                <Switch checked />
+                <Switch checked onCheckedChange={handleUnderDev} />
               </div>
             </div>
           </section>
@@ -114,7 +135,7 @@ export default function SettingsPage() {
               {isRtl ? "عن التطبيق" : "About"}
             </h2>
             <div className="bg-zinc-900/30 rounded-2xl border border-zinc-900 overflow-hidden">
-              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5">
+              <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5" onClick={handleUnderDev}>
                 <div className="flex items-center gap-4">
                   <div className="h-8 w-8 rounded-full bg-zinc-900 flex items-center justify-center">
                     <CircleHelp className="h-4 w-4 text-zinc-400" />
@@ -131,7 +152,7 @@ export default function SettingsPage() {
                   </div>
                   <span className="text-sm font-medium">{isRtl ? "الإصدار" : "Version"}</span>
                 </div>
-                <span className="text-xs text-zinc-600 font-mono">v1.0.0-PRO</span>
+                <span className="text-xs text-zinc-600 font-mono">v1.0.0-BETA</span>
               </div>
             </div>
           </section>

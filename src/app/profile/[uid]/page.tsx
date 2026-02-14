@@ -15,7 +15,8 @@ import {
   UserPlus,
   UserCheck,
   MessageSquare,
-  Settings
+  Settings,
+  Hammer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -40,11 +41,9 @@ export default function UserProfilePage() {
 
   const isOwnProfile = currentUser?.uid === uid;
 
-  // Real-time user profile data
   const profileRef = useMemoFirebase(() => uid ? doc(db, "users", uid as string) : null, [db, uid]);
   const { data: profile, loading: profileLoading } = useDoc<any>(profileRef);
 
-  // Follow state
   const followId = currentUser && uid ? `${currentUser.uid}_${uid}` : null;
   const followRef = useMemoFirebase(() => (followId && !isOwnProfile) ? doc(db, "follows", followId) : null, [db, followId, isOwnProfile]);
   const { data: followDoc } = useDoc<any>(followRef);
@@ -66,7 +65,6 @@ export default function UserProfilePage() {
       updateDoc(doc(db, "users", currentUser.uid), { followingCount: increment(1) });
       updateDoc(doc(db, "users", uid as string), { followersCount: increment(1) });
 
-      // Notification
       addDoc(collection(db, "notifications"), {
         userId: uid,
         type: "follow",
@@ -88,7 +86,6 @@ export default function UserProfilePage() {
     }
   };
 
-  // Fetch user's posts
   const userPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
     return query(
@@ -258,6 +255,16 @@ export default function UserProfilePage() {
               {isRtl ? "لا توجد منشورات" : "No posts yet"}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="media" className="m-0 p-10 text-center text-zinc-500 text-sm flex flex-col items-center gap-4">
+           <Hammer className="h-10 w-10 opacity-20" />
+           <p>{isRtl ? "معرض الوسائط قيد التطوير" : "Media gallery under development"}</p>
+        </TabsContent>
+
+        <TabsContent value="likes" className="m-0 p-10 text-center text-zinc-500 text-sm flex flex-col items-center gap-4">
+           <Hammer className="h-10 w-10 opacity-20" />
+           <p>{isRtl ? "سجل الإعجابات قيد التطوير" : "Likes history under development"}</p>
         </TabsContent>
       </Tabs>
 
