@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, Suspense } from "react";
@@ -50,6 +51,8 @@ function CreatePostContent() {
   const textEffect = searchParams.get("textEffect") || "";
   const textX = parseFloat(searchParams.get("textX") || "50");
   const textY = parseFloat(searchParams.get("textY") || "50");
+  const stickersRaw = searchParams.get("stickers");
+  const stickers = stickersRaw ? JSON.parse(stickersRaw) : [];
 
   const handleSubmit = async () => {
     if (!content.trim() && !imageUrl && !videoUrl && !audioUrl) return;
@@ -96,7 +99,8 @@ function CreatePostContent() {
           textBg: textBg,
           textEffect: textEffect,
           textX: textX,
-          textY: textY
+          textY: textY,
+          stickers: stickers
         },
         authorId: user?.uid || "anonymous",
         author: {
@@ -161,6 +165,21 @@ function CreatePostContent() {
                       <span className={cn("text-xs font-black px-2 py-1 rounded-md", textColor, textBg ? "bg-black/50" : "")}>{textOverlay}</span>
                     </div>
                   )}
+                  {stickers.map((s: any) => (
+                    <div 
+                      key={s.id} 
+                      className="absolute" 
+                      style={{ 
+                        left: `${s.x}%`, 
+                        top: `${s.y}%`, 
+                        transform: `translate(-50%, -50%) scale(${s.scale * 0.5}) rotate(${s.rotation}deg)` 
+                      }}
+                    >
+                      <div className="px-2 py-1 rounded-lg bg-white text-black font-black text-[10px] shadow-lg">
+                        {s.text}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
               {videoUrl && <video src={videoUrl} className="w-full h-full object-cover" />}

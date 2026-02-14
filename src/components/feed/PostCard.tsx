@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Heart, MessageCircle, MessageSquare, MoreHorizontal, Send, Loader2, X, Trash2, Mic } from "lucide-react";
@@ -15,6 +16,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+
+const STICKER_COLORS = [
+  { bg: "bg-white", text: "text-black" },
+  { bg: "bg-black", text: "text-white" },
+  { bg: "bg-primary", text: "text-white" },
+  { bg: "bg-accent", text: "text-accent-foreground" },
+  { bg: "bg-white/20 backdrop-blur-md border border-white/20", text: "text-white" },
+];
 
 interface PostCardProps {
   id: string;
@@ -39,6 +48,7 @@ interface PostCardProps {
     textEffect?: string;
     textX?: number;
     textY?: number;
+    stickers?: any[];
   };
 }
 
@@ -90,7 +100,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       updateDoc(postRef, { likedBy: arrayRemove(user.uid) });
     } else {
       updateDoc(postRef, { likedBy: arrayUnion(user.uid) });
-      
       if (postAuthorId && postAuthorId !== user.uid) {
         addDoc(collection(db, "notifications"), {
           userId: postAuthorId,
@@ -109,12 +118,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!id || !db || !user || postAuthorId !== user.uid) return;
-    
     if (confirm(isRtl ? "هل أنت متأكد من حذف هذا المنشور؟" : "Are you sure you want to delete this post?")) {
-      try {
-        await deleteDoc(doc(db, "posts", id));
-        toast({ title: isRtl ? "تم الحذف" : "Deleted", description: isRtl ? "تم حذف المنشور بنجاح" : "Post deleted successfully" });
-      } catch (error) {}
+      await deleteDoc(doc(db, "posts", id));
+      toast({ title: isRtl ? "تم الحذف" : "Deleted" });
     }
   };
 
@@ -128,18 +134,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       text: newComment,
       createdAt: serverTimestamp()
     });
-    if (postAuthorId && postAuthorId !== user.uid) {
-      addDoc(collection(db, "notifications"), {
-        userId: postAuthorId,
-        type: "comment",
-        fromUserId: user.uid,
-        fromUserName: user.displayName || "Someone",
-        fromUserAvatar: user.photoURL || "",
-        postId: id,
-        read: false,
-        createdAt: serverTimestamp()
-      });
-    }
     setNewComment("");
   };
 
@@ -193,13 +187,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                   <div className="flex-1"><audio controls src={image} className="w-full h-10 brightness-90 filter invert" /></div>
                 </div>
               ) : mediaType === "video" ? (
-                <div className="relative w-full aspect-video bg-black">
-                  <video src={image} controls className="w-full h-full object-contain" />
-                </div>
+                <video src={image} controls className="w-full h-full object-contain aspect-video" />
               ) : (
-                <div className="relative w-full">
-                  <img src={image} alt="Post" className={cn("w-full h-auto max-h-[600px] object-cover", mediaSettings?.filter || "filter-none")} />
-                </div>
+                <img src={image} alt="Post" className={cn("w-full h-auto max-h-[600px] object-cover", mediaSettings?.filter || "filter-none")} />
               )}
 
               <div className="absolute inset-0 pointer-events-none">
@@ -217,6 +207,25 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     </span>
                   </div>
                 )}
+                {mediaSettings?.stickers?.map((s: any) => (
+                  <div 
+                    key={s.id} 
+                    className="absolute" 
+                    style={{ 
+                      left: `${s.x}%`, 
+                      top: `${s.y}%`, 
+                      transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` 
+                    }}
+                  >
+                    <div className={cn(
+                      "px-3 py-1.5 rounded-lg font-black text-sm shadow-xl drop-shadow-lg",
+                      STICKER_COLORS[s.colorIndex || 0].bg,
+                      STICKER_COLORS[s.colorIndex || 0].text
+                    )}>
+                      {s.text}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -274,6 +283,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                         className="bg-zinc-900 border-none rounded-full h-12 px-6" 
                         value={newComment} 
                         onChange={(e) => setNewComment(e.target.value)} 
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
                       />
                       <Button size="icon" className="rounded-full h-12 w-12 bg-primary shadow-xl" onClick={handleAddComment} disabled={!newComment.trim()}>
                         <Send className="h-5 w-5" />
