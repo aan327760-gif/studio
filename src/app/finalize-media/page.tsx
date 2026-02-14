@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, Suspense, useEffect, useRef } from "react";
@@ -10,8 +9,14 @@ import {
   Trash2, 
   Maximize, 
   RotateCw, 
-  Palette,
-  Check
+  Sparkles,
+  Zap,
+  Flame,
+  Diamond,
+  Wind,
+  Rainbow,
+  Sun,
+  Moon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,6 +30,17 @@ import { Slider } from "@/components/ui/slider";
 const TEXT_COLORS = [
   "text-white", "text-black", "text-primary", "text-red-500", "text-yellow-400", 
   "text-green-500", "text-purple-500", "text-orange-500", "text-pink-500"
+];
+
+const TEXT_EFFECTS = [
+  { id: "effect-flame", name: "لهب خفيف", icon: Flame },
+  { id: "effect-lightning", name: "برق خلفي", icon: Zap },
+  { id: "effect-sparkle", name: "بريق متحرك", icon: Sparkles },
+  { id: "effect-glass", name: "زجاج شفاف", icon: Diamond },
+  { id: "effect-cinematic", name: "دخول سينمائي", icon: Wind },
+  { id: "effect-rainbow", name: "تدرج لوني", icon: Rainbow },
+  { id: "effect-gold", name: "وهج ذهبي", icon: Sun },
+  { id: "effect-neon", name: "نيون داكن", icon: Moon },
 ];
 
 const STICKER_CATEGORIES = [
@@ -61,10 +77,14 @@ function FinalizeMediaContent() {
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
   const [textOverlay, setTextOverlay] = useState("");
   const [textColor, setTextColor] = useState("text-white");
+  const [textEffect, setTextEffect] = useState("");
   const [textBg, setTextBg] = useState(false);
+  
   const [finalText, setFinalText] = useState("");
   const [finalColor, setFinalColor] = useState("text-white");
   const [finalBg, setFinalBg] = useState(false);
+  const [finalEffect, setFinalEffect] = useState("");
+  
   const [textPos, setTextPos] = useState({ x: 50, y: 30 });
   const [isDraggingText, setIsDraggingText] = useState(false);
 
@@ -82,6 +102,7 @@ function FinalizeMediaContent() {
       params.set("textOverlay", finalText);
       params.set("textColor", finalColor);
       params.set("textBg", finalBg.toString());
+      params.set("textEffect", finalEffect);
       params.set("textX", textPos.x.toString());
       params.set("textY", textPos.y.toString());
     }
@@ -132,7 +153,6 @@ function FinalizeMediaContent() {
     let x = ((clientX - rect.left) / rect.width) * 100;
     let y = ((clientY - rect.top) / rect.height) * 100;
     
-    // إبقاء العناصر داخل الإطار
     x = Math.max(10, Math.min(90, x));
     y = Math.max(10, Math.min(90, y));
 
@@ -163,12 +183,12 @@ function FinalizeMediaContent() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/40" />
       </div>
 
-      {/* عرض النص المتحرك */}
       {finalText && (
         <div 
           className={cn(
             "absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing transition-transform touch-none", 
-            isDraggingText && "scale-110 ring-2 ring-primary rounded-xl"
+            isDraggingText && "scale-110 ring-2 ring-primary rounded-xl",
+            finalEffect
           )}
           style={{ 
             left: `${textPos.x}%`, 
@@ -189,7 +209,6 @@ function FinalizeMediaContent() {
         </div>
       )}
 
-      {/* عرض الملصقات المتحركة */}
       {stickers.map((sticker) => (
         <div 
           key={sticker.id}
@@ -239,7 +258,6 @@ function FinalizeMediaContent() {
         ))}
       </div>
 
-      {/* شريط التحكم في الملصق النشط */}
       {activeStickerId && (
         <div className="absolute bottom-28 left-4 right-4 z-50 animate-in slide-in-from-bottom-5" onClick={(e) => e.stopPropagation()}>
           <div className="bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-2xl space-y-5">
@@ -291,7 +309,6 @@ function FinalizeMediaContent() {
         </Button>
       </footer>
 
-      {/* نافذة اختيار الملصقات المرتبة */}
       <Dialog open={isStickerDialogOpen} onOpenChange={setIsStickerDialogOpen}>
         <DialogContent className="bg-zinc-950/98 backdrop-blur-3xl border-zinc-800 text-white w-[95%] max-w-[420px] rounded-[2.5rem] p-0 h-[75vh] flex flex-col overflow-hidden outline-none">
           <DialogHeader className="p-6 pb-2">
@@ -328,33 +345,68 @@ function FinalizeMediaContent() {
         </DialogContent>
       </Dialog>
 
-      {/* نافذة الكتابة */}
       <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
-        <DialogContent className="bg-zinc-950/98 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2.5rem] p-8 outline-none">
-          <DialogHeader className="mb-6">
-            <DialogTitle className="text-center font-black">أضف رأيك</DialogTitle>
+        <DialogContent className="bg-zinc-950/98 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2.5rem] p-6 outline-none h-[85vh] flex flex-col">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-center font-black">أضف لمستك السينمائية</DialogTitle>
           </DialogHeader>
-          <div className="space-y-8">
-            <Input 
-              placeholder="اكتب هنا..." value={textOverlay} onChange={(e) => setTextOverlay(e.target.value)}
-              className={cn("bg-zinc-900 border-none rounded-2xl h-16 text-center text-2xl font-black", textColor)}
-              autoFocus
-            />
-            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-              {TEXT_COLORS.map(c => (
-                <button key={c} className={cn("h-9 w-9 rounded-full border-2 shrink-0 transition-all active:scale-90", c.replace('text-', 'bg-'), textColor === c ? "border-white scale-110" : "border-transparent")} onClick={() => setTextColor(c)} />
-              ))}
+          <ScrollArea className="flex-1">
+            <div className="space-y-6 pb-4">
+              <div className="relative">
+                <Input 
+                  placeholder="اكتب هنا..." value={textOverlay} onChange={(e) => setTextOverlay(e.target.value)}
+                  className={cn("bg-zinc-900 border-none rounded-2xl h-20 text-center text-2xl font-black", textColor, textEffect)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-3">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">تأثيرات سينمائية</span>
+                <div className="grid grid-cols-4 gap-2">
+                  {TEXT_EFFECTS.map((eff) => (
+                    <button 
+                      key={eff.id} 
+                      className={cn(
+                        "flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all active:scale-95",
+                        textEffect === eff.id ? "bg-primary border-primary" : "bg-zinc-900 border-white/5"
+                      )}
+                      onClick={() => setTextEffect(textEffect === eff.id ? "" : eff.id)}
+                    >
+                      <eff.icon className="h-5 w-5" />
+                      <span className="text-[8px] font-black text-center leading-tight">{eff.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">الألوان</span>
+                <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                  {TEXT_COLORS.map(c => (
+                    <button key={c} className={cn("h-9 w-9 rounded-full border-2 shrink-0 transition-all active:scale-90", c.replace('text-', 'bg-'), textColor === c ? "border-white scale-110" : "border-transparent")} onClick={() => setTextColor(c)} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between bg-zinc-900/50 p-4 rounded-2xl">
+                <span className="text-sm font-bold">خلفية زجاجية</span>
+                <Button variant={textBg ? "default" : "outline"} size="sm" className="rounded-full" onClick={() => setTextBg(!textBg)}>
+                  {textBg ? "مفعل" : "معطل"}
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center justify-between bg-zinc-900/50 p-4 rounded-2xl">
-              <span className="text-sm font-bold">خلفية النص</span>
-              <Button variant={textBg ? "default" : "outline"} size="sm" className="rounded-full" onClick={() => setTextBg(!textBg)}>
-                {textBg ? "مفعل" : "معطل"}
-              </Button>
-            </div>
-            <div className="flex gap-4">
-              <Button variant="ghost" className="flex-1 rounded-2xl font-bold h-12" onClick={() => setIsTextDialogOpen(false)}>إلغاء</Button>
-              <Button className="flex-1 bg-white text-black hover:bg-zinc-200 rounded-2xl font-black h-12 shadow-xl" onClick={() => { setFinalText(textOverlay); setFinalColor(textColor); setFinalBg(textBg); setIsTextDialogOpen(false); setActiveStickerId(null); }}>تطبيق</Button>
-            </div>
+          </ScrollArea>
+          
+          <div className="flex gap-4 mt-4">
+            <Button variant="ghost" className="flex-1 rounded-2xl font-bold h-12" onClick={() => setIsTextDialogOpen(false)}>إلغاء</Button>
+            <Button className="flex-1 bg-white text-black hover:bg-zinc-200 rounded-2xl font-black h-12 shadow-xl" onClick={() => { 
+              setFinalText(textOverlay); 
+              setFinalColor(textColor); 
+              setFinalBg(textBg); 
+              setFinalEffect(textEffect);
+              setIsTextDialogOpen(false); 
+              setActiveStickerId(null); 
+            }}>تطبيق</Button>
           </div>
         </DialogContent>
       </Dialog>

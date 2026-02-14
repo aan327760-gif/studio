@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Heart, MessageCircle, MessageSquare, Repeat2, Share2, MoreHorizontal, Send, Loader2, X, Trash2, Mic } from "lucide-react";
@@ -37,6 +36,7 @@ interface PostCardProps {
     textOverlay?: string;
     textColor?: string;
     textBg?: boolean;
+    textEffect?: string;
     textX?: number;
     textY?: number;
     stickers?: any[];
@@ -74,9 +74,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
           setIsLiked(likedBy.includes(user.uid));
         }
       }
-    }, (error) => {
-      // التعامل مع أخطاء الأذونات بصمت لعدم إزعاج المستخدم
-    });
+    }, (error) => {});
     return () => unsubscribe();
   }, [id, db, user]);
 
@@ -205,10 +203,12 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 </div>
               )}
 
-              {/* طبقة التعديلات (نصوص وملصقات) المصممة لـ "بلا قيود" */}
               <div className="absolute inset-0 pointer-events-none">
                 {mediaSettings?.textOverlay && (
-                  <div className="absolute" style={{ left: `${mediaSettings.textX ?? 50}%`, top: `${mediaSettings.textY ?? 50}%`, transform: 'translate(-50%, -50%)' }}>
+                  <div 
+                    className={cn("absolute", mediaSettings.textEffect)} 
+                    style={{ left: `${mediaSettings.textX ?? 50}%`, top: `${mediaSettings.textY ?? 50}%`, transform: 'translate(-50%, -50%)' }}
+                  >
                     <span className={cn(
                       "text-base font-black text-center px-3 py-1.5 rounded-lg drop-shadow-2xl shadow-black", 
                       mediaSettings.textColor || "text-white", 
