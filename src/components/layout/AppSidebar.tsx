@@ -42,6 +42,19 @@ export function AppSidebar() {
     { icon: User, href: "/profile", label: "Profile", isAvatar: true },
   ];
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setIsSheetOpen(false);
+        router.push(`/edit-image?image=${encodeURIComponent(imageUrl)}`);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleStartRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -134,7 +147,7 @@ export function AppSidebar() {
         accept="image/*" 
         className="hidden" 
         ref={imageInputRef} 
-        onChange={() => toast({ title: isRtl ? "تم اختيار الصورة" : "Image Selected" })}
+        onChange={handleImageChange}
       />
       <input 
         type="file" 
