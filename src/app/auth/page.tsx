@@ -44,10 +44,10 @@ export default function AuthPage() {
         const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
         const user = userCredential.user;
         
-        // التحقق من وجود بيانات المستخدم في قاعدة البيانات، وإن لم توجد نقوم بإنشائها (للحالات الاستثنائية)
+        // التحقق من وجود بيانات المستخدم في قاعدة البيانات
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (!userDoc.exists()) {
-          setDoc(doc(db, "users", user.uid), {
+          const newUserProfile = {
             uid: user.uid,
             displayName: user.displayName || "User",
             email: user.email,
@@ -58,10 +58,13 @@ export default function AuthPage() {
             followersCount: 0,
             followingCount: 0,
             bio: ""
-          }).catch(async (err) => {
+          };
+          
+          await setDoc(doc(db, "users", user.uid), newUserProfile).catch(async (err) => {
             const permissionError = new FirestorePermissionError({
               path: `users/${user.uid}`,
               operation: 'create',
+              requestResourceData: newUserProfile
             });
             errorEmitter.emit('permission-error', permissionError);
           });
@@ -96,8 +99,7 @@ export default function AuthPage() {
           language: isRtl ? "ar" : "en"
         };
 
-        // نستخدم setDoc ونقوم بمعالجة الأخطاء عبر البنية التي أعددناها
-        setDoc(doc(db, "users", user.uid), userProfileData)
+        await setDoc(doc(db, "users", user.uid), userProfileData)
           .catch(async (err) => {
             const permissionError = new FirestorePermissionError({
               path: `users/${user.uid}`,

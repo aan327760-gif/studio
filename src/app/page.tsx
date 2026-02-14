@@ -5,14 +5,14 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { PostCard } from "@/components/feed/PostCard";
 import { useLanguage } from "@/context/LanguageContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { MessageSquare, Loader2, Sparkles } from "lucide-react";
+import { MessageSquare, Loader2, Sparkles, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, orderBy, limit, where } from "firebase/firestore";
 
 export default function Home() {
-  const { t, isRtl } = useLanguage();
+  const { isRtl } = useLanguage();
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
@@ -29,7 +29,7 @@ export default function Home() {
   }, [db, currentUser]);
   const { data: userFollows } = useCollection<any>(followsQuery);
 
-  const followingIds = userFollows.map(f => f.followingId);
+  const followingIds = userFollows?.map(f => f.followingId) || [];
 
   const followingPostsQuery = useMemoFirebase(() => {
     if (!currentUser || followingIds.length === 0) return null;
@@ -75,7 +75,7 @@ export default function Home() {
           </TabsTrigger>
         </TabsList>
 
-        <main className="pb-20">
+        <main className="pb-24">
           <TabsContent value="discover" className="m-0">
             {discoverLoading ? (
               <div className="flex justify-center p-10">
@@ -108,14 +108,19 @@ export default function Home() {
           
           <TabsContent value="following" className="m-0">
             {!currentUser ? (
-              <div className="p-10 text-center text-muted-foreground">
-                {isRtl ? "سجل الدخول لرؤية منشورات من تتابعهم" : "Login to see posts from people you follow."}
+              <div className="p-10 text-center text-muted-foreground flex flex-col items-center gap-4">
+                <p>{isRtl ? "سجل الدخول لرؤية منشورات من تتابعهم" : "Login to see posts from people you follow."}</p>
+                <Link href="/auth">
+                  <Button className="rounded-full bg-white text-black hover:bg-zinc-200">
+                    {isRtl ? "تسجيل الدخول" : "Sign In"}
+                  </Button>
+                </Link>
               </div>
             ) : followingLoading ? (
               <div className="flex justify-center p-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : followingPosts.length > 0 ? (
+            ) : followingPosts && followingPosts.length > 0 ? (
               <div className="flex flex-col">
                 {followingPosts.map((post: any) => (
                   <PostCard 
@@ -133,8 +138,14 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <div className="p-10 text-center text-muted-foreground">
-                {isRtl ? "أنت لا تتابع أحداً بعد، ابدأ بالاكتشاف!" : "No posts yet. Start following people to see their updates here."}
+              <div className="p-10 text-center text-muted-foreground flex flex-col items-center gap-4">
+                <UserPlus className="h-10 w-10 opacity-20" />
+                <p>{isRtl ? "أنت لا تتابع أحداً بعد، ابدأ بالاكتشاف!" : "No posts yet. Start following people to see their updates here."}</p>
+                <Link href="/explore">
+                  <Button variant="outline" className="rounded-full border-zinc-700">
+                    {isRtl ? "اكتشف أشخاصاً" : "Discover People"}
+                  </Button>
+                </Link>
               </div>
             )}
           </TabsContent>
