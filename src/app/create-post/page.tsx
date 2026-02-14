@@ -59,6 +59,8 @@ function CreatePostContent() {
   const audioUrl = searchParams.get("audio");
   const filterClass = searchParams.get("filter") || "filter-none";
   const textOverlay = searchParams.get("textOverlay") || "";
+  const textColor = searchParams.get("textColor") || "text-white";
+  const textBg = searchParams.get("textBg") === "true";
 
   const handleSubmit = async () => {
     if (!content.trim() && !imageUrl && !videoUrl && !audioUrl) return;
@@ -100,7 +102,9 @@ function CreatePostContent() {
         mediaType: mediaType,
         mediaSettings: {
           filter: filterClass,
-          textOverlay: textOverlay
+          textOverlay: textOverlay,
+          textColor: textColor,
+          textBg: textBg
         },
         authorId: user?.uid || "anonymous",
         author: {
@@ -180,8 +184,14 @@ function CreatePostContent() {
                 <div className="relative w-full h-full">
                   <img src={imageUrl} alt="Preview" className={cn("w-full h-full object-cover", filterClass)} />
                   {textOverlay && (
-                    <div className="absolute inset-0 flex items-center justify-center p-2">
-                      <span className="text-white text-xs font-black text-center drop-shadow-md break-words">{textOverlay}</span>
+                    <div className="absolute inset-0 flex items-center justify-center p-3">
+                      <span className={cn(
+                        "text-[10px] font-black text-center px-2 py-1 rounded-md break-words max-w-full drop-shadow-md",
+                        textColor,
+                        textBg ? "bg-black/50 backdrop-blur-sm" : ""
+                      )}>
+                        {textOverlay}
+                      </span>
                     </div>
                   )}
                 </div>

@@ -12,7 +12,8 @@ import {
   Layers, 
   Grid2X2,
   Check,
-  X
+  X,
+  Palette
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,6 +21,16 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const TEXT_COLORS = [
+  "text-white",
+  "text-black",
+  "text-primary",
+  "text-red-500",
+  "text-yellow-400",
+  "text-green-500",
+  "text-purple-500"
+];
 
 function FinalizeMediaContent() {
   const router = useRouter();
@@ -30,30 +41,37 @@ function FinalizeMediaContent() {
 
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
   const [textOverlay, setTextOverlay] = useState("");
+  const [textColor, setTextColor] = useState("text-white");
+  const [textBg, setTextBg] = useState(false);
+  
   const [finalText, setFinalText] = useState("");
+  const [finalColor, setFinalColor] = useState("text-white");
+  const [finalBg, setFinalBg] = useState(false);
 
   const handleNext = () => {
     const params = new URLSearchParams();
     if (imageUrl) params.set("image", imageUrl);
     if (videoUrl) params.set("video", videoUrl);
     if (filterClass) params.set("filter", filterClass);
-    if (finalText) params.set("textOverlay", finalText);
+    if (finalText) {
+      params.set("textOverlay", finalText);
+      params.set("textColor", finalColor);
+      params.set("textBg", finalBg.toString());
+    }
     router.push(`/create-post?${params.toString()}`);
   };
 
-  const handleUnderDev = () => {
+  const handleUnderDev = (feature: string) => {
     toast({
-      title: "Under Development",
-      description: "This creative tool will be available in the next update.",
+      title: "قيد التطوير",
+      description: `ميزة ${feature} ستتوفر قريباً في التحديث القادم.`,
     });
-  };
-
-  const openTextTool = () => {
-    setIsTextDialogOpen(true);
   };
 
   const applyText = () => {
     setFinalText(textOverlay);
+    setFinalColor(textColor);
+    setFinalBg(textBg);
     setIsTextDialogOpen(false);
   };
 
@@ -79,8 +97,12 @@ function FinalizeMediaContent() {
 
       {/* Text Overlay Render */}
       {finalText && (
-        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-          <span className="text-white text-3xl font-black text-center px-6 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] break-words max-w-full">
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none p-6">
+          <span className={cn(
+            "text-3xl font-black text-center px-4 py-2 rounded-xl break-words max-w-full transition-all drop-shadow-2xl",
+            finalColor,
+            finalBg ? "bg-black/50 backdrop-blur-sm" : ""
+          )}>
             {finalText}
           </span>
         </div>
@@ -101,13 +123,13 @@ function FinalizeMediaContent() {
       {/* Left Sidebar Actions */}
       <div className="relative z-10 flex-1 flex flex-col justify-center px-4 gap-7">
         {[
-          { icon: Smile, label: "Stickers", onClick: handleUnderDev },
-          { icon: Type, label: "Text", onClick: openTextTool, active: !!finalText },
-          { icon: Sparkles, label: "Effects", onClick: handleUnderDev },
-          { icon: Music, label: "Music", onClick: handleUnderDev },
-          { icon: FastForward, label: "Time", onClick: handleUnderDev },
+          { icon: Type, label: "Text", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
           { icon: Layers, label: "Filters", onClick: () => router.back(), active: filterClass !== "filter-none" },
-          { icon: Grid2X2, label: "Blur", onClick: handleUnderDev },
+          { icon: Smile, label: "Stickers", onClick: () => handleUnderDev("Stickers") },
+          { icon: Sparkles, label: "Effects", onClick: () => handleUnderDev("Effects") },
+          { icon: Music, label: "Music", onClick: () => handleUnderDev("Music") },
+          { icon: FastForward, label: "Time", onClick: () => handleUnderDev("Time") },
+          { icon: Grid2X2, label: "Blur", onClick: () => handleUnderDev("Blur") },
         ].map((action) => (
           <div 
             key={action.label} 
@@ -116,7 +138,7 @@ function FinalizeMediaContent() {
           >
             <div className={cn(
               "h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md transition-all shadow-sm border border-white/10",
-              action.active ? "bg-primary border-primary" : "bg-black/20 group-hover:bg-black/40"
+              action.active ? "bg-primary border-primary scale-110" : "bg-black/20 group-hover:bg-black/40"
             )}>
               <action.icon className="h-6 w-6 text-white" />
             </div>
@@ -142,23 +164,56 @@ function FinalizeMediaContent() {
 
       {/* Text Tool Dialog */}
       <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-900 text-white max-w-[90%] rounded-3xl p-6">
+        <DialogContent className="bg-zinc-950/95 backdrop-blur-xl border-zinc-800 text-white max-w-[90%] rounded-[2rem] p-6">
           <DialogHeader>
-            <DialogTitle className="text-center font-bold">Add Text</DialogTitle>
+            <DialogTitle className="text-center font-bold">Add Text Overlay</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 mt-4">
-            <Input 
-              placeholder="Type something..." 
-              value={textOverlay} 
-              onChange={(e) => setTextOverlay(e.target.value)}
-              className="bg-zinc-900 border-none rounded-xl h-12 text-center text-lg focus-visible:ring-1 focus-visible:ring-primary"
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <Button variant="ghost" className="flex-1 rounded-full font-bold" onClick={() => setIsTextDialogOpen(false)}>
+            <div className="relative">
+              <Input 
+                placeholder="Type your message..." 
+                value={textOverlay} 
+                onChange={(e) => setTextOverlay(e.target.value)}
+                className={cn(
+                  "bg-zinc-900 border-none rounded-2xl h-14 text-center text-xl font-bold focus-visible:ring-2 focus-visible:ring-primary",
+                  textColor
+                )}
+                autoFocus
+              />
+            </div>
+            
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-500 uppercase">Colors</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={cn("h-8 rounded-full text-[10px] font-bold", textBg ? "bg-primary text-white" : "text-zinc-400")}
+                  onClick={() => setTextBg(!textBg)}
+                >
+                  Background
+                </Button>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                {TEXT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    className={cn(
+                      "h-8 w-8 rounded-full border-2 shrink-0 transition-transform active:scale-90",
+                      color.replace('text-', 'bg-'),
+                      textColor === color ? "border-white scale-110" : "border-transparent"
+                    )}
+                    onClick={() => setTextColor(color)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button variant="ghost" className="flex-1 rounded-full font-bold h-12" onClick={() => setIsTextDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1 rounded-full font-bold bg-primary hover:bg-primary/90" onClick={applyText}>
+              <Button className="flex-1 rounded-full font-bold bg-primary hover:bg-primary/90 h-12" onClick={applyText}>
                 Apply
               </Button>
             </div>
@@ -171,7 +226,7 @@ function FinalizeMediaContent() {
 
 export default function FinalizeMediaPage() {
   return (
-    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white">Loading...</div>}>
+    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white">Loading Editor...</div>}>
       <FinalizeMediaContent />
     </Suspense>
   );

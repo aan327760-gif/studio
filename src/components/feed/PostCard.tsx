@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Heart, MessageCircle, MessageSquare, Repeat2, Share2, MoreHorizontal, Languages, Send, Loader2, X, Info, Trash2, Mic, PlayCircle } from "lucide-react";
@@ -30,9 +31,15 @@ interface PostCardProps {
   comments: number;
   reposts: number;
   time: string;
+  mediaSettings?: {
+    filter?: string;
+    textOverlay?: string;
+    textColor?: string;
+    textBg?: boolean;
+  };
 }
 
-export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, reposts, time }: PostCardProps) {
+export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, reposts, time, mediaSettings }: PostCardProps) {
   const { isRtl } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const { user } = useUser();
@@ -193,7 +200,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
         {image && (
           <div className="px-4 mb-2">
-            <div className="rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-900/40" onClick={(e) => e.stopPropagation()}>
+            <div className="relative rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-900/40" onClick={(e) => e.stopPropagation()}>
               {mediaType === "audio" ? (
                 <div className="p-4 flex items-center gap-4 bg-gradient-to-br from-zinc-900 to-black">
                   <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-primary shadow-inner">
@@ -206,17 +213,38 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
               ) : mediaType === "video" ? (
                 <div className="relative group aspect-video bg-black flex items-center justify-center">
                   <video src={image} controls className="w-full h-full max-h-[500px]" />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-active:scale-95 transition-transform">
-                     {!image && <PlayCircle className="h-12 w-12 text-white/50" />}
-                  </div>
+                  {mediaSettings?.textOverlay && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
+                      <span className={cn(
+                        "text-lg font-black text-center px-3 py-1.5 rounded-xl break-words max-w-full drop-shadow-2xl",
+                        mediaSettings.textColor || "text-white",
+                        mediaSettings.textBg ? "bg-black/50 backdrop-blur-sm" : ""
+                      )}>
+                        {mediaSettings.textOverlay}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <img 
-                  src={image} 
-                  alt="Post media" 
-                  className="w-full h-auto max-h-[600px] object-cover hover:opacity-95 transition-opacity"
-                  loading="lazy"
-                />
+                <div className="relative">
+                  <img 
+                    src={image} 
+                    alt="Post media" 
+                    className={cn("w-full h-auto max-h-[600px] object-cover hover:opacity-95 transition-all", mediaSettings?.filter || "filter-none")}
+                    loading="lazy"
+                  />
+                  {mediaSettings?.textOverlay && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
+                      <span className={cn(
+                        "text-lg font-black text-center px-3 py-1.5 rounded-xl break-words max-w-full drop-shadow-2xl",
+                        mediaSettings.textColor || "text-white",
+                        mediaSettings.textBg ? "bg-black/50 backdrop-blur-sm" : ""
+                      )}>
+                        {mediaSettings.textOverlay}
+                      </span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

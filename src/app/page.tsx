@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppSidebar } from "@/components/layout/AppSidebar";
@@ -93,6 +94,7 @@ export default function Home() {
                     comments={0}
                     reposts={0}
                     time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
+                    mediaSettings={post.mediaSettings}
                   />
                 ))}
               </div>
@@ -145,6 +147,7 @@ export default function Home() {
                     comments={0}
                     reposts={0}
                     time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
+                    mediaSettings={post.mediaSettings}
                   />
                 ))}
               </div>
