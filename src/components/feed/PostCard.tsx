@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 interface PostCardProps {
   id: string;
@@ -37,6 +38,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [isExpanded, setIsExpanded] = useState(false);
   const { user } = useUser();
   const db = useFirestore();
+  const router = useRouter();
   
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
@@ -66,11 +68,11 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     return () => unsubscribe();
   }, [id, db, user]);
 
-  const handleLike = async () => {
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!user || !id) return;
     const postRef = doc(db, "posts", id);
     
-    // تفاعل لحظي (Optimistic Update)
     const wasLiked = isLiked;
     setIsLiked(!wasLiked);
     setLikesCount(prev => wasLiked ? prev - 1 : prev + 1);
@@ -95,7 +97,8 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!id || !db || !user || postAuthorId !== user.uid) return;
     
     if (confirm(isRtl ? "هل أنت متأكد من حذف هذا المنشور؟" : "Are you sure you want to delete this post?")) {
@@ -141,9 +144,13 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     setNewComment("");
   };
 
+  const navigateToDetail = () => {
+    router.push(`/post/${id}`);
+  };
+
   return (
-    <Card className="bg-black text-white border-none rounded-none mb-2 border-b border-zinc-900">
-      <CardHeader className="p-4 flex flex-row items-center space-y-0 gap-3">
+    <Card className="bg-black text-white border-none rounded-none mb-2 border-b border-zinc-900 cursor-pointer" onClick={navigateToDetail}>
+      <CardHeader className="p-4 flex flex-row items-center space-y-0 gap-3" onClick={(e) => e.stopPropagation()}>
         <Link href={`/profile/${postAuthorId || '#'}`}>
           <Avatar className="h-10 w-10 border-none cursor-pointer">
             <AvatarImage src={author.avatar} />
@@ -177,7 +184,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
           </p>
           {!isExpanded && content.length > 150 && (
             <button 
-              onClick={() => setIsExpanded(true)}
+              onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }}
               className="text-primary font-semibold mt-1"
             >
               {isRtl ? "عرض المزيد" : "Show more"}
@@ -188,8 +195,8 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
         {image && (
           <div className="px-4">
             {mediaType === "audio" ? (
-              <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center animate-pulse">
+              <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
                   <Mic className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -197,7 +204,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 </div>
               </div>
             ) : mediaType === "video" ? (
-              <div className="relative w-full bg-zinc-900 overflow-hidden rounded-2xl border border-zinc-800">
+              <div className="relative w-full bg-zinc-900 overflow-hidden rounded-2xl border border-zinc-800" onClick={(e) => e.stopPropagation()}>
                 <video src={image} controls className="w-full h-auto max-h-[500px]" />
               </div>
             ) : (
@@ -213,7 +220,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
           </div>
         )}
 
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div 
@@ -254,18 +261,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     <div className="w-10" /> 
                   </SheetHeader>
                   
-                  <div className="p-4 flex gap-2 overflow-x-auto no-scrollbar border-b border-zinc-900 bg-zinc-950/50">
-                    <Button variant="secondary" size="sm" className="rounded-xl h-8 px-4 font-bold bg-white text-black hover:bg-zinc-200">
-                      {isRtl ? "الأهم" : "Top"}
-                    </Button>
-                    <Button variant="ghost" size="sm" className="rounded-xl h-8 px-4 font-bold text-zinc-400 hover:bg-zinc-900">
-                      {isRtl ? "المواضيع" : "Topics"}
-                    </Button>
-                    <Button variant="ghost" size="sm" className="rounded-xl h-8 px-4 font-bold text-zinc-400 hover:bg-zinc-900">
-                      {isRtl ? "أحدث التعليقات" : "Newest"}
-                    </Button>
-                  </div>
-
                   <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar pb-32">
                     {commentsLoading ? (
                       <div className="flex justify-center p-10">
@@ -274,26 +269,22 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     ) : comments.length > 0 ? (
                       comments.map((comment: any) => (
                         <div key={comment.id} className="relative group">
-                          <div className={cn("flex gap-3", isRtl ? "flex-row" : "flex-row-reverse")}>
-                            <div className="flex-1 space-y-2">
-                              <div className={cn("flex items-center gap-2 text-[11px] text-zinc-500", isRtl ? "flex-row" : "flex-row-reverse")}>
-                                <span className="font-medium">@{comment.authorHandle || "user"}</span>
-                                <span>•</span>
-                                <span>{comment.createdAt?.toDate ? "2m ago" : "just now"}</span>
-                                <Button variant="ghost" size="icon" className="h-4 w-4 text-zinc-600 hover:text-white ml-auto">
-                                  <MoreHorizontal className="h-3 w-3" />
-                                </Button>
-                              </div>
-                              <p className={cn("text-sm text-zinc-200 leading-relaxed", isRtl ? "text-right" : "text-left")}>
-                                {comment.text}
-                              </p>
-                            </div>
+                          <div className={cn("flex gap-3", isRtl ? "flex-row-reverse text-right" : "flex-row text-left")}>
                             <Link href={`/profile/${comment.authorId || '#'}`}>
                               <Avatar className="h-9 w-9 shrink-0 border border-zinc-800 shadow-sm cursor-pointer">
                                 <AvatarImage src={comment.authorAvatar} />
                                 <AvatarFallback>{comment.authorName?.[0]}</AvatarFallback>
                               </Avatar>
                             </Link>
+                            <div className="flex-1 space-y-1">
+                              <div className={cn("flex items-center gap-2 text-[11px] text-zinc-500", isRtl ? "justify-start flex-row-reverse" : "justify-start flex-row")}>
+                                <span className="font-bold text-zinc-300">@{comment.authorHandle || "user"}</span>
+                                <span className="text-[9px] opacity-60">• {isRtl ? "الآن" : "Now"}</span>
+                              </div>
+                              <p className="text-sm text-zinc-200 leading-relaxed">
+                                {comment.text}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       ))
@@ -308,7 +299,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                   </div>
                   
                   <div className="p-4 bg-zinc-950 border-t border-zinc-900 absolute bottom-0 left-0 right-0 z-20 shadow-[0_-8px_20px_rgba(0,0,0,0.5)]">
-                    <div className={cn("flex gap-3 items-center", isRtl ? "flex-row" : "flex-row-reverse")}>
+                    <div className={cn("flex gap-3 items-center", isRtl ? "flex-row-reverse" : "flex-row")}>
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.photoURL || ""} />
                         <AvatarFallback>U</AvatarFallback>
@@ -341,7 +332,18 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 <span className="text-xs font-medium">{reposts}</span>
               </div>
             </div>
-            <Share2 className="h-5 w-5 text-zinc-500 cursor-pointer hover:text-white" />
+            <Share2 className="h-5 w-5 text-zinc-500 cursor-pointer hover:text-white" onClick={(e) => {
+              e.stopPropagation();
+              if (navigator.share) {
+                navigator.share({
+                  title: 'Check out this post on Unbound',
+                  url: `${window.location.origin}/post/${id}`
+                });
+              } else {
+                navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
+                toast({ title: isRtl ? "تم نسخ الرابط" : "Link Copied" });
+              }
+            }} />
           </div>
 
           <div className="flex items-center justify-between text-[10px] text-zinc-600 uppercase tracking-wider">
