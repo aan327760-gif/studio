@@ -85,7 +85,6 @@ function FinalizeMediaContent() {
     setIsTextDialogOpen(false);
   };
 
-  // Dragging logic
   const onStartDrag = (e: React.MouseEvent | React.TouchEvent) => {
     if (finalText) {
       setIsDragging(true);
@@ -106,13 +105,15 @@ function FinalizeMediaContent() {
       clientY = e.clientY;
     }
 
-    const x = ((clientX - rect.left) / rect.width) * 100;
-    const y = ((clientY - rect.top) / rect.height) * 100;
+    // Calculate percentage based on current mouse/touch position
+    let x = ((clientX - rect.left) / rect.width) * 100;
+    let y = ((clientY - rect.top) / rect.height) * 100;
 
-    // Constrain to bounds
+    // Strict constraints to prevent text from leaving the phone frame (0 to 100)
+    // We use a safe margin of 15% to ensure the text remains visible and selectable
     setTextPos({
-      x: Math.max(10, Math.min(90, x)),
-      y: Math.max(10, Math.min(90, y))
+      x: Math.max(15, Math.min(85, x)),
+      y: Math.max(15, Math.min(85, y))
     });
   };
 
@@ -164,7 +165,7 @@ function FinalizeMediaContent() {
           onTouchStart={onStartDrag}
         >
           <span className={cn(
-            "text-2xl font-black text-center px-4 py-2 rounded-xl break-words max-w-[80vw] whitespace-nowrap drop-shadow-2xl shadow-black",
+            "text-xl font-black text-center px-4 py-2 rounded-xl break-words max-w-[70vw] drop-shadow-2xl shadow-black",
             finalColor,
             finalBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
           )}>
@@ -309,3 +310,4 @@ export default function FinalizeMediaPage() {
     </Suspense>
   );
 }
+
