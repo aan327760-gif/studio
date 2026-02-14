@@ -61,6 +61,8 @@ function CreatePostContent() {
   const textOverlay = searchParams.get("textOverlay") || "";
   const textColor = searchParams.get("textColor") || "text-white";
   const textBg = searchParams.get("textBg") === "true";
+  const textX = parseFloat(searchParams.get("textX") || "50");
+  const textY = parseFloat(searchParams.get("textY") || "50");
 
   const handleSubmit = async () => {
     if (!content.trim() && !imageUrl && !videoUrl && !audioUrl) return;
@@ -104,7 +106,9 @@ function CreatePostContent() {
           filter: filterClass,
           textOverlay: textOverlay,
           textColor: textColor,
-          textBg: textBg
+          textBg: textBg,
+          textX: textX,
+          textY: textY
         },
         authorId: user?.uid || "anonymous",
         author: {
@@ -184,9 +188,12 @@ function CreatePostContent() {
                 <div className="relative w-full h-full">
                   <img src={imageUrl} alt="Preview" className={cn("w-full h-full object-cover", filterClass)} />
                   {textOverlay && (
-                    <div className="absolute inset-0 flex items-center justify-center p-3">
+                    <div 
+                      className="absolute pointer-events-none"
+                      style={{ left: `${textX}%`, top: `${textY}%`, transform: 'translate(-50%, -50%)' }}
+                    >
                       <span className={cn(
-                        "text-[10px] font-black text-center px-2 py-1 rounded-md break-words max-w-full drop-shadow-md",
+                        "text-[8px] font-black text-center px-1.5 py-0.5 rounded-md break-words max-w-full drop-shadow-md",
                         textColor,
                         textBg ? "bg-black/50 backdrop-blur-sm" : ""
                       )}>

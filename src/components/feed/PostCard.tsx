@@ -36,6 +36,8 @@ interface PostCardProps {
     textOverlay?: string;
     textColor?: string;
     textBg?: boolean;
+    textX?: number;
+    textY?: number;
   };
 }
 
@@ -214,7 +216,15 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 <div className="relative group aspect-video bg-black flex items-center justify-center">
                   <video src={image} controls className="w-full h-full max-h-[500px]" />
                   {mediaSettings?.textOverlay && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none p-4"
+                      style={{ 
+                        left: `${mediaSettings.textX ?? 50}%`, 
+                        top: `${mediaSettings.textY ?? 50}%`, 
+                        transform: 'translate(-50%, -50%)',
+                        position: 'absolute'
+                      }}
+                    >
                       <span className={cn(
                         "text-lg font-black text-center px-4 py-2 rounded-xl break-words max-w-full drop-shadow-2xl shadow-black",
                         mediaSettings.textColor || "text-white",
@@ -234,7 +244,14 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     loading="lazy"
                   />
                   {mediaSettings?.textOverlay && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
+                    <div 
+                      className="absolute pointer-events-none p-4"
+                      style={{ 
+                        left: `${mediaSettings.textX ?? 50}%`, 
+                        top: `${mediaSettings.textY ?? 50}%`, 
+                        transform: 'translate(-50%, -50%)'
+                      }}
+                    >
                       <span className={cn(
                         "text-lg font-black text-center px-4 py-2 rounded-xl break-words max-w-full drop-shadow-2xl shadow-black",
                         mediaSettings.textColor || "text-white",

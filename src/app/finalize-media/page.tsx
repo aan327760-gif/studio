@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense, useEffect, useRef } from "react";
 import { 
   ArrowLeft, 
   Smile, 
@@ -37,6 +37,8 @@ const TEXT_COLORS = [
 function FinalizeMediaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   const imageUrl = searchParams.get("image");
   const videoUrl = searchParams.get("video");
   const filterClass = searchParams.get("filter") || "filter-none";
@@ -49,6 +51,10 @@ function FinalizeMediaContent() {
   const [finalText, setFinalText] = useState("");
   const [finalColor, setFinalColor] = useState("text-white");
   const [finalBg, setFinalBg] = useState(false);
+  
+  // Coordinates in percentage (0 to 100)
+  const [textPos, setTextPos] = useState({ x: 50, y: 50 });
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleNext = () => {
     const params = new URLSearchParams();
@@ -59,6 +65,8 @@ function FinalizeMediaContent() {
       params.set("textOverlay", finalText);
       params.set("textColor", finalColor);
       params.set("textBg", finalBg.toString());
+      params.set("textX", textPos.x.toString());
+      params.set("textY", textPos.y.toString());
     }
     router.push(`/create-post?${params.toString()}`);
   };
@@ -77,8 +85,50 @@ function FinalizeMediaContent() {
     setIsTextDialogOpen(false);
   };
 
+  // Dragging logic
+  const onStartDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    if (finalText) {
+      setIsDragging(true);
+    }
+  };
+
+  const onDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    let clientX, clientY;
+
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+
+    // Constrain to bounds
+    setTextPos({
+      x: Math.max(10, Math.min(90, x)),
+      y: Math.max(10, Math.min(90, y))
+    });
+  };
+
+  const onStopDrag = () => {
+    setIsDragging(false);
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
+    <div 
+      className="flex flex-col h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden select-none touch-none"
+      ref={containerRef}
+      onMouseMove={onDrag}
+      onMouseUp={onStopDrag}
+      onTouchMove={onDrag}
+      onTouchEnd={onStopDrag}
+    >
       {/* Background Media */}
       <div className="absolute inset-0 z-0">
         {imageUrl && (
@@ -97,16 +147,32 @@ function FinalizeMediaContent() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
       </div>
 
-      {/* Text Overlay Render - This is the "Writing on Image" part */}
+      {/* Text Overlay Render - Draggable Area */}
       {finalText && (
-        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none p-6">
+        <div 
+          className={cn(
+            "absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing",
+            isDragging && "scale-110 opacity-70"
+          )}
+          style={{ 
+            left: `${textPos.x}%`, 
+            top: `${textPos.y}%`, 
+            transform: 'translate(-50%, -50%)',
+            transition: isDragging ? 'none' : 'all 0.1s ease-out'
+          }}
+          onMouseDown={onStartDrag}
+          onTouchStart={onStartDrag}
+        >
           <span className={cn(
-            "text-3xl font-black text-center px-6 py-3 rounded-2xl break-words max-w-full transition-all drop-shadow-2xl",
+            "text-2xl font-black text-center px-4 py-2 rounded-xl break-words max-w-[80vw] whitespace-nowrap drop-shadow-2xl shadow-black",
             finalColor,
             finalBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
           )}>
             {finalText}
           </span>
+          {isDragging && (
+            <div className="absolute -inset-2 border-2 border-white/30 border-dashed rounded-2xl" />
+          )}
         </div>
       )}
 
@@ -152,6 +218,15 @@ function FinalizeMediaContent() {
         ))}
       </div>
 
+      {/* Bottom Text Hint */}
+      {finalText && !isDragging && (
+        <div className="relative z-10 w-full text-center pb-2 animate-pulse">
+          <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
+            اسحب النص لتحريكه
+          </span>
+        </div>
+      )}
+
       {/* Bottom Right Next Button */}
       <div className="relative z-10 p-6 flex justify-end">
         <Button 
@@ -162,11 +237,11 @@ function FinalizeMediaContent() {
         </Button>
       </div>
 
-      {/* Text Tool Dialog - The Interface to write on the image */}
+      {/* Text Tool Dialog */}
       <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
         <DialogContent className="bg-zinc-950/95 backdrop-blur-2xl border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-8">
           <DialogHeader>
-            <DialogTitle className="text-center font-black text-xl">أضف نصاً فوق الصورة</DialogTitle>
+            <DialogTitle className="text-center font-black text-xl">أضف نصاً فوق الوسائط</DialogTitle>
           </DialogHeader>
           <div className="space-y-8 mt-6">
             <div className="relative">

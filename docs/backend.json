@@ -40,7 +40,18 @@
         "mediaType": { "type": "string", "enum": ["image", "video"] },
         "likesCount": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "likedBy": { "type": "array", "items": { "type": "string" } }
+        "likedBy": { "type": "array", "items": { "type": "string" } },
+        "mediaSettings": {
+          "type": "object",
+          "properties": {
+            "filter": { "type": "string" },
+            "textOverlay": { "type": "string" },
+            "textColor": { "type": "string" },
+            "textBg": { "type": "boolean" },
+            "textX": { "type": "number" },
+            "textY": { "type": "number" }
+          }
+        }
       }
     },
     "Comment": {
@@ -85,7 +96,7 @@
       }
     },
     "ChatMessage": {
-      "title": "Chat Message",
+      "title": "ChatMessage",
       "description": "Messages within a Lamma Group",
       "type": "object",
       "properties": {
