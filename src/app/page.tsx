@@ -1,41 +1,41 @@
+
 "use client";
 
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { useLanguage } from "@/context/LanguageContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const MOCK_POSTS = [
   {
     id: "1",
-    author: { name: "Ahmed Salem", handle: "ahmed_s", avatar: "https://picsum.photos/seed/ahmed/100/100" },
-    content: "Beautiful day! 🇪🇬 Looking forward to connecting with the tech community here on Unbound.",
-    image: "https://picsum.photos/seed/cairo/800/500",
-    likes: 245,
-    comments: 12,
-    reposts: 5,
-    time: "2h",
+    author: { 
+      name: "الجزيرة - فلسطين", 
+      handle: "AJApalestine", 
+      avatar: "https://picsum.photos/seed/aja/100/100" 
+    },
+    content: "عاجل | الهلال الأحمر: إصابة فلسطيني برصاص إسرائيلي في بلدة حوسان غرب بيت لحم والاحتلال يمنع طواقمنا من الوصول للموقع...",
+    image: "https://picsum.photos/seed/palestine/800/1000",
+    likes: 1,
+    comments: 0,
+    reposts: 0,
+    time: "4:26 PM . 14 Feb 2026",
   },
   {
     id: "2",
-    author: { name: "Sarah Connor", handle: "sconnor", avatar: "https://picsum.photos/seed/sarah/100/100" },
-    content: "Just started learning React. The ecosystem is huge! Any advice for beginners?",
-    likes: 89,
-    comments: 45,
-    reposts: 2,
-    time: "4h",
-  },
-  {
-    id: "3",
-    author: { name: "Community Talk", handle: "unbound_talk", avatar: "https://picsum.photos/seed/lamma/100/100" },
-    content: "Join our 'Lamma' tonight at 8 PM to discuss the future of AI. Don't miss out! #AI #Tech #Unbound",
-    isLamma: true,
-    likes: 512,
-    comments: 108,
-    reposts: 88,
-    time: "6h",
+    author: { 
+      name: "Ahmed Salem", 
+      handle: "ahmed_s", 
+      avatar: "https://picsum.photos/seed/user1/100/100" 
+    },
+    content: "Beautiful day! 🇪🇬 Looking forward to connecting with the tech community here on Unbound.",
+    image: "https://picsum.photos/seed/cairo/800/800",
+    likes: 245,
+    comments: 12,
+    reposts: 5,
+    time: "2:15 PM . 14 Feb 2026",
   }
 ];
 
@@ -43,77 +43,51 @@ export default function Home() {
   const { t, isRtl } = useLanguage();
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen max-w-7xl mx-auto">
-      <AppSidebar />
-      
-      <main className="flex-1 bg-background border-x min-h-screen">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b">
-          <div className="p-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold">{t("home")}</h2>
+    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+        <div className="w-8" /> {/* Placeholder for balance */}
+        <div className="flex flex-col items-center">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center mb-1">
+             <span className="text-white font-bold text-xl">U</span>
           </div>
-          <Tabs defaultValue="forYou" className="w-full">
-            <TabsList className="w-full bg-transparent h-12 rounded-none p-0">
-              <TabsTrigger value="forYou" className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary font-semibold">
-                {t("forYou")}
-              </TabsTrigger>
-              <TabsTrigger value="latest" className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary font-semibold">
-                {t("latest")}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </header>
+        </div>
+        <Link href="/messages">
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
+            <MessageSquare className="h-6 w-6" />
+          </Button>
+        </Link>
+      </header>
 
-        <div className="pb-20 md:pb-4 max-w-2xl mx-auto md:px-4 md:mt-4">
-          <CreatePost />
-          
+      {/* Tabs */}
+      <Tabs defaultValue="following" className="w-full">
+        <TabsList className="w-full bg-black h-12 rounded-none p-0 border-none">
+          <TabsTrigger 
+            value="following" 
+            className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:text-white text-muted-foreground font-bold text-base border-b-2 border-transparent data-[state=active]:border-white"
+          >
+            Following
+          </TabsTrigger>
+          <TabsTrigger 
+            value="discover" 
+            className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:text-white text-muted-foreground font-bold text-base border-b-2 border-transparent data-[state=active]:border-white"
+          >
+            Discover
+          </TabsTrigger>
+        </TabsList>
+
+        <main className="pb-24">
           <div className="flex flex-col">
             {MOCK_POSTS.map(post => (
               <PostCard key={post.id} {...post} />
             ))}
           </div>
-        </div>
-      </main>
+        </main>
+      </Tabs>
 
-      <aside className="hidden lg:flex flex-col w-80 p-6 gap-6 sticky top-0 h-screen overflow-y-auto">
-        <div className="bg-white rounded-2xl border p-4 shadow-sm">
-          <h3 className="font-bold text-lg mb-4">{t("trending")}</h3>
-          <div className="space-y-4">
-            {["#Unbound", "#CairoTech", "#NextJS", "#ArabicCode"].map((tag, i) => (
-              <div key={i} className="group cursor-pointer">
-                <p className="text-xs text-muted-foreground">{i + 1} • Trending</p>
-                <p className="font-semibold group-hover:text-primary transition-colors">{tag}</p>
-                <p className="text-xs text-muted-foreground">{Math.floor(Math.random() * 5000)} posts</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border p-4 shadow-sm">
-          <h3 className="font-bold text-lg mb-4">{t("communities")}</h3>
-          <div className="space-y-4">
-            {[
-              { name: "Arabic Cooking", members: "12k" },
-              { name: "Global Nomads", members: "45k" },
-              { name: "Mental Support", members: "8k" }
-            ].map((comm, i) => (
-              <div key={i} className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="h-10 w-10 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
-                    <span className="text-accent font-bold">C</span>
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="font-semibold text-sm truncate">{comm.name}</p>
-                    <p className="text-xs text-muted-foreground">{comm.members} members</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="h-8 rounded-full text-xs">
-                  {t("join")}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </aside>
+      <AppSidebar />
     </div>
   );
 }
+
+import Link from "next/link";
