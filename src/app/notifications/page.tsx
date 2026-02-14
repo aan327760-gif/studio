@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useEffect } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Heart, UserPlus, MessageSquare, Repeat2, Settings, Loader2, Trash2 } from "lucide-react";
@@ -8,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy, limit, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, doc, deleteDoc, updateDoc, writeBatch, getDocs } from "firebase/firestore";
 
 export default function NotificationsPage() {
   const { isRtl } = useLanguage();
@@ -26,6 +27,24 @@ export default function NotificationsPage() {
   }, [db, currentUser]);
 
   const { data: notifications, loading } = useCollection<any>(notificationsQuery);
+
+  // تحديث التنبيهات لتصبح "مقروءة" عند فتح الصفحة
+  useEffect(() => {
+    const markAllAsRead = async () => {
+      if (!currentUser || !db || notifications.length === 0) return;
+      
+      const unread = notifications.filter(n => !n.read);
+      if (unread.length === 0) return;
+
+      const batch = writeBatch(db);
+      unread.forEach(notif => {
+        batch.update(doc(db, "notifications", notif.id), { read: true });
+      });
+      await batch.commit();
+    };
+
+    markAllAsRead();
+  }, [notifications, currentUser, db]);
 
   const clearNotification = async (id: string) => {
     if (!db) return;
@@ -78,7 +97,10 @@ export default function NotificationsPage() {
             ) : notifications.length > 0 ? (
               <div className="flex flex-col">
                 {notifications.map((notif) => (
-                  <div key={notif.id} className="flex items-start gap-4 p-4 border-b border-zinc-900 hover:bg-white/5 transition-colors group">
+                  <div key={notif.id} className={cn(
+                    "flex items-start gap-4 p-4 border-b border-zinc-900 hover:bg-white/5 transition-colors group",
+                    !notif.read && "bg-primary/5"
+                  )}>
                     <div className="pt-1">
                       {getIcon(notif.type)}
                     </div>
@@ -121,4 +143,8 @@ export default function NotificationsPage() {
       <AppSidebar />
     </div>
   );
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(' ');
 }

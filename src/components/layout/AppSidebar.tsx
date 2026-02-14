@@ -8,7 +8,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -17,9 +17,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
-import { useAuth, useUser, useFirestore } from "@/firebase";
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { signOut } from "firebase/auth";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where } from "firebase/firestore";
 
 export function AppSidebar() {
   const { isRtl, t } = useLanguage();
@@ -37,11 +37,18 @@ export function AppSidebar() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // جلب عدد التنبيهات غير المقروءة
+  const unreadNotifsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(db, "notifications"), where("userId", "==", user.uid), where("read", "==", false));
+  }, [db, user]);
+  const { data: unreadNotifs } = useCollection(unreadNotifsQuery);
+
   const navItems = [
     { icon: Home, href: "/", label: "Home" },
     { icon: Search, href: "/explore", label: "Search" },
     { icon: Plus, href: "#", label: "Add", special: true },
-    { icon: Bell, href: "/notifications", label: "Notifications" },
+    { icon: Bell, href: "/notifications", label: "Notifications", hasBadge: unreadNotifs.length > 0 },
     { 
       icon: User, 
       href: user ? "/profile" : "/auth", 
@@ -221,14 +228,19 @@ export function AppSidebar() {
 
         return (
           <Link key={item.href} href={item.href}>
-            <Button variant="ghost" size="icon" className={cn("h-12 w-12 rounded-full transition-all", isActive ? "text-white" : "text-muted-foreground")}>
+            <Button variant="ghost" size="icon" className={cn("h-12 w-12 rounded-full transition-all relative", isActive ? "text-white" : "text-muted-foreground")}>
               {item.isAvatar ? (
                 <Avatar className={cn("h-7 w-7 border", isActive ? "border-white" : "border-transparent")}>
                   <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/50/50"} />
                   <AvatarFallback>{user?.displayName?.[0] || "U"}</AvatarFallback>
                 </Avatar>
               ) : (
-                <item.icon className={cn("h-7 w-7", isActive && "stroke-[2.5px]")} />
+                <>
+                  <item.icon className={cn("h-7 w-7", isActive && "stroke-[2.5px]")} />
+                  {item.hasBadge && (
+                    <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-black" />
+                  )}
+                </>
               )}
             </Button>
           </Link>

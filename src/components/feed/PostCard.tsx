@@ -70,7 +70,12 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     if (!user || !id) return;
     const postRef = doc(db, "posts", id);
     
-    if (isLiked) {
+    // تفاعل لحظي (Optimistic Update)
+    const wasLiked = isLiked;
+    setIsLiked(!wasLiked);
+    setLikesCount(prev => wasLiked ? prev - 1 : prev + 1);
+
+    if (wasLiked) {
       updateDoc(postRef, { likedBy: arrayRemove(user.uid) });
     } else {
       updateDoc(postRef, { likedBy: arrayUnion(user.uid) });
