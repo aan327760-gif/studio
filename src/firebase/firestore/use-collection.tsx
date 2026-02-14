@@ -26,23 +26,24 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setLoading(false);
       },
       async (err: any) => {
-        // التحقق مما إذا كان الخطأ فعلياً هو نقص في الصلاحيات
+        // التحقق من نوع الخطأ
         if (err.code === 'permission-denied') {
           const permissionError = new FirestorePermissionError({
             path: (query as any)._query?.path?.segments?.join('/') || 'unknown',
             operation: 'list',
           });
           errorEmitter.emit('permission-error', permissionError);
-        } else {
-          // إذا كان خطأ آخر (مثل نقص الفهارس)، نعرضه كما هو
-          console.error("Firestore Error:", err);
+        } else if (err.message.includes('index')) {
+          // خطأ الفهرس المفقود
           errorEmitter.emit('permission-error', {
             context: {
               path: (query as any)._query?.path?.segments?.join('/') || 'unknown',
               operation: 'list',
-              message: err.message
+              message: "يتطلب هذا العرض إنشاء فهرس (Index). الرابط متاح في سجل المتصفح (Console).",
             }
           });
+        } else {
+          console.error("Firestore Error:", err);
         }
         setError(err);
         setLoading(false);

@@ -3,21 +3,23 @@
 import { useEffect } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 export function FirebaseErrorListener() {
   const { toast } = useToast();
 
   useEffect(() => {
     const handlePermissionError = (error: any) => {
-      // التعامل مع الخطأ سواء كان كائناً مهيئاً أو خطأ خاماً
       const context = error.context || {};
-      const message = context.message || `You don't have permission to ${context.operation || 'access'} at ${context.path || 'this location'}`;
+      
+      // تمييز رسالة خطأ الفهرس
+      const isIndexError = context.message?.includes('index') || error.message?.includes('index');
       
       toast({
-        variant: 'destructive',
-        title: context.message ? 'Database Error' : 'Permission Denied',
-        description: message,
+        variant: isIndexError ? 'default' : 'destructive',
+        title: isIndexError ? 'إعداد مطلوب (Index)' : 'خطأ في الصلاحيات',
+        description: isIndexError 
+          ? "يرجى إنشاء الفهرس عبر الرابط الموجود في سجل المتصفح (Console) لتعمل هذه الصفحة."
+          : (context.message || "ليس لديك صلاحية للقيام بهذا الإجراء."),
       });
     };
 
