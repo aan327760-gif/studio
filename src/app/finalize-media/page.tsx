@@ -38,7 +38,10 @@ const STICKER_CATEGORIES = [
   { name: "تحليل", icon: "🧠", stickers: ["تحليل", "أرقام", "مصدر؟", "تدقيق", "رأي شخصي", "معلومة مهمة", "مقارنة", "خلف الكواليس", "قراءة عميقة", "زاوية أخرى", "نظرة مختلفة", "تفسير", "توضيح", "استنتاج", "توقعات"] },
   { name: "شأن عام", icon: "🏛", stickers: ["شأن عام", "قرار مهم", "جدل", "أزمة", "قانون", "بيان رسمي", "عاجل", "حدث الآن", "ملف مفتوح", "مسؤولية", "انتخابات", "تصريح", "موقف", "سياسة", "قضية رأي عام"] },
   { name: "إنساني", icon: "❤️", stickers: ["تضامن", "دعم", "إنسانية", "قصة مؤثرة", "واقعي", "مؤلم", "فرحة", "أمل", "لا للعنف", "معًا أفضل"] },
-  { name: "حياة", icon: "🎉", stickers: ["ضحك", "ترند", "لحظة جميلة", "يوميات", "ذكريات", "عفوي", "مزاج", "مفاجأة", "تحدي", "رهيب"] }
+  { name: "حياة", icon: "🎉", stickers: ["ضحك", "ترند", "لحظة جميلة", "يوميات", "ذكريات", "عفوي", "مزاج", "مفاجأة", "تحدي", "رهيب"] },
+  { name: "رياضة", icon: "⚽", stickers: ["بطل", "مباراة قوية", "هدف", "فوز", "خسارة"] },
+  { name: "مستقبلي", icon: "💰", stickers: ["مدعوم", "محتوى مميز", "دعم مباشر", "شكراً للداعمين", "شراكة"] },
+  { name: "تحذير", icon: "🔍", stickers: ["تحذير", "تحقق قبل النشر", "إشاعة؟", "غير مؤكد", "معلومات حساسة"] }
 ];
 
 interface StickerInstance {
@@ -60,7 +63,6 @@ function FinalizeMediaContent() {
   const videoUrl = searchParams.get("video");
   const filterClass = searchParams.get("filter") || "filter-none";
 
-  // Text Overlay States
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
   const [textOverlay, setTextOverlay] = useState("");
   const [textColor, setTextColor] = useState("text-white");
@@ -71,7 +73,6 @@ function FinalizeMediaContent() {
   const [textPos, setTextPos] = useState({ x: 50, y: 30 });
   const [isDraggingText, setIsDraggingText] = useState(false);
 
-  // Stickers States
   const [isStickerDialogOpen, setIsStickerDialogOpen] = useState(false);
   const [stickers, setStickers] = useState<StickerInstance[]>([]);
   const [activeStickerId, setActiveStickerId] = useState<string | null>(null);
@@ -155,7 +156,6 @@ function FinalizeMediaContent() {
       onTouchEnd={() => { setIsDraggingText(false); setIsDraggingSticker(false); }}
       onClick={() => setActiveStickerId(null)}
     >
-      {/* Background Media */}
       <div className="absolute inset-0 z-0">
         {imageUrl && (
           <img src={imageUrl} alt="Finalize" className={cn("w-full h-full object-cover", filterClass)} />
@@ -166,7 +166,6 @@ function FinalizeMediaContent() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20" />
       </div>
 
-      {/* Text Overlay */}
       {finalText && (
         <div 
           className={cn("absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing transition-transform", isDraggingText && "scale-110")}
@@ -184,7 +183,6 @@ function FinalizeMediaContent() {
         </div>
       )}
 
-      {/* Stickers Overlay */}
       {stickers.map((sticker) => (
         <div 
           key={sticker.id}
@@ -209,14 +207,12 @@ function FinalizeMediaContent() {
         </div>
       ))}
 
-      {/* Top Header */}
       <header className="relative z-50 p-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-black/30 backdrop-blur-md">
           <ArrowLeft className="h-7 w-7" />
         </Button>
       </header>
 
-      {/* Sidebar Controls */}
       <div className="relative z-50 flex-1 flex flex-col justify-center px-4 gap-4">
         {[
           { icon: Type, label: "الكتابة", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
@@ -232,7 +228,6 @@ function FinalizeMediaContent() {
         ))}
       </div>
 
-      {/* Active Sticker Controls (Floating Bar) */}
       {activeStickerId && (
         <div className="absolute bottom-28 left-4 right-4 z-50 animate-in slide-in-from-bottom-5" onClick={(e) => e.stopPropagation()}>
           <div className="bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-2xl space-y-4">
@@ -278,14 +273,12 @@ function FinalizeMediaContent() {
         </div>
       )}
 
-      {/* Bottom Footer */}
       <footer className="relative z-50 p-6 flex justify-end">
         <Button onClick={handleNext} className="rounded-full bg-white text-black hover:bg-zinc-200 px-10 py-6 text-lg font-black shadow-2xl">
           التالي
         </Button>
       </footer>
 
-      {/* Stickers Dialog */}
       <Dialog open={isStickerDialogOpen} onOpenChange={setIsStickerDialogOpen}>
         <DialogContent className="bg-zinc-950/95 backdrop-blur-2xl border-zinc-800 text-white w-[95%] max-w-[400px] rounded-[2rem] p-0 h-[70vh] flex flex-col overflow-hidden outline-none">
           <DialogHeader className="p-6 pb-2">
@@ -322,7 +315,6 @@ function FinalizeMediaContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Text Dialog (Modified to close active sticker) */}
       <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
         <DialogContent className="bg-zinc-950/95 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2rem] p-6 outline-none">
           <DialogHeader className="mb-4">

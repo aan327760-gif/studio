@@ -12,6 +12,7 @@ import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, collection, addDoc
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -45,7 +46,7 @@ interface PostCardProps {
 export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, reposts, time, mediaSettings }: PostCardProps) {
   const { isRtl } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
-  const { user } = useUser();
+  const { user } = userUser();
   const db = useFirestore();
   const router = useRouter();
   
@@ -202,7 +203,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 </div>
               )}
 
-              {/* Overlays Rendering */}
               <div className="absolute inset-0 pointer-events-none">
                 {mediaSettings?.textOverlay && (
                   <div className="absolute" style={{ left: `${mediaSettings.textX ?? 50}%`, top: `${mediaSettings.textY ?? 50}%`, transform: 'translate(-50%, -50%)' }}>
