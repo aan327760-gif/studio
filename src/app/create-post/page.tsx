@@ -1,14 +1,12 @@
-
 "use client";
 
 import { useState, Suspense } from "react";
 import { 
   X,
-  Plus,
   Mic,
-  LayoutGrid,
-  Bot,
-  Download
+  Avatar,
+  AvatarImage,
+  AvatarFallback
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,13 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-
-const MAX_CHARS = 2500;
-const TOPICS = ["General", "News", "Entertainment", "Sports", "Tech", "Life"];
 
 async function urlToBlob(url: string): Promise<string> {
   const response = await fetch(url);
@@ -47,12 +39,6 @@ function CreatePostContent() {
   
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState("General");
-  const [settings, setSettings] = useState({
-    allowDownload: true,
-    markSensitive: false,
-    isAiGenerated: false
-  });
   
   const imageUrl = searchParams.get("image");
   const videoUrl = searchParams.get("video");
@@ -61,10 +47,9 @@ function CreatePostContent() {
   const textOverlay = searchParams.get("textOverlay") || "";
   const textColor = searchParams.get("textColor") || "text-white";
   const textBg = searchParams.get("textBg") === "true";
+  const textEffect = searchParams.get("textEffect") || "";
   const textX = parseFloat(searchParams.get("textX") || "50");
   const textY = parseFloat(searchParams.get("textY") || "50");
-  const stickersRaw = searchParams.get("stickers");
-  const stickers = stickersRaw ? JSON.parse(stickersRaw) : [];
 
   const handleSubmit = async () => {
     if (!content.trim() && !imageUrl && !videoUrl && !audioUrl) return;
@@ -109,9 +94,9 @@ function CreatePostContent() {
           textOverlay: textOverlay,
           textColor: textColor,
           textBg: textBg,
+          textEffect: textEffect,
           textX: textX,
-          textY: textY,
-          stickers: stickers
+          textY: textY
         },
         authorId: user?.uid || "anonymous",
         author: {
@@ -121,9 +106,7 @@ function CreatePostContent() {
         },
         likesCount: 0,
         likedBy: [],
-        createdAt: serverTimestamp(),
-        topic: selectedTopic,
-        settings: settings
+        createdAt: serverTimestamp()
       });
 
       toast({
@@ -143,21 +126,22 @@ function CreatePostContent() {
     }
   };
 
-  const progress = (content.length / MAX_CHARS) * 100;
-
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
       <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-20">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><X className="h-6 w-6" /></Button>
         <h1 className="text-sm font-bold opacity-70">New post</h1>
-        <Button onClick={handleSubmit} disabled={isSubmitting || content.length > MAX_CHARS} className="rounded-full px-6 font-bold bg-white text-black hover:bg-zinc-200">
+        <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6 font-bold bg-white text-black hover:bg-zinc-200">
           {isSubmitting ? "Uploading..." : "Post"}
         </Button>
       </header>
 
       <main className="flex-1 overflow-y-auto pb-32">
         <div className="p-4 flex gap-3">
-          <Avatar><AvatarImage src={user?.photoURL || ""} /><AvatarFallback>U</AvatarFallback></Avatar>
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={user?.photoURL || ""} />
+            <AvatarFallback>U</AvatarFallback>
+          </Avatar>
           <Textarea 
             placeholder="Say something..." 
             className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg min-h-[120px]" 
@@ -172,18 +156,11 @@ function CreatePostContent() {
               {imageUrl && (
                 <div className="relative w-full h-full">
                   <img src={imageUrl} alt="Preview" className={cn("w-full h-full object-cover", filterClass)} />
-                  <div className="absolute inset-0 pointer-events-none">
-                    {textOverlay && (
-                      <div className="absolute" style={{ left: `${textX}%`, top: `${textY}%`, transform: 'translate(-50%, -50%)' }}>
-                        <span className={cn("text-xs font-black px-2 py-1 rounded-md", textColor, textBg ? "bg-black/50" : "")}>{textOverlay}</span>
-                      </div>
-                    )}
-                    {stickers.map((s: any, i: number) => (
-                      <div key={i} className="absolute" style={{ left: `${s.x}%`, top: `${s.y}%`, transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` }}>
-                        <div className={cn("px-2 py-0.5 rounded-md font-black text-[8px]", s.color)}>{s.text}</div>
-                      </div>
-                    ))}
-                  </div>
+                  {textOverlay && (
+                    <div className={cn("absolute", textEffect)} style={{ left: `${textX}%`, top: `${textY}%`, transform: 'translate(-50%, -50%)' }}>
+                      <span className={cn("text-xs font-black px-2 py-1 rounded-md", textColor, textBg ? "bg-black/50" : "")}>{textOverlay}</span>
+                    </div>
+                  )}
                 </div>
               )}
               {videoUrl && <video src={videoUrl} className="w-full h-full object-cover" />}

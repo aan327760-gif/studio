@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, MessageCircle, MessageSquare, Repeat2, Share2, MoreHorizontal, Send, Loader2, X, Trash2, Mic } from "lucide-react";
+import { Heart, MessageCircle, MessageSquare, MoreHorizontal, Send, Loader2, X, Trash2, Mic } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -39,11 +39,10 @@ interface PostCardProps {
     textEffect?: string;
     textX?: number;
     textY?: number;
-    stickers?: any[];
   };
 }
 
-export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, reposts, time, mediaSettings }: PostCardProps) {
+export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, time, mediaSettings }: PostCardProps) {
   const { isRtl } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const { user } = useUser();
@@ -187,7 +186,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
         {image && (
           <div className="px-4 mb-2">
-            <div className="relative rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-900/40 aspect-video md:aspect-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/40 aspect-video md:aspect-auto" onClick={(e) => e.stopPropagation()}>
               {mediaType === "audio" ? (
                 <div className="p-4 flex items-center gap-4 bg-zinc-900">
                   <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-primary"><Mic className="h-6 w-6" /></div>
@@ -218,20 +217,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     </span>
                   </div>
                 )}
-                {mediaSettings?.stickers?.map((sticker: any, idx: number) => (
-                  <div key={idx} className="absolute" style={{ 
-                    left: `${sticker.x}%`, 
-                    top: `${sticker.y}%`, 
-                    transform: `translate(-50%, -50%) scale(${sticker.scale || 1}) rotate(${sticker.rotation || 0}deg)` 
-                  }}>
-                    <div className={cn(
-                      "px-3 py-1.5 rounded-lg font-black text-[11px] shadow-2xl drop-shadow-md border border-white/15 whitespace-nowrap", 
-                      sticker.color || "bg-white text-black"
-                    )}>
-                      {sticker.text}
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
