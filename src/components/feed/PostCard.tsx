@@ -12,7 +12,7 @@ import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, collection, addDoc
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 interface PostCardProps {
   id: string;
@@ -20,6 +20,7 @@ interface PostCardProps {
     name: string;
     handle: string;
     avatar: string;
+    uid?: string; // Added uid to props
   };
   content: string;
   image?: string;
@@ -38,7 +39,7 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
-  const [postAuthorId, setPostAuthorId] = useState<string | null>(null);
+  const [postAuthorId, setPostAuthorId] = useState<string | null>(author.uid || null);
 
   // Fetch comments
   const commentsQuery = useMemoFirebase(() => {
@@ -121,15 +122,19 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
   return (
     <Card className="bg-black text-white border-none rounded-none mb-2 border-b border-zinc-900">
       <CardHeader className="p-4 flex flex-row items-center space-y-0 gap-3">
-        <Avatar className="h-10 w-10 border-none">
-          <AvatarImage src={author.avatar} />
-          <AvatarFallback>{author.name[0]}</AvatarFallback>
-        </Avatar>
+        <Link href={`/profile/${postAuthorId || '#'}`}>
+          <Avatar className="h-10 w-10 border-none cursor-pointer">
+            <AvatarImage src={author.avatar} />
+            <AvatarFallback>{author.name[0]}</AvatarFallback>
+          </Avatar>
+        </Link>
         <div className="flex-1 overflow-hidden">
-          <div className="flex items-center gap-1">
-            <h3 className="font-bold text-sm truncate">{author.name}</h3>
-            <span className="text-xs text-muted-foreground">@{author.handle}</span>
-          </div>
+          <Link href={`/profile/${postAuthorId || '#'}`}>
+            <div className="flex items-center gap-1 cursor-pointer">
+              <h3 className="font-bold text-sm truncate hover:underline">{author.name}</h3>
+              <span className="text-xs text-muted-foreground">@{author.handle}</span>
+            </div>
+          </Link>
         </div>
         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
           <MoreHorizontal className="h-5 w-5" />
@@ -248,19 +253,14 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
                                   <MessageSquare className="h-4 w-4" />
                                 </div>
                               </div>
-                              {/* Reply indicator mock */}
-                              <div className={cn("pt-2 flex items-center gap-2 text-primary font-bold text-xs cursor-pointer", isRtl ? "flex-row" : "flex-row-reverse")}>
-                                <X className={cn("h-3 w-3 rotate-45", isRtl ? "rotate-45" : "-rotate-45")} />
-                                <span>{isRtl ? "11 رداً" : "11 replies"}</span>
-                                <span className="text-zinc-800">|</span>
-                              </div>
                             </div>
-                            <Avatar className="h-9 w-9 shrink-0 border border-zinc-800 shadow-sm">
-                              <AvatarImage src={comment.authorAvatar} />
-                              <AvatarFallback>{comment.authorName?.[0]}</AvatarFallback>
-                            </Avatar>
+                            <Link href={`/profile/${comment.authorId || '#'}`}>
+                              <Avatar className="h-9 w-9 shrink-0 border border-zinc-800 shadow-sm cursor-pointer">
+                                <AvatarImage src={comment.authorAvatar} />
+                                <AvatarFallback>{comment.authorName?.[0]}</AvatarFallback>
+                              </Avatar>
+                            </Link>
                           </div>
-                          {/* Vertical connector line mock */}
                           <div className={cn("absolute top-10 bottom-0 w-[1px] bg-zinc-800", isRtl ? "right-4" : "left-4")} />
                         </div>
                       ))
