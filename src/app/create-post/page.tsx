@@ -3,17 +3,14 @@
 
 import { useState, Suspense } from "react";
 import { 
-  ArrowLeft, 
-  ChevronRight, 
-  Tag, 
-  MapPin, 
-  Download, 
-  EyeOff, 
-  Bot, 
-  LayoutGrid,
   X,
   Plus,
-  Mic
+  Mic,
+  LayoutGrid,
+  MapPin,
+  Download,
+  Bot,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,9 +24,9 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const MAX_CHARS = 2500;
-
 const TOPICS = ["General", "News", "Entertainment", "Sports", "Tech", "Life"];
 
 function CreatePostContent() {
@@ -57,6 +54,7 @@ function CreatePostContent() {
 
     setIsSubmitting(true);
     try {
+      // 1. Content Moderation
       const moderationResult = await moderateContent({ text: content || "Media Post" });
       
       if (!moderationResult.isAppropriate) {
@@ -69,10 +67,27 @@ function CreatePostContent() {
         return;
       }
 
+      // 2. Media Upload to Cloudinary if exists
+      let finalMediaUrl = null;
+      let mediaType: "image" | "video" | "audio" | null = null;
+
+      if (imageUrl) {
+        finalMediaUrl = await uploadToCloudinary(imageUrl, 'image');
+        mediaType = 'image';
+      } else if (videoUrl) {
+        // Note: For large videos, we'd need a different approach, but for this prototype:
+        finalMediaUrl = await uploadToCloudinary(videoUrl, 'video');
+        mediaType = 'video';
+      } else if (audioUrl) {
+        finalMediaUrl = await uploadToCloudinary(audioUrl, 'raw');
+        mediaType = 'audio';
+      }
+
+      // 3. Save to Firestore
       await addDoc(collection(db, "posts"), {
         content,
-        mediaUrl: imageUrl || videoUrl || audioUrl || null,
-        mediaType: imageUrl ? "image" : (videoUrl ? "video" : (audioUrl ? "audio" : null)),
+        mediaUrl: finalMediaUrl,
+        mediaType: mediaType,
         authorId: user?.uid || "anonymous",
         author: {
           name: user?.displayName || "User",
@@ -88,15 +103,15 @@ function CreatePostContent() {
 
       toast({
         title: isRtl ? "تم النشر" : "Posted",
-        description: isRtl ? "تم نشر منشورك بنجاح" : "Your post has been published successfully.",
+        description: isRtl ? "تم نشر منشورك بنجاح على Cloudinary" : "Your post has been published successfully to Cloudinary.",
       });
       
       router.push("/");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Something went wrong during upload.",
+        description: error.message || "Something went wrong during upload.",
       });
     } finally {
       setIsSubmitting(false);
@@ -107,7 +122,6 @@ function CreatePostContent() {
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
-      {/* Header */}
       <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-20">
         <Button 
           variant="ghost" 
@@ -125,13 +139,11 @@ function CreatePostContent() {
           disabled={isSubmitting || content.length > MAX_CHARS}
           className="rounded-full px-6 font-bold bg-white text-black hover:bg-zinc-200 h-8 transition-all"
         >
-          {isSubmitting ? "..." : "Post"}
+          {isSubmitting ? "Uploading..." : "Post"}
         </Button>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-y-auto custom-scrollbar">
-        {/* User Info and Text Area */}
         <div className="p-4 flex gap-3">
           <Avatar className="h-10 w-10 shrink-0">
             <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/100/100"} />
@@ -147,7 +159,6 @@ function CreatePostContent() {
           </div>
         </div>
 
-        {/* Media Preview Section */}
         {(imageUrl || videoUrl || audioUrl) && (
           <div className="px-4 pb-6">
             <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-[3/4] w-40 shadow-xl group">
@@ -168,14 +179,10 @@ function CreatePostContent() {
                   <span className="text-xs font-bold text-zinc-500">Voice clip ready</span>
                 </div>
               )}
-              <Button variant="ghost" size="icon" className="absolute top-2 right-2 rounded-full bg-black/40 h-6 w-6 text-white" onClick={() => router.back()}>
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         )}
 
-        {/* Toolbar Settings */}
         <div className="flex flex-col border-t border-zinc-900 pt-2 pb-24">
           <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer" onClick={() => {
             const next = TOPICS[(TOPICS.indexOf(selectedTopic) + 1) % TOPICS.length];
@@ -188,14 +195,6 @@ function CreatePostContent() {
             <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 font-normal hover:bg-zinc-800 uppercase tracking-tighter">
               {selectedTopic}
             </Badge>
-          </div>
-
-          <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer">
-            <div className="flex items-center gap-4">
-              <MapPin className="h-5 w-5 text-zinc-400" />
-              <span className="text-sm font-medium">Add location</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-zinc-600" />
           </div>
 
           <div className="flex items-center justify-between p-4">
@@ -222,7 +221,6 @@ function CreatePostContent() {
         </div>
       </main>
 
-      {/* Bottom Sticky Counter and Tools */}
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-black border-t border-zinc-900 flex items-center justify-between">
         <div className="flex gap-4">
           <Plus className="h-6 w-6 text-primary cursor-pointer" />
@@ -231,34 +229,14 @@ function CreatePostContent() {
         
         <div className="relative flex items-center">
           <svg className="h-10 w-10 transform -rotate-90">
+            <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-zinc-800" />
             <circle
-              cx="20"
-              cy="20"
-              r="16"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="transparent"
-              className="text-zinc-800"
-            />
-            <circle
-              cx="20"
-              cy="20"
-              r="16"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="transparent"
-              strokeDasharray={100}
-              strokeDashoffset={100 - progress}
-              className={cn(
-                "transition-all duration-300",
-                content.length > MAX_CHARS ? "text-red-500" : "text-primary"
-              )}
+              cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="2" fill="transparent"
+              strokeDasharray={100} strokeDashoffset={100 - progress}
+              className={cn("transition-all duration-300", content.length > MAX_CHARS ? "text-red-500" : "text-primary")}
             />
           </svg>
-          <span className={cn(
-            "absolute text-[10px] w-full text-center font-bold",
-            content.length > MAX_CHARS ? "text-red-500" : "text-zinc-500"
-          )}>
+          <span className={cn("absolute text-[10px] w-full text-center font-bold", content.length > MAX_CHARS ? "text-red-500" : "text-zinc-500")}>
             {content.length > 0 && MAX_CHARS - content.length}
           </span>
         </div>
