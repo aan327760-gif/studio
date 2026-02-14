@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { 
   ArrowLeft, 
   ChevronRight, 
@@ -10,8 +10,9 @@ import {
   Download, 
   EyeOff, 
   Bot, 
-  ChevronDown,
-  LayoutGrid
+  LayoutGrid,
+  X,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +25,9 @@ import { useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+const MAX_CHARS = 2500;
 
 function CreatePostContent() {
   const { isRtl } = useLanguage();
@@ -92,6 +96,8 @@ function CreatePostContent() {
     }
   };
 
+  const progress = (content.length / MAX_CHARS) * 100;
+
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
       {/* Header */}
@@ -100,16 +106,16 @@ function CreatePostContent() {
           variant="ghost" 
           size="icon" 
           onClick={() => router.back()}
-          className="rounded-full hover:bg-white/10 text-white p-0 h-auto w-auto"
+          className="rounded-full hover:bg-white/10 text-white"
         >
-          <ArrowLeft className="h-6 w-6" />
+          <X className="h-6 w-6" />
         </Button>
-        <h1 className="text-lg font-bold">
+        <h1 className="text-sm font-bold opacity-70">
           {videoUrl ? "New video post" : (imageUrl ? "New image post" : "New post")}
         </h1>
         <Button 
           onClick={handleSubmit} 
-          disabled={isSubmitting}
+          disabled={isSubmitting || content.length > MAX_CHARS}
           className="rounded-full px-6 font-bold bg-white text-black hover:bg-zinc-200 h-8 transition-all"
         >
           {isSubmitting ? "..." : "Post"}
@@ -118,37 +124,47 @@ function CreatePostContent() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto custom-scrollbar">
-        {/* Media Preview Section */}
-        <div className="flex justify-center p-4">
-          <div className="relative rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 aspect-[3/4] w-48 shadow-lg">
-            {imageUrl && <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />}
-            {videoUrl && (
-              <div className="relative w-full h-full">
-                <video src={videoUrl} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                  <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center">
-                    <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
-                  </div>
-                </div>
-              </div>
-            )}
+        {/* User Info and Text Area */}
+        <div className="p-4 flex gap-3">
+          <Avatar className="h-10 w-10 shrink-0">
+            <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/100/100"} />
+            <AvatarFallback>U</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <Textarea
+              placeholder="Say something..."
+              className="w-full bg-transparent border-none text-zinc-300 resize-none focus-visible:ring-0 p-0 placeholder:text-zinc-600 min-h-[120px] text-lg"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            />
           </div>
         </div>
 
-        {/* Caption Input */}
-        <div className="px-4 py-6">
-          <Textarea
-            placeholder="Add a caption..."
-            className="w-full bg-transparent border-none text-zinc-300 resize-none focus-visible:ring-0 p-0 placeholder:text-zinc-600 min-h-[100px]"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-          />
-        </div>
+        {/* Media Preview Section */}
+        {(imageUrl || videoUrl) && (
+          <div className="px-4 pb-6">
+            <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-[3/4] w-40 shadow-xl group">
+              {imageUrl && <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />}
+              {videoUrl && (
+                <div className="relative w-full h-full">
+                  <video src={videoUrl} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center">
+                      <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-1" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <Button variant="ghost" size="icon" className="absolute top-2 right-2 rounded-full bg-black/40 h-6 w-6 text-white" onClick={() => router.back()}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
 
-        {/* Settings List */}
-        <div className="flex flex-col border-t border-zinc-900">
-          {/* Topic */}
-          <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer transition-colors">
+        {/* Toolbar Settings */}
+        <div className="flex flex-col border-t border-zinc-900 pt-2 pb-24">
+          <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer">
             <div className="flex items-center gap-4">
               <LayoutGrid className="h-5 w-5 text-zinc-400" />
               <span className="text-sm font-medium">Topic</span>
@@ -156,17 +172,7 @@ function CreatePostContent() {
             <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 font-normal hover:bg-zinc-800">Topic</Badge>
           </div>
 
-          {/* Tag people */}
-          <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer transition-colors">
-            <div className="flex items-center gap-4">
-              <Tag className="h-5 w-5 text-zinc-400" />
-              <span className="text-sm font-medium">Tag people</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-zinc-600" />
-          </div>
-
-          {/* Add location */}
-          <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer transition-colors">
+          <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer">
             <div className="flex items-center gap-4">
               <MapPin className="h-5 w-5 text-zinc-400" />
               <span className="text-sm font-medium">Add location</span>
@@ -174,7 +180,6 @@ function CreatePostContent() {
             <ChevronRight className="h-5 w-5 text-zinc-600" />
           </div>
 
-          {/* Allow download */}
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-4">
               <Download className="h-5 w-5 text-zinc-400" />
@@ -183,25 +188,10 @@ function CreatePostContent() {
             <Switch 
               checked={settings.allowDownload} 
               onCheckedChange={(val) => setSettings(s => ({...s, allowDownload: val}))}
-              className="data-[state=checked]:bg-white data-[state=unchecked]:bg-zinc-800"
             />
           </div>
 
-          {/* Mark sensitive */}
           <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-4">
-              <EyeOff className="h-5 w-5 text-zinc-400" />
-              <span className="text-sm font-medium">Mark sensitive</span>
-            </div>
-            <Switch 
-              checked={settings.markSensitive} 
-              onCheckedChange={(val) => setSettings(s => ({...s, markSensitive: val}))}
-              className="data-[state=checked]:bg-white data-[state=unchecked]:bg-zinc-800"
-            />
-          </div>
-
-          {/* Mark as AI generated */}
-          <div className="flex items-center justify-between p-4 mb-20">
             <div className="flex items-center gap-4">
               <Bot className="h-5 w-5 text-zinc-400" />
               <span className="text-sm font-medium">Mark as AI generated</span>
@@ -209,11 +199,52 @@ function CreatePostContent() {
             <Switch 
               checked={settings.isAiGenerated} 
               onCheckedChange={(val) => setSettings(s => ({...s, isAiGenerated: val}))}
-              className="data-[state=checked]:bg-white data-[state=unchecked]:bg-zinc-800"
             />
           </div>
         </div>
       </main>
+
+      {/* Bottom Sticky Counter and Tools */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-black border-t border-zinc-900 flex items-center justify-between">
+        <div className="flex gap-4">
+          <Plus className="h-6 w-6 text-primary cursor-pointer" />
+          <LayoutGrid className="h-6 w-6 text-zinc-500 cursor-pointer" />
+        </div>
+        
+        <div className="relative flex items-center">
+          <svg className="h-10 w-10 transform -rotate-90">
+            <circle
+              cx="20"
+              cy="20"
+              r="16"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="transparent"
+              className="text-zinc-800"
+            />
+            <circle
+              cx="20"
+              cy="20"
+              r="16"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="transparent"
+              strokeDasharray={100}
+              strokeDashoffset={100 - progress}
+              className={cn(
+                "transition-all duration-300",
+                content.length > MAX_CHARS ? "text-red-500" : "text-primary"
+              )}
+            />
+          </svg>
+          <span className={cn(
+            "absolute text-[10px] w-full text-center font-bold",
+            content.length > MAX_CHARS ? "text-red-500" : "text-zinc-500"
+          )}>
+            {content.length > 0 && MAX_CHARS - content.length}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
