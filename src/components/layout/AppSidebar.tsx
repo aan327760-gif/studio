@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Home, Search, Plus, Bell, User, Video, Mic, Image as ImageIcon, PenLine, X, StopCircle, MessageSquare } from "lucide-react";
@@ -54,16 +55,13 @@ export function AppSidebar() {
     },
   ];
 
+  // استخدام Blob URLs بدلاً من Base64 لتفادي مشاكل طول الرابط في الهواتف
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string;
-        setIsSheetOpen(false);
-        router.push(`/edit-image?image=${encodeURIComponent(imageUrl)}`);
-      };
-      reader.readAsDataURL(file);
+      const imageUrl = URL.createObjectURL(file);
+      setIsSheetOpen(false);
+      router.push(`/edit-image?image=${encodeURIComponent(imageUrl)}`);
     }
   };
 
@@ -86,13 +84,9 @@ export function AppSidebar() {
       mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64Audio = reader.result as string;
-          setIsSheetOpen(false);
-          router.push(`/create-post?audio=${encodeURIComponent(base64Audio)}`);
-        };
-        reader.readAsDataURL(blob);
+        const audioUrl = URL.createObjectURL(blob);
+        setIsSheetOpen(false);
+        router.push(`/create-post?audio=${encodeURIComponent(audioUrl)}`);
         stream.getTracks().forEach(track => track.stop());
       };
 

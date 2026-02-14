@@ -7,10 +7,8 @@ import {
   Plus,
   Mic,
   LayoutGrid,
-  MapPin,
-  Download,
   Bot,
-  ChevronRight
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +26,18 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 
 const MAX_CHARS = 2500;
 const TOPICS = ["General", "News", "Entertainment", "Sports", "Tech", "Life"];
+
+// دالة مساعدة لتحويل الرابط المحلي (Blob URL) إلى Base64 قبل الرفع
+async function urlToBase64(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
 
 function CreatePostContent() {
   const { isRtl } = useLanguage();
@@ -72,13 +82,16 @@ function CreatePostContent() {
       let mediaType: "image" | "video" | "audio" | null = null;
 
       if (imageUrl) {
-        finalMediaUrl = await uploadToCloudinary(imageUrl, 'image');
+        const base64 = await urlToBase64(imageUrl);
+        finalMediaUrl = await uploadToCloudinary(base64, 'image');
         mediaType = 'image';
       } else if (videoUrl) {
-        finalMediaUrl = await uploadToCloudinary(videoUrl, 'video');
+        const base64 = await urlToBase64(videoUrl);
+        finalMediaUrl = await uploadToCloudinary(base64, 'video');
         mediaType = 'video';
       } else if (audioUrl) {
-        finalMediaUrl = await uploadToCloudinary(audioUrl, 'raw');
+        const base64 = await urlToBase64(audioUrl);
+        finalMediaUrl = await uploadToCloudinary(base64, 'raw');
         mediaType = 'audio';
       }
 
