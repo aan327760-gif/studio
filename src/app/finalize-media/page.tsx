@@ -23,7 +23,10 @@ function FinalizeMediaContent() {
   const videoUrl = searchParams.get("video");
 
   const handleNext = () => {
-    router.push("/create-post");
+    const params = new URLSearchParams();
+    if (imageUrl) params.set("image", imageUrl);
+    if (videoUrl) params.set("video", videoUrl);
+    router.push(`/create-post?${params.toString()}`);
   };
 
   return (
@@ -43,7 +46,7 @@ function FinalizeMediaContent() {
             playsInline
           />
         )}
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
       </div>
 
       {/* Top Header */}
@@ -70,10 +73,10 @@ function FinalizeMediaContent() {
           { icon: Grid2X2, label: "Blur" },
         ].map((action) => (
           <div key={action.label} className="flex items-center gap-4 group cursor-pointer w-fit">
-            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md group-hover:bg-black/40 transition-colors shadow-sm">
+            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md group-hover:bg-black/40 transition-all shadow-sm border border-white/10">
               <action.icon className="h-6 w-6 text-white" />
             </div>
-            <span className="text-sm font-semibold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+            <span className="text-sm font-semibold text-white drop-shadow-lg">
               {action.label}
             </span>
           </div>
