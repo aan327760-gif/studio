@@ -1,15 +1,17 @@
 
 "use client";
 
-import { Heart, MessageCircle, Repeat2, Share2, MoreHorizontal, Languages } from "lucide-react";
+import { Heart, MessageCircle, Repeat2, Share2, MoreHorizontal, Languages, Send, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
 import { useState, useEffect } from "react";
-import { useFirestore, useUser } from "@/firebase";
-import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot } from "firebase/firestore";
+import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase";
+import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit } from "firebase/firestore";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 interface PostCardProps {
   id: string;
@@ -26,13 +28,23 @@ interface PostCardProps {
   time: string;
 }
 
-export function PostCard({ id, author, content, image, likes: initialLikes, comments, reposts, time }: PostCardProps) {
+export function PostCard({ id, author, content, image, likes: initialLikes, comments: initialCommentsCount, reposts, time }: PostCardProps) {
   const { isRtl } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const { user } = useUser();
   const db = useFirestore();
+  
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [postAuthorId, setPostAuthorId] = useState<string | null>(null);
+
+  // Fetch comments
+  const commentsQuery = useMemoFirebase(() => {
+    if (!id) return null;
+    return query(collection(db, "posts", id, "comments"), orderBy("createdAt", "desc"), limit(50));
+  }, [db, id]);
+  const { data: comments, loading: commentsLoading } = useCollection<any>(commentsQuery);
 
   useEffect(() => {
     if (!id || !db) return;
@@ -42,6 +54,7 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
         const data = docSnap.data();
         const likedBy = data.likedBy || [];
         setLikesCount(likedBy.length);
+        setPostAuthorId(data.authorId || null);
         if (user) {
           setIsLiked(likedBy.includes(user.uid));
         }
@@ -53,15 +66,56 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
   const handleLike = async () => {
     if (!user || !id) return;
     const postRef = doc(db, "posts", id);
+    
     if (isLiked) {
-      updateDoc(postRef, {
-        likedBy: arrayRemove(user.uid)
-      });
+      updateDoc(postRef, { likedBy: arrayRemove(user.uid) });
     } else {
-      updateDoc(postRef, {
-        likedBy: arrayUnion(user.uid)
+      updateDoc(postRef, { likedBy: arrayUnion(user.uid) });
+      
+      // Create Notification if it's not the user's own post
+      if (postAuthorId && postAuthorId !== user.uid) {
+        addDoc(collection(db, "notifications"), {
+          userId: postAuthorId,
+          type: "like",
+          fromUserId: user.uid,
+          fromUserName: user.displayName || "Someone",
+          fromUserAvatar: user.photoURL || "",
+          postId: id,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !user || !id) return;
+    
+    const commentData = {
+      authorId: user.uid,
+      authorName: user.displayName || "User",
+      authorAvatar: user.photoURL || "",
+      text: newComment,
+      createdAt: serverTimestamp()
+    };
+
+    addDoc(collection(db, "posts", id, "comments"), commentData);
+    
+    // Create Notification
+    if (postAuthorId && postAuthorId !== user.uid) {
+      addDoc(collection(db, "notifications"), {
+        userId: postAuthorId,
+        type: "comment",
+        fromUserId: user.uid,
+        fromUserName: user.displayName || "Someone",
+        fromUserAvatar: user.photoURL || "",
+        postId: id,
+        read: false,
+        createdAt: serverTimestamp()
       });
     }
+
+    setNewComment("");
   };
 
   return (
@@ -125,10 +179,63 @@ export function PostCard({ id, author, content, image, likes: initialLikes, comm
                   {likesCount}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 group cursor-pointer text-zinc-500 hover:text-primary transition-colors">
-                <MessageCircle className="h-5 w-5" />
-                <span className="text-xs font-medium">{comments}</span>
-              </div>
+              
+              <Sheet>
+                <SheetTrigger asChild>
+                  <div className="flex items-center gap-1.5 group cursor-pointer text-zinc-500 hover:text-primary transition-colors">
+                    <MessageCircle className="h-5 w-5" />
+                    <span className="text-xs font-medium">{comments.length}</span>
+                  </div>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80vh] bg-zinc-950 border-zinc-800 rounded-t-3xl p-0 flex flex-col">
+                  <SheetHeader className="p-4 border-b border-zinc-900">
+                    <SheetTitle className="text-white text-center">
+                      {isRtl ? "التعليقات" : "Comments"}
+                    </SheetTitle>
+                  </SheetHeader>
+                  
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {commentsLoading ? (
+                      <div className="flex justify-center p-4">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    ) : comments.length > 0 ? (
+                      comments.map((comment: any) => (
+                        <div key={comment.id} className="flex gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={comment.authorAvatar} />
+                            <AvatarFallback>{comment.authorName[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 bg-zinc-900/50 p-3 rounded-2xl">
+                            <p className="text-xs font-bold mb-1">{comment.authorName}</p>
+                            <p className="text-sm text-zinc-300">{comment.text}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-zinc-500 text-sm py-10">
+                        {isRtl ? "لا يوجد تعليقات بعد" : "No comments yet. Be the first!"}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="p-4 bg-black border-t border-zinc-900 pb-10">
+                    <div className="flex gap-2 items-center">
+                      <Input 
+                        placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} 
+                        className="bg-zinc-900 border-none rounded-full h-11"
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
+                      />
+                      <Button size="icon" className="rounded-full bg-primary" onClick={handleAddComment}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
               <div className="flex items-center gap-1.5 group cursor-pointer text-zinc-500 hover:text-green-500 transition-colors">
                 <Repeat2 className="h-5 w-5" />
                 <span className="text-xs font-medium">{reposts}</span>

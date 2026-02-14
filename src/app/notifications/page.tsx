@@ -3,20 +3,52 @@
 
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
-import { Heart, UserPlus, MessageSquare, Repeat2, Settings } from "lucide-react";
+import { Heart, UserPlus, MessageSquare, Repeat2, Settings, Loader2, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-
-const NOTIFICATIONS = [
-  { id: 1, type: "like", user: "Ahmed Salem", avatar: "https://picsum.photos/seed/1/100/100", content: "Liked your post", time: "2h" },
-  { id: 2, type: "follow", user: "Sarah K.", avatar: "https://picsum.photos/seed/2/100/100", content: "Started following you", time: "5h" },
-  { id: 3, type: "comment", user: "Zaki Dz", avatar: "https://picsum.photos/seed/3/100/100", content: "Commented on your video", time: "1d" },
-  { id: 4, type: "repost", user: "Amine", avatar: "https://picsum.photos/seed/4/100/100", content: "Reposted your thought", time: "2d" },
-];
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { collection, query, where, orderBy, limit, doc, deleteDoc, updateDoc } from "firebase/firestore";
 
 export default function NotificationsPage() {
   const { isRtl } = useLanguage();
+  const db = useFirestore();
+  const { user: currentUser } = useUser();
+
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!currentUser) return null;
+    return query(
+      collection(db, "notifications"),
+      where("userId", "==", currentUser.uid),
+      orderBy("createdAt", "desc"),
+      limit(50)
+    );
+  }, [db, currentUser]);
+
+  const { data: notifications, loading } = useCollection<any>(notificationsQuery);
+
+  const clearNotification = async (id: string) => {
+    if (!db) return;
+    deleteDoc(doc(db, "notifications", id));
+  };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "like": return <Heart className="h-5 w-5 fill-red-500 text-red-500" />;
+      case "comment": return <MessageSquare className="h-5 w-5 text-green-500" />;
+      case "follow": return <UserPlus className="h-5 w-5 text-primary" />;
+      default: return <Repeat2 className="h-5 w-5 text-zinc-500" />;
+    }
+  };
+
+  const getMessage = (type: string, isAr: boolean) => {
+    switch (type) {
+      case "like": return isAr ? "أعجب بمنشورك" : "liked your post";
+      case "comment": return isAr ? "علق على منشورك" : "commented on your post";
+      case "follow": return isAr ? "بدأ بمتابعتك" : "started following you";
+      default: return isAr ? "تفاعل معك" : "interacted with you";
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800">
@@ -35,38 +67,52 @@ export default function NotificationsPage() {
           <TabsTrigger value="mentions" className="flex-1 h-full rounded-none font-bold text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
             {isRtl ? "الإشارات" : "Mentions"}
           </TabsTrigger>
-          <TabsTrigger value="verified" className="flex-1 h-full rounded-none font-bold text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
-            {isRtl ? "الموثقة" : "Verified"}
-          </TabsTrigger>
         </TabsList>
 
         <main className="pb-24">
           <TabsContent value="all" className="m-0">
-            <div className="flex flex-col">
-              {NOTIFICATIONS.map((notif) => (
-                <div key={notif.id} className="flex gap-4 p-4 border-b border-zinc-900 hover:bg-white/5 transition-colors cursor-pointer">
-                  <div className="pt-1">
-                    {notif.type === "like" && <Heart className="h-5 w-5 fill-red-500 text-red-500" />}
-                    {notif.type === "follow" && <UserPlus className="h-5 w-5 text-primary" />}
-                    {notif.type === "comment" && <MessageSquare className="h-5 w-5 text-green-500" />}
-                    {notif.type === "repost" && <Repeat2 className="h-5 w-5 text-zinc-500" />}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={notif.avatar} />
-                      <AvatarFallback>{notif.user[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="text-sm">
-                      <span className="font-bold">{notif.user}</span>{" "}
-                      <span className="text-zinc-400">{notif.content}</span>
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : notifications.length > 0 ? (
+              <div className="flex flex-col">
+                {notifications.map((notif) => (
+                  <div key={notif.id} className="flex items-start gap-4 p-4 border-b border-zinc-900 hover:bg-white/5 transition-colors group">
+                    <div className="pt-1">
+                      {getIcon(notif.type)}
                     </div>
-                    <p className="text-xs text-zinc-500">{notif.time}</p>
+                    <div className="flex-1 space-y-2">
+                      <Avatar className="h-8 w-8 border border-zinc-800">
+                        <AvatarImage src={notif.fromUserAvatar} />
+                        <AvatarFallback>{notif.fromUserName?.[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="text-sm">
+                        <span className="font-bold">{notif.fromUserName}</span>{" "}
+                        <span className="text-zinc-400">{getMessage(notif.type, isRtl)}</span>
+                      </div>
+                      <p className="text-[10px] text-zinc-600">
+                        {notif.createdAt?.toDate ? notif.createdAt.toDate().toLocaleString() : ""}
+                      </p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-500"
+                      onClick={() => clearNotification(notif.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-20 text-center text-zinc-500 text-sm">
+                {isRtl ? "لا توجد تنبيهات حالياً" : "No notifications yet"}
+              </div>
+            )}
           </TabsContent>
-          <TabsContent value="mentions" className="p-10 text-center text-zinc-500">
+          <TabsContent value="mentions" className="p-20 text-center text-zinc-500 text-sm">
              {isRtl ? "لا توجد إشارات حالياً" : "Nothing to see here — yet"}
           </TabsContent>
         </main>

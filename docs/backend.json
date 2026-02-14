@@ -26,6 +26,20 @@
         "mediaUrl": { "type": "string" },
         "mediaType": { "type": "string", "enum": ["image", "video"] },
         "likesCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "likedBy": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a post",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "text": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     },
@@ -34,9 +48,12 @@
       "description": "In-app notifications for users",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
+        "userId": { "type": "string", "description": "The recipient of the notification" },
         "type": { "type": "string", "enum": ["like", "comment", "follow", "message"] },
         "fromUserId": { "type": "string" },
+        "fromUserName": { "type": "string" },
+        "fromUserAvatar": { "type": "string" },
+        "postId": { "type": "string", "optional": true },
         "read": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
@@ -50,7 +67,8 @@
         "description": { "type": "string" },
         "createdBy": { "type": "string" },
         "isPrivate": { "type": "boolean" },
-        "memberCount": { "type": "number" }
+        "memberCount": { "type": "number" },
+        "icon": { "type": "string" }
       }
     },
     "ChatMessage": {
@@ -75,6 +93,10 @@
     "/posts/{postId}": {
       "schema": "Post",
       "description": "Feed posts"
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments on a post"
     },
     "/notifications/{notificationId}": {
       "schema": "Notification",
