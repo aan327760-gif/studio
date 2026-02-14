@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -30,9 +30,7 @@ function ImageEditorContent() {
   }, [searchParams]);
 
   const handleDone = () => {
-    // In a real app, you'd apply the filter and save. 
-    // Here we just go back to home or create post.
-    router.push("/create-post");
+    router.push(`/finalize-media?image=${encodeURIComponent(selectedImage || "")}`);
   };
 
   if (!selectedImage) {

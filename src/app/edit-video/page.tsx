@@ -26,7 +26,7 @@ function VideoEditorContent() {
   };
 
   const handleDone = () => {
-    router.push("/create-post");
+    router.push(`/finalize-media?video=${encodeURIComponent(videoUrl || "")}`);
   };
 
   if (!videoUrl) {
@@ -46,6 +46,7 @@ function VideoEditorContent() {
           src={videoUrl} 
           className="w-full h-full object-cover"
           onEnded={() => setIsPlaying(false)}
+          playsInline
         />
         
         {/* Top Overlay Controls */}
