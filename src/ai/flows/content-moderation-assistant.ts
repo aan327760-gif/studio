@@ -42,11 +42,6 @@ const moderateContentPrompt = ai.definePrompt({
   input: { schema: ModerateContentInputSchema },
   output: { schema: ModerateContentOutputSchema },
   config: {
-    // For a moderation tool, we want the AI to analyze and identify issues
-    // even if the content itself is highly problematic. We rely on the AI's
-    // output for flagging, rather than blocking the response outright. The model
-    // configured in genkit.ts might have default safety settings, but for this
-    // specific task, we override them to ensure a response is always returned for analysis.
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
       { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
@@ -55,7 +50,7 @@ const moderateContentPrompt = ai.definePrompt({
       { category: 'HARM_CATEGORY_CIVIC_INTEGRITY', threshold: 'BLOCK_NONE' },
     ],
   },
-  prompt: `You are an AI content moderation assistant for a social media platform called LammaFeed. Your task is to analyze user-generated content, which can be in English or Arabic, and determine if it contains inappropriate material.
+  prompt: `You are an AI content moderation assistant for a social media platform called Unbound. Your task is to analyze user-generated content, which can be in English or Arabic, and determine if it contains inappropriate material.
 
 Inappropriate material includes:
 - Hate speech: Content that expresses hatred or disparagement towards a person or group based on protected characteristics (e.g., race, ethnicity, origin, religion, gender, sexual orientation, disability).
@@ -89,12 +84,9 @@ const moderateContentFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      // With safetySettings set to BLOCK_NONE, we expect an output for analysis
-      // rather than the content being blocked by default API filters.
       const { output } = await moderateContentPrompt(input);
 
       if (!output) {
-        // This case should ideally not happen with BLOCK_NONE, but provides robustness.
         return {
           isAppropriate: false,
           moderationFlags: ['UNSURE'],

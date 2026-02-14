@@ -5,15 +5,13 @@ import { CreatePost } from "@/components/feed/CreatePost";
 import { PostCard } from "@/components/feed/PostCard";
 import { useLanguage } from "@/context/LanguageContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 const MOCK_POSTS = [
   {
     id: "1",
     author: { name: "Ahmed Salem", handle: "ahmed_s", avatar: "https://picsum.photos/seed/ahmed/100/100" },
-    content: "Beautiful day in Cairo! 🇪🇬 Looking forward to connecting with the tech community here on LammaFeed.",
+    content: "Beautiful day! 🇪🇬 Looking forward to connecting with the tech community here on Unbound.",
     image: "https://picsum.photos/seed/cairo/800/500",
     likes: 245,
     comments: 12,
@@ -31,8 +29,8 @@ const MOCK_POSTS = [
   },
   {
     id: "3",
-    author: { name: "Community Talk", handle: "lamma_talk", avatar: "https://picsum.photos/seed/lamma/100/100" },
-    content: "Join our 'Lamma' tonight at 8 PM to discuss the future of AI in the Arab world. Don't miss out! #AI #Tech",
+    author: { name: "Community Talk", handle: "unbound_talk", avatar: "https://picsum.photos/seed/lamma/100/100" },
+    content: "Join our 'Lamma' tonight at 8 PM to discuss the future of AI. Don't miss out! #AI #Tech #Unbound",
     isLamma: true,
     likes: 512,
     comments: 108,
@@ -80,7 +78,7 @@ export default function Home() {
         <div className="bg-white rounded-2xl border p-4 shadow-sm">
           <h3 className="font-bold text-lg mb-4">{t("trending")}</h3>
           <div className="space-y-4">
-            {["#LammaFeed", "#CairoTech", "#NextJS", "#ArabicCode"].map((tag, i) => (
+            {["#Unbound", "#CairoTech", "#NextJS", "#ArabicCode"].map((tag, i) => (
               <div key={i} className="group cursor-pointer">
                 <p className="text-xs text-muted-foreground">{i + 1} • Trending</p>
                 <p className="font-semibold group-hover:text-primary transition-colors">{tag}</p>

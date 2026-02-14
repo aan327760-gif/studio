@@ -13,7 +13,7 @@ interface LanguageContextType {
 
 const translations: Record<Language, Record<string, string>> = {
   en: {
-    appName: "LammaFeed",
+    appName: "Unbound",
     home: "Home",
     explore: "Explore",
     lamma: "Lamma",
@@ -38,7 +38,7 @@ const translations: Record<Language, Record<string, string>> = {
     latest: "Latest",
   },
   ar: {
-    appName: "لمة فيد",
+    appName: "Unbound",
     home: "الرئيسية",
     explore: "استكشف",
     lamma: "لمة",

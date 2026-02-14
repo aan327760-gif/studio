@@ -1,17 +1,16 @@
-
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "LammaFeed - Connect Globally, Connect Locally",
-  description: "The modern social platform for everyone, with a special touch for the Arabic community.",
+  title: "Unbound - Break Free, Connect Deeply",
+  description: "The modern social platform for everyone, with a special touch for global communities.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "LammaFeed",
+    title: "Unbound",
   },
 };
 
