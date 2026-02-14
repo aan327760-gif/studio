@@ -147,7 +147,7 @@ export default function EditProfilePage() {
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-all">
             {uploading === "banner" ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
           </div>
-          <input type="file" accept="image/*,image/heic,image/heif,image/webp" className="hidden" ref={bannerInputRef} onChange={(e) => handleImageUpload(e, "banner")} />
+          <input type="file" accept="image/*,image/heic,image/heif,image/webp,image/avif,image/png,image/jpeg" className="hidden" ref={bannerInputRef} onChange={(e) => handleImageUpload(e, "banner")} />
         </div>
 
         {/* Avatar Section */}
@@ -160,7 +160,7 @@ export default function EditProfilePage() {
             <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               {uploading === "avatar" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
             </div>
-            <input type="file" accept="image/*,image/heic,image/heif,image/webp" className="hidden" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, "avatar")} />
+            <input type="file" accept="image/*,image/heic,image/heif,image/webp,image/avif,image/png,image/jpeg" className="hidden" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, "avatar")} />
           </div>
         </div>
 
