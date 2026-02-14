@@ -8,9 +8,7 @@ import {
   Type, 
   Sparkles, 
   Music, 
-  FastForward, 
   Layers, 
-  Grid2X2,
   Check,
   X,
   Palette
@@ -109,8 +107,8 @@ function FinalizeMediaContent() {
     let x = ((clientX - rect.left) / rect.width) * 100;
     let y = ((clientY - rect.top) / rect.height) * 100;
 
-    // Strict constraints to prevent text from leaving the phone frame (0 to 100)
-    // We use a safe margin of 15% to ensure the text remains visible and selectable
+    // Strict constraints: Keep the text within 15% - 85% of the screen
+    // This ensures the text handles don't go off-screen and remain draggable
     setTextPos({
       x: Math.max(15, Math.min(85, x)),
       y: Math.max(15, Math.min(85, y))
@@ -159,7 +157,7 @@ function FinalizeMediaContent() {
             left: `${textPos.x}%`, 
             top: `${textPos.y}%`, 
             transform: 'translate(-50%, -50%)',
-            transition: isDragging ? 'none' : 'all 0.1s ease-out'
+            transition: isDragging ? 'none' : 'all 0.1s cubic-bezier(0.2, 0, 0, 1)'
           }}
           onMouseDown={onStartDrag}
           onTouchStart={onStartDrag}
@@ -190,7 +188,7 @@ function FinalizeMediaContent() {
       </header>
 
       {/* Left Sidebar Actions */}
-      <div className="relative z-10 flex-1 flex flex-col justify-center px-4 gap-7">
+      <div className="relative z-10 flex-1 flex flex-col justify-center px-4 gap-6">
         {[
           { icon: Type, label: "الكتابة", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
           { icon: Layers, label: "الفلاتر", onClick: () => router.back(), active: filterClass !== "filter-none" },
@@ -204,68 +202,60 @@ function FinalizeMediaContent() {
             onClick={action.onClick}
           >
             <div className={cn(
-              "h-11 w-11 flex items-center justify-center rounded-2xl backdrop-blur-md transition-all shadow-xl border border-white/10",
+              "h-10 w-10 flex items-center justify-center rounded-xl backdrop-blur-md transition-all shadow-xl border border-white/10",
               action.active ? "bg-primary border-primary scale-110" : "bg-black/30 group-hover:bg-black/50"
             )}>
-              <action.icon className="h-6 w-6 text-white" />
+              <action.icon className="h-5 w-5 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-white drop-shadow-lg">
+              <span className="text-xs font-bold text-white drop-shadow-lg">
                 {action.label}
               </span>
-              {action.active && <span className="text-[8px] text-primary font-black uppercase tracking-widest drop-shadow-md">نشط</span>}
+              {action.active && <span className="text-[7px] text-primary font-black uppercase tracking-widest drop-shadow-md">نشط</span>}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Bottom Text Hint */}
-      {finalText && !isDragging && (
-        <div className="relative z-10 w-full text-center pb-2 animate-pulse">
-          <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
-            اسحب النص لتحريكه
-          </span>
-        </div>
-      )}
-
       {/* Bottom Right Next Button */}
       <div className="relative z-10 p-6 flex justify-end">
         <Button 
           onClick={handleNext}
-          className="rounded-full bg-white text-black hover:bg-zinc-200 px-12 py-7 text-xl font-black shadow-2xl transition-transform active:scale-95"
+          className="rounded-full bg-white text-black hover:bg-zinc-200 px-10 py-6 text-lg font-black shadow-2xl transition-transform active:scale-95"
         >
           {imageUrl || videoUrl ? "التالي" : "تخطي"}
         </Button>
       </div>
 
-      {/* Text Tool Dialog */}
+      {/* Text Tool Dialog - Improved for Mobile */}
       <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
-        <DialogContent className="bg-zinc-950/95 backdrop-blur-2xl border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-8">
-          <DialogHeader>
-            <DialogTitle className="text-center font-black text-xl">أضف نصاً فوق الوسائط</DialogTitle>
+        <DialogContent className="bg-zinc-950/95 backdrop-blur-2xl border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2rem] p-6 focus:outline-none">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-center font-bold text-lg">أضف نصاً</DialogTitle>
           </DialogHeader>
-          <div className="space-y-8 mt-6">
+          
+          <div className="space-y-6">
             <div className="relative">
               <Input 
                 placeholder="اكتب شيئاً..." 
                 value={textOverlay} 
                 onChange={(e) => setTextOverlay(e.target.value)}
                 className={cn(
-                  "bg-zinc-900/50 border-none rounded-3xl h-16 text-center text-2xl font-black focus-visible:ring-2 focus-visible:ring-primary placeholder:opacity-30",
+                  "bg-zinc-900/50 border-none rounded-2xl h-14 text-center text-xl font-bold focus-visible:ring-1 focus-visible:ring-primary placeholder:opacity-20",
                   textColor
                 )}
                 autoFocus
               />
             </div>
             
-            <div className="flex flex-col gap-6">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">الألوان</span>
+                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">الألوان</span>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   className={cn(
-                    "h-9 rounded-full px-4 text-[10px] font-black transition-all", 
+                    "h-8 rounded-full px-3 text-[9px] font-black transition-all", 
                     textBg ? "bg-primary text-white" : "bg-zinc-900 text-zinc-500"
                   )}
                   onClick={() => setTextBg(!textBg)}
@@ -273,14 +263,14 @@ function FinalizeMediaContent() {
                   خلفية النص
                 </Button>
               </div>
-              <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+              <div className="flex gap-2.5 overflow-x-auto pb-2 no-scrollbar">
                 {TEXT_COLORS.map((color) => (
                   <button
                     key={color}
                     className={cn(
-                      "h-10 w-10 rounded-full border-4 shrink-0 transition-all active:scale-90 shadow-lg",
+                      "h-8 w-8 rounded-full border-2 shrink-0 transition-all active:scale-90",
                       color.replace('text-', 'bg-'),
-                      textColor === color ? "border-white scale-110" : "border-transparent opacity-80"
+                      textColor === color ? "border-white scale-110" : "border-transparent opacity-60"
                     )}
                     onClick={() => setTextColor(color)}
                   />
@@ -288,11 +278,11 @@ function FinalizeMediaContent() {
               </div>
             </div>
 
-            <div className="flex gap-4 pt-4">
-              <Button variant="ghost" className="flex-1 rounded-2xl font-bold h-14 text-zinc-400" onClick={() => setIsTextDialogOpen(false)}>
+            <div className="flex gap-3 pt-2">
+              <Button variant="ghost" className="flex-1 rounded-xl font-bold h-12 text-zinc-500 hover:bg-zinc-900" onClick={() => setIsTextDialogOpen(false)}>
                 إلغاء
               </Button>
-              <Button className="flex-1 rounded-2xl font-black bg-primary hover:bg-primary/90 h-14 shadow-lg shadow-primary/20" onClick={applyText}>
+              <Button className="flex-1 rounded-xl font-black bg-primary hover:bg-primary/90 h-12 shadow-lg shadow-primary/10" onClick={applyText}>
                 تطبيق
               </Button>
             </div>
@@ -310,4 +300,3 @@ export default function FinalizeMediaPage() {
     </Suspense>
   );
 }
-
