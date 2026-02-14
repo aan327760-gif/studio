@@ -10,8 +10,7 @@ import {
   CheckCircle2, 
   Search, 
   Edit2, 
-  Compass,
-  Plus
+  Compass
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,7 +24,7 @@ export default function ProfilePage() {
   const { t, isRtl } = useLanguage();
   const [activeTab, setActiveTab] = useState("posts");
 
-  // بيانات تجريبية للمستخدم
+  // Mock user data
   const user = {
     name: isRtl ? "تطبيق لمة" : "Unbound App",
     handle: "BoBibo38876",
@@ -74,7 +73,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Live Banner Prompt (As seen in screenshot) */}
+        {/* Live Banner Prompt */}
         <div className="absolute bottom-4 right-4 bg-orange-500 rounded-lg px-3 py-1.5 flex items-center gap-2 cursor-pointer shadow-lg hover:bg-orange-600 transition-colors">
           <div className="h-5 w-5 rounded-full border-2 border-white flex items-center justify-center">
             <div className="h-2 w-2 bg-white rounded-full animate-pulse" />
@@ -190,14 +189,6 @@ export default function ProfilePage() {
           </div>
         </TabsContent>
       </Tabs>
-
-      {/* Floating Action Button */}
-      <Button 
-        className="fixed bottom-20 left-6 h-14 w-14 rounded-full shadow-2xl bg-primary hover:bg-primary/90 text-white z-50 p-0"
-        size="icon"
-      >
-        <Plus className="h-8 w-8" />
-      </Button>
 
       <AppSidebar />
     </div>
