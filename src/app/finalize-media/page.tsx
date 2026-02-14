@@ -11,7 +11,11 @@ import {
   Layers, 
   Check,
   X,
-  Palette
+  Palette,
+  RotateCw,
+  Maximize,
+  Minimize,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,18 +23,33 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
 
 const TEXT_COLORS = [
-  "text-white",
-  "text-black",
-  "text-primary",
-  "text-red-500",
-  "text-yellow-400",
-  "text-green-500",
-  "text-purple-500",
-  "text-orange-500",
-  "text-pink-500"
+  "text-white", "text-black", "text-primary", "text-red-500", "text-yellow-400", 
+  "text-green-500", "text-purple-500", "text-orange-500", "text-pink-500"
 ];
+
+const STICKER_CATEGORIES = [
+  { name: "هوية", icon: "🆔", stickers: ["صوت حر", "بلا فلتر", "قولها بصراحة", "فكر مختلف", "خارج الصندوق", "رأي جريء", "بلا مجاملة", "الحقيقة أولًا", "نقاش مفتوح", "فكر قبل أن تحكم", "الحرية مسؤولية", "كلام ثقيل", "مواجهة", "بدون خوف", "وعي", "انتبه", "افهم الصورة", "الموضوع كبير", "لا تسكت", "اسمع الآخر"] },
+  { name: "تفاعل", icon: "💬", stickers: ["متفق", "غير موافق", "100٪ صح", "فيه مبالغة", "منطقي", "غير مقنع", "يحتاج دليل", "قوي جدًا", "عادي", "صادم", "ممتاز", "ضعيف", "يستحق الانتشار", "لازم نقاش", "شارك رأيك"] },
+  { name: "تحليل", icon: "🧠", stickers: ["تحليل", "أرقام", "مصدر؟", "تدقيق", "رأي شخصي", "معلومة مهمة", "مقارنة", "خلف الكواليس", "قراءة عميقة", "زاوية أخرى", "نظرة مختلفة", "تفسير", "توضيح", "استنتاج", "توقعات"] },
+  { name: "شأن عام", icon: "🏛", stickers: ["شأن عام", "قرار مهم", "جدل", "أزمة", "قانون", "بيان رسمي", "عاجل", "حدث الآن", "ملف مفتوح", "مسؤولية", "انتخابات", "تصريح", "موقف", "سياسة", "قضية رأي عام"] },
+  { name: "إنساني", icon: "❤️", stickers: ["تضامن", "دعم", "إنسانية", "قصة مؤثرة", "واقعي", "مؤلم", "فرحة", "أمل", "لا للعنف", "معًا أفضل"] },
+  { name: "حياة", icon: "🎉", stickers: ["ضحك", "ترند", "لحظة جميلة", "يوميات", "ذكريات", "عفوي", "مزاج", "مفاجأة", "تحدي", "رهيب"] }
+];
+
+interface StickerInstance {
+  id: string;
+  text: string;
+  color: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
+}
 
 function FinalizeMediaContent() {
   const router = useRouter();
@@ -41,18 +60,22 @@ function FinalizeMediaContent() {
   const videoUrl = searchParams.get("video");
   const filterClass = searchParams.get("filter") || "filter-none";
 
+  // Text Overlay States
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
   const [textOverlay, setTextOverlay] = useState("");
   const [textColor, setTextColor] = useState("text-white");
   const [textBg, setTextBg] = useState(false);
-  
   const [finalText, setFinalText] = useState("");
   const [finalColor, setFinalColor] = useState("text-white");
   const [finalBg, setFinalBg] = useState(false);
-  
-  // Coordinates in percentage (0 to 100)
-  const [textPos, setTextPos] = useState({ x: 50, y: 50 });
-  const [isDragging, setIsDragging] = useState(false);
+  const [textPos, setTextPos] = useState({ x: 50, y: 30 });
+  const [isDraggingText, setIsDraggingText] = useState(false);
+
+  // Stickers States
+  const [isStickerDialogOpen, setIsStickerDialogOpen] = useState(false);
+  const [stickers, setStickers] = useState<StickerInstance[]>([]);
+  const [activeStickerId, setActiveStickerId] = useState<string | null>(null);
+  const [isDraggingSticker, setIsDraggingSticker] = useState(false);
 
   const handleNext = () => {
     const params = new URLSearchParams();
@@ -66,31 +89,38 @@ function FinalizeMediaContent() {
       params.set("textX", textPos.x.toString());
       params.set("textY", textPos.y.toString());
     }
+    if (stickers.length > 0) {
+      params.set("stickers", JSON.stringify(stickers));
+    }
     router.push(`/create-post?${params.toString()}`);
   };
 
-  const handleUnderDev = (feature: string) => {
-    toast({
-      title: "قيد التطوير",
-      description: `ميزة ${feature} ستتوفر قريباً في التحديث القادم.`,
-    });
+  const addSticker = (text: string) => {
+    const newSticker: StickerInstance = {
+      id: Math.random().toString(36).substr(2, 9),
+      text,
+      color: "bg-white text-black",
+      x: 50,
+      y: 50,
+      scale: 1,
+      rotation: 0
+    };
+    setStickers([...stickers, newSticker]);
+    setActiveStickerId(newSticker.id);
+    setIsStickerDialogOpen(false);
   };
 
-  const applyText = () => {
-    setFinalText(textOverlay);
-    setFinalColor(textColor);
-    setFinalBg(textBg);
-    setIsTextDialogOpen(false);
+  const updateActiveSticker = (updates: Partial<StickerInstance>) => {
+    setStickers(prev => prev.map(s => s.id === activeStickerId ? { ...s, ...updates } : s));
   };
 
-  const onStartDrag = (e: React.MouseEvent | React.TouchEvent) => {
-    if (finalText) {
-      setIsDragging(true);
-    }
+  const removeSticker = (id: string) => {
+    setStickers(prev => prev.filter(s => s.id !== id));
+    if (activeStickerId === id) setActiveStickerId(null);
   };
 
-  const onDrag = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging || !containerRef.current) return;
+  const handleGlobalDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    if ((!isDraggingText && !isDraggingSticker) || !containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     let clientX, clientY;
@@ -103,30 +133,27 @@ function FinalizeMediaContent() {
       clientY = e.clientY;
     }
 
-    // Calculate percentage based on current mouse/touch position
     let x = ((clientX - rect.left) / rect.width) * 100;
     let y = ((clientY - rect.top) / rect.height) * 100;
+    x = Math.max(10, Math.min(90, x));
+    y = Math.max(10, Math.min(90, y));
 
-    // Strict constraints: Keep the text within 15% - 85% of the screen
-    // This ensures the text handles don't go off-screen and remain draggable
-    setTextPos({
-      x: Math.max(15, Math.min(85, x)),
-      y: Math.max(15, Math.min(85, y))
-    });
-  };
-
-  const onStopDrag = () => {
-    setIsDragging(false);
+    if (isDraggingText) {
+      setTextPos({ x, y });
+    } else if (isDraggingSticker && activeStickerId) {
+      updateActiveSticker({ x, y });
+    }
   };
 
   return (
     <div 
       className="flex flex-col h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden select-none touch-none"
       ref={containerRef}
-      onMouseMove={onDrag}
-      onMouseUp={onStopDrag}
-      onTouchMove={onDrag}
-      onTouchEnd={onStopDrag}
+      onMouseMove={handleGlobalDrag}
+      onMouseUp={() => { setIsDraggingText(false); setIsDraggingSticker(false); }}
+      onTouchMove={handleGlobalDrag}
+      onTouchEnd={() => { setIsDraggingText(false); setIsDraggingSticker(false); }}
+      onClick={() => setActiveStickerId(null)}
     >
       {/* Background Media */}
       <div className="absolute inset-0 z-0">
@@ -134,157 +161,187 @@ function FinalizeMediaContent() {
           <img src={imageUrl} alt="Finalize" className={cn("w-full h-full object-cover", filterClass)} />
         )}
         {videoUrl && (
-          <video 
-            src={videoUrl} 
-            className="w-full h-full object-cover" 
-            autoPlay 
-            muted 
-            loop 
-            playsInline
-          />
+          <video src={videoUrl} className="w-full h-full object-cover" autoPlay muted loop playsInline />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20" />
       </div>
 
-      {/* Text Overlay Render - Draggable Area */}
+      {/* Text Overlay */}
       {finalText && (
         <div 
-          className={cn(
-            "absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing",
-            isDragging && "scale-110 opacity-70"
-          )}
-          style={{ 
-            left: `${textPos.x}%`, 
-            top: `${textPos.y}%`, 
-            transform: 'translate(-50%, -50%)',
-            transition: isDragging ? 'none' : 'all 0.1s cubic-bezier(0.2, 0, 0, 1)'
-          }}
-          onMouseDown={onStartDrag}
-          onTouchStart={onStartDrag}
+          className={cn("absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing transition-transform", isDraggingText && "scale-110")}
+          style={{ left: `${textPos.x}%`, top: `${textPos.y}%`, transform: 'translate(-50%, -50%)' }}
+          onMouseDown={(e) => { e.stopPropagation(); setIsDraggingText(true); setActiveStickerId(null); }}
+          onTouchStart={(e) => { e.stopPropagation(); setIsDraggingText(true); setActiveStickerId(null); }}
         >
           <span className={cn(
-            "text-xl font-black text-center px-4 py-2 rounded-xl break-words max-w-[70vw] drop-shadow-2xl shadow-black",
+            "text-xl font-black text-center px-4 py-2 rounded-xl break-words max-w-[70vw] drop-shadow-2xl",
             finalColor,
             finalBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
           )}>
             {finalText}
           </span>
-          {isDragging && (
-            <div className="absolute -inset-2 border-2 border-white/30 border-dashed rounded-2xl" />
-          )}
         </div>
       )}
 
-      {/* Top Header */}
-      <header className="relative z-10 p-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => router.back()}
-          className="rounded-full text-white hover:bg-white/10"
+      {/* Stickers Overlay */}
+      {stickers.map((sticker) => (
+        <div 
+          key={sticker.id}
+          className={cn(
+            "absolute z-40 pointer-events-auto cursor-grab active:cursor-grabbing transition-all",
+            activeStickerId === sticker.id && "ring-2 ring-primary ring-offset-4 ring-offset-transparent rounded-lg"
+          )}
+          style={{ 
+            left: `${sticker.x}%`, 
+            top: `${sticker.y}%`, 
+            transform: `translate(-50%, -50%) scale(${sticker.scale}) rotate(${sticker.rotation}deg)` 
+          }}
+          onMouseDown={(e) => { e.stopPropagation(); setActiveStickerId(sticker.id); setIsDraggingSticker(true); }}
+          onTouchStart={(e) => { e.stopPropagation(); setActiveStickerId(sticker.id); setIsDraggingSticker(true); }}
         >
+          <div className={cn(
+            "px-4 py-2 rounded-lg font-black text-sm whitespace-nowrap shadow-xl drop-shadow-md border-2 border-white/20",
+            sticker.color
+          )}>
+            {sticker.text}
+          </div>
+        </div>
+      ))}
+
+      {/* Top Header */}
+      <header className="relative z-50 p-4">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-black/30 backdrop-blur-md">
           <ArrowLeft className="h-7 w-7" />
         </Button>
       </header>
 
-      {/* Left Sidebar Actions */}
-      <div className="relative z-10 flex-1 flex flex-col justify-center px-4 gap-6">
+      {/* Sidebar Controls */}
+      <div className="relative z-50 flex-1 flex flex-col justify-center px-4 gap-4">
         {[
           { icon: Type, label: "الكتابة", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
+          { icon: Smile, label: "الملصقات", onClick: () => setIsStickerDialogOpen(true), active: stickers.length > 0 },
           { icon: Layers, label: "الفلاتر", onClick: () => router.back(), active: filterClass !== "filter-none" },
-          { icon: Smile, label: "ملصقات", onClick: () => handleUnderDev("الملصقات") },
-          { icon: Sparkles, label: "تأثيرات", onClick: () => handleUnderDev("التأثيرات") },
-          { icon: Music, label: "موسيقى", onClick: () => handleUnderDev("الموسيقى") },
         ].map((action) => (
-          <div 
-            key={action.label} 
-            className="flex items-center gap-4 group cursor-pointer w-fit"
-            onClick={action.onClick}
-          >
-            <div className={cn(
-              "h-10 w-10 flex items-center justify-center rounded-xl backdrop-blur-md transition-all shadow-xl border border-white/10",
-              action.active ? "bg-primary border-primary scale-110" : "bg-black/30 group-hover:bg-black/50"
-            )}>
-              <action.icon className="h-5 w-5 text-white" />
+          <div key={action.label} className="flex items-center gap-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); action.onClick(); }}>
+            <div className={cn("h-11 w-11 flex items-center justify-center rounded-xl backdrop-blur-md border border-white/10 shadow-xl", action.active ? "bg-primary border-primary" : "bg-black/40")}>
+              <action.icon className="h-5 w-5" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-white drop-shadow-lg">
-                {action.label}
-              </span>
-              {action.active && <span className="text-[7px] text-primary font-black uppercase tracking-widest drop-shadow-md">نشط</span>}
-            </div>
+            <span className="text-xs font-bold drop-shadow-md">{action.label}</span>
           </div>
         ))}
       </div>
 
-      {/* Bottom Right Next Button */}
-      <div className="relative z-10 p-6 flex justify-end">
-        <Button 
-          onClick={handleNext}
-          className="rounded-full bg-white text-black hover:bg-zinc-200 px-10 py-6 text-lg font-black shadow-2xl transition-transform active:scale-95"
-        >
-          {imageUrl || videoUrl ? "التالي" : "تخطي"}
-        </Button>
-      </div>
-
-      {/* Text Tool Dialog - Improved for Mobile */}
-      <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
-        <DialogContent className="bg-zinc-950/95 backdrop-blur-2xl border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2rem] p-6 focus:outline-none">
-          <DialogHeader className="mb-4">
-            <DialogTitle className="text-center font-bold text-lg">أضف نصاً</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            <div className="relative">
-              <Input 
-                placeholder="اكتب شيئاً..." 
-                value={textOverlay} 
-                onChange={(e) => setTextOverlay(e.target.value)}
-                className={cn(
-                  "bg-zinc-900/50 border-none rounded-2xl h-14 text-center text-xl font-bold focus-visible:ring-1 focus-visible:ring-primary placeholder:opacity-20",
-                  textColor
-                )}
-                autoFocus
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">الألوان</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={cn(
-                    "h-8 rounded-full px-3 text-[9px] font-black transition-all", 
-                    textBg ? "bg-primary text-white" : "bg-zinc-900 text-zinc-500"
-                  )}
-                  onClick={() => setTextBg(!textBg)}
-                >
-                  خلفية النص
-                </Button>
+      {/* Active Sticker Controls (Floating Bar) */}
+      {activeStickerId && (
+        <div className="absolute bottom-28 left-4 right-4 z-50 animate-in slide-in-from-bottom-5" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Maximize className="h-3 w-3 text-zinc-500" />
+                  <span className="text-[10px] font-bold uppercase text-zinc-500">الحجم</span>
+                </div>
+                <Slider 
+                  value={[stickers.find(s => s.id === activeStickerId)?.scale || 1]} 
+                  min={0.5} max={2.5} step={0.1} 
+                  onValueChange={([val]) => updateActiveSticker({ scale: val })}
+                />
               </div>
-              <div className="flex gap-2.5 overflow-x-auto pb-2 no-scrollbar">
-                {TEXT_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    className={cn(
-                      "h-8 w-8 rounded-full border-2 shrink-0 transition-all active:scale-90",
-                      color.replace('text-', 'bg-'),
-                      textColor === color ? "border-white scale-110" : "border-transparent opacity-60"
-                    )}
-                    onClick={() => setTextColor(color)}
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <RotateCw className="h-3 w-3 text-zinc-500" />
+                  <span className="text-[10px] font-bold uppercase text-zinc-500">التدوير</span>
+                </div>
+                <Slider 
+                  value={[stickers.find(s => s.id === activeStickerId)?.rotation || 0]} 
+                  min={-180} max={180} step={5} 
+                  onValueChange={([val]) => updateActiveSticker({ rotation: val })}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-white/5">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar max-w-[200px]">
+                {["bg-white text-black", "bg-primary text-white", "bg-red-500 text-white", "bg-black text-white", "bg-yellow-400 text-black"].map(c => (
+                  <button 
+                    key={c} 
+                    className={cn("h-6 w-6 rounded-full border-2", c.split(' ')[0], stickers.find(s => s.id === activeStickerId)?.color === c ? "border-white" : "border-transparent")}
+                    onClick={() => updateActiveSticker({ color: c })}
                   />
                 ))}
               </div>
+              <Button variant="ghost" size="sm" className="text-red-500 font-bold" onClick={() => removeSticker(activeStickerId)}>
+                <Trash2 className="h-4 w-4 mr-1" /> حذف
+              </Button>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="flex gap-3 pt-2">
-              <Button variant="ghost" className="flex-1 rounded-xl font-bold h-12 text-zinc-500 hover:bg-zinc-900" onClick={() => setIsTextDialogOpen(false)}>
-                إلغاء
-              </Button>
-              <Button className="flex-1 rounded-xl font-black bg-primary hover:bg-primary/90 h-12 shadow-lg shadow-primary/10" onClick={applyText}>
-                تطبيق
-              </Button>
+      {/* Bottom Footer */}
+      <footer className="relative z-50 p-6 flex justify-end">
+        <Button onClick={handleNext} className="rounded-full bg-white text-black hover:bg-zinc-200 px-10 py-6 text-lg font-black shadow-2xl">
+          التالي
+        </Button>
+      </footer>
+
+      {/* Stickers Dialog */}
+      <Dialog open={isStickerDialogOpen} onOpenChange={setIsStickerDialogOpen}>
+        <DialogContent className="bg-zinc-950/95 backdrop-blur-2xl border-zinc-800 text-white w-[95%] max-w-[400px] rounded-[2rem] p-0 h-[70vh] flex flex-col overflow-hidden outline-none">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-center font-bold">ملصقات بلا قيود</DialogTitle>
+          </DialogHeader>
+          <Tabs defaultValue="هوية" className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="bg-transparent border-b border-white/5 px-2 h-12 gap-2 overflow-x-auto no-scrollbar justify-start">
+              {STICKER_CATEGORIES.map(cat => (
+                <TabsTrigger key={cat.name} value={cat.name} className="rounded-full data-[state=active]:bg-white data-[state=active]:text-black text-xs font-bold gap-2">
+                  <span>{cat.icon}</span> {cat.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <div className="flex-1 overflow-hidden relative">
+              <ScrollArea className="h-full p-4">
+                {STICKER_CATEGORIES.map(cat => (
+                  <TabsContent key={cat.name} value={cat.name} className="mt-0">
+                    <div className="grid grid-cols-2 gap-3 pb-20">
+                      {cat.stickers.map(sticker => (
+                        <button 
+                          key={sticker} 
+                          className="bg-zinc-900/50 hover:bg-zinc-800 p-3 rounded-xl text-sm font-black text-center transition-all active:scale-95 border border-white/5"
+                          onClick={() => addSticker(sticker)}
+                        >
+                          {sticker}
+                        </button>
+                      ))}
+                    </div>
+                  </TabsContent>
+                ))}
+              </ScrollArea>
+            </div>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Text Dialog (Modified to close active sticker) */}
+      <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
+        <DialogContent className="bg-zinc-950/95 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2rem] p-6 outline-none">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-center font-bold">أضف نصاً</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <Input 
+              placeholder="اكتب شيئاً..." value={textOverlay} onChange={(e) => setTextOverlay(e.target.value)}
+              className={cn("bg-zinc-900 border-none rounded-2xl h-14 text-center text-xl font-bold", textColor)}
+              autoFocus
+            />
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+              {TEXT_COLORS.map(c => (
+                <button key={c} className={cn("h-8 w-8 rounded-full border-2 shrink-0", c.replace('text-', 'bg-'), textColor === c ? "border-white" : "border-transparent")} onClick={() => setTextColor(c)} />
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <Button variant="ghost" className="flex-1" onClick={() => setIsTextDialogOpen(false)}>إلغاء</Button>
+              <Button className="flex-1 bg-primary font-black" onClick={() => { setFinalText(textOverlay); setFinalColor(textColor); setFinalBg(textBg); setIsTextDialogOpen(false); setActiveStickerId(null); }}>تطبيق</Button>
             </div>
           </div>
         </DialogContent>

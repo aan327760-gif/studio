@@ -38,6 +38,7 @@ interface PostCardProps {
     textBg?: boolean;
     textX?: number;
     textY?: number;
+    stickers?: any[];
   };
 }
 
@@ -112,30 +113,21 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     if (confirm(isRtl ? "هل أنت متأكد من حذف هذا المنشور؟" : "Are you sure you want to delete this post?")) {
       try {
         await deleteDoc(doc(db, "posts", id));
-        toast({
-          title: isRtl ? "تم الحذف" : "Deleted",
-          description: isRtl ? "تم حذف المنشور بنجاح" : "Post deleted successfully",
-        });
-      } catch (error) {
-        console.error("Error deleting post:", error);
-      }
+        toast({ title: isRtl ? "تم الحذف" : "Deleted", description: isRtl ? "تم حذف المنشور بنجاح" : "Post deleted successfully" });
+      } catch (error) {}
     }
   };
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !user || !id) return;
-    
-    const commentData = {
+    addDoc(collection(db, "posts", id, "comments"), {
       authorId: user.uid,
       authorName: user.displayName || "User",
       authorAvatar: user.photoURL || "",
       authorHandle: user.email?.split('@')[0] || "user",
       text: newComment,
       createdAt: serverTimestamp()
-    };
-
-    addDoc(collection(db, "posts", id, "comments"), commentData);
-    
+    });
     if (postAuthorId && postAuthorId !== user.uid) {
       addDoc(collection(db, "notifications"), {
         userId: postAuthorId,
@@ -148,16 +140,11 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
         createdAt: serverTimestamp()
       });
     }
-
     setNewComment("");
   };
 
-  const navigateToDetail = () => {
-    router.push(`/post/${id}`);
-  };
-
   return (
-    <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/50 cursor-pointer active:bg-zinc-950/50 transition-colors" onClick={navigateToDetail}>
+    <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/50 cursor-pointer active:bg-zinc-950/50 transition-colors" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-4 pb-2 flex flex-row items-center space-y-0 gap-3" onClick={(e) => e.stopPropagation()}>
         <Link href={`/profile/${postAuthorId || '#'}`}>
           <Avatar className="h-10 w-10 ring-1 ring-zinc-800 ring-offset-1 ring-offset-black">
@@ -191,10 +178,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
             {content}
           </p>
           {!isExpanded && content.length > 180 && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }}
-              className="text-primary text-xs font-bold mt-1"
-            >
+            <button onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }} className="text-primary text-xs font-bold mt-1">
               {isRtl ? "عرض المزيد" : "Show more"}
             </button>
           )}
@@ -202,67 +186,43 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
         {image && (
           <div className="px-4 mb-2">
-            <div className="relative rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-900/40" onClick={(e) => e.stopPropagation()}>
+            <div className="relative rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-900/40 aspect-video md:aspect-auto" onClick={(e) => e.stopPropagation()}>
               {mediaType === "audio" ? (
-                <div className="p-4 flex items-center gap-4 bg-gradient-to-br from-zinc-900 to-black">
-                  <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-primary shadow-inner">
-                    <Mic className="h-6 w-6" />
-                  </div>
-                  <div className="flex-1">
-                     <audio controls src={image} className="w-full h-10 brightness-90 filter invert" />
-                  </div>
+                <div className="p-4 flex items-center gap-4 bg-zinc-900">
+                  <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-primary"><Mic className="h-6 w-6" /></div>
+                  <div className="flex-1"><audio controls src={image} className="w-full h-10 brightness-90 filter invert" /></div>
                 </div>
               ) : mediaType === "video" ? (
-                <div className="relative group aspect-video bg-black flex items-center justify-center">
-                  <video src={image} controls className="w-full h-full max-h-[500px]" />
-                  {mediaSettings?.textOverlay && (
-                    <div 
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none p-4"
-                      style={{ 
-                        left: `${mediaSettings.textX ?? 50}%`, 
-                        top: `${mediaSettings.textY ?? 50}%`, 
-                        transform: 'translate(-50%, -50%)',
-                        position: 'absolute'
-                      }}
-                    >
-                      <span className={cn(
-                        "text-lg font-black text-center px-4 py-2 rounded-xl break-words max-w-full drop-shadow-2xl shadow-black",
-                        mediaSettings.textColor || "text-white",
-                        mediaSettings.textBg ? "bg-black/50 backdrop-blur-md border border-white/5" : ""
-                      )}>
-                        {mediaSettings.textOverlay}
-                      </span>
-                    </div>
-                  )}
+                <div className="relative w-full aspect-video bg-black">
+                  <video src={image} controls className="w-full h-full object-contain" />
                 </div>
               ) : (
-                <div className="relative">
-                  <img 
-                    src={image} 
-                    alt="Post media" 
-                    className={cn("w-full h-auto max-h-[600px] object-cover hover:opacity-95 transition-all", mediaSettings?.filter || "filter-none")}
-                    loading="lazy"
-                  />
-                  {mediaSettings?.textOverlay && (
-                    <div 
-                      className="absolute pointer-events-none p-4"
-                      style={{ 
-                        left: `${mediaSettings.textX ?? 50}%`, 
-                        top: `${mediaSettings.textY ?? 50}%`, 
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                    >
-                      <span className={cn(
-                        "text-lg font-black text-center px-4 py-2 rounded-xl break-words max-w-full drop-shadow-2xl shadow-black",
-                        mediaSettings.textColor || "text-white",
-                        mediaSettings.textBg ? "bg-black/50 backdrop-blur-md border border-white/5" : ""
-                      )}>
-                        {mediaSettings.textOverlay}
-                      </span>
-                    </div>
-                  )}
+                <div className="relative w-full">
+                  <img src={image} alt="Post" className={cn("w-full h-auto max-h-[600px] object-cover", mediaSettings?.filter || "filter-none")} />
                 </div>
               )}
+
+              {/* Overlays Rendering */}
+              <div className="absolute inset-0 pointer-events-none">
+                {mediaSettings?.textOverlay && (
+                  <div className="absolute" style={{ left: `${mediaSettings.textX ?? 50}%`, top: `${mediaSettings.textY ?? 50}%`, transform: 'translate(-50%, -50%)' }}>
+                    <span className={cn("text-base font-black text-center px-3 py-1.5 rounded-lg drop-shadow-xl", mediaSettings.textColor || "text-white", mediaSettings.textBg ? "bg-black/50 backdrop-blur-md" : "")}>
+                      {mediaSettings.textOverlay}
+                    </span>
+                  </div>
+                )}
+                {mediaSettings?.stickers?.map((sticker: any, idx: number) => (
+                  <div key={idx} className="absolute" style={{ 
+                    left: `${sticker.x}%`, 
+                    top: `${sticker.y}%`, 
+                    transform: `translate(-50%, -50%) scale(${sticker.scale || 1}) rotate(${sticker.rotation || 0}deg)` 
+                  }}>
+                    <div className={cn("px-3 py-1 rounded-md font-black text-[10px] shadow-lg border border-white/10", sticker.color || "bg-white text-black")}>
+                      {sticker.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -270,117 +230,50 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
         <div className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <div 
-                className="flex items-center gap-1.5 group cursor-pointer transition-colors"
-                onClick={handleLike}
-              >
-                <div className={cn(
-                  "p-2 rounded-full transition-colors",
-                  isLiked ? "bg-red-500/10" : "group-hover:bg-red-500/10"
-                )}>
-                  <Heart 
-                    className={cn(
-                      "h-5 w-5 transition-all",
-                      isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-500 group-hover:text-red-500"
-                    )} 
-                  />
+              <div className="flex items-center gap-1.5 group cursor-pointer" onClick={handleLike}>
+                <div className={cn("p-2 rounded-full", isLiked ? "bg-red-500/10" : "group-hover:bg-red-500/10")}>
+                  <Heart className={cn("h-5 w-5", isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-500 group-hover:text-red-500")} />
                 </div>
-                <span className={cn("text-xs font-bold", isLiked ? "text-red-500" : "text-zinc-500")}>
-                  {likesCount}
-                </span>
+                <span className={cn("text-xs font-bold", isLiked ? "text-red-500" : "text-zinc-500")}>{likesCount}</span>
               </div>
               
               <Sheet>
                 <SheetTrigger asChild>
-                  <div className="flex items-center gap-1.5 group cursor-pointer transition-colors">
-                    <div className="p-2 rounded-full group-hover:bg-primary/10">
-                      <MessageCircle className="h-5 w-5 text-zinc-500 group-hover:text-primary" />
-                    </div>
+                  <div className="flex items-center gap-1.5 group cursor-pointer">
+                    <div className="p-2 rounded-full group-hover:bg-primary/10"><MessageCircle className="h-5 w-5 text-zinc-500 group-hover:text-primary" /></div>
                     <span className="text-xs font-bold text-zinc-500 group-hover:text-primary">{comments.length}</span>
                   </div>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="h-[90vh] bg-zinc-950 border-zinc-800 rounded-t-[2.5rem] p-0 flex flex-col focus:outline-none">
-                  <SheetHeader className="p-5 border-b border-zinc-900 glass rounded-t-[2.5rem] sticky top-0 z-10">
-                    <div className="flex items-center justify-between">
-                      <SheetClose asChild>
-                        <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
-                          <X className="h-5 w-5" />
-                        </Button>
-                      </SheetClose>
+                <SheetContent side="bottom" className="h-[80vh] bg-zinc-950 border-zinc-800 rounded-t-[2rem] p-0 flex flex-col outline-none">
+                  <SheetHeader className="p-4 border-b border-zinc-900 sticky top-0 bg-zinc-950/80 backdrop-blur-md z-10">
+                    <div className="flex justify-between items-center">
+                      <SheetClose asChild><Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button></SheetClose>
                       <SheetTitle className="text-white font-bold">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
-                      <div className="w-9" />
+                      <div className="w-10" />
                     </div>
                   </SheetHeader>
-                  
-                  <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar pb-32">
-                    {commentsLoading ? (
-                      <div className="flex justify-center p-10">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      </div>
-                    ) : comments.length > 0 ? (
-                      comments.map((comment: any) => (
-                        <div key={comment.id} className={cn("flex gap-3", isRtl && "flex-row-reverse")}>
-                          <Avatar className="h-8 w-8 shrink-0">
-                            <AvatarImage src={comment.authorAvatar} />
-                            <AvatarFallback>{comment.authorName?.[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className={cn("flex-1 bg-zinc-900/50 p-3 rounded-2xl", isRtl ? "text-right" : "text-left")}>
-                            <p className="text-[11px] font-bold text-zinc-400 mb-1">@{comment.authorHandle}</p>
+                  <ScrollArea className="flex-1 p-4">
+                    {commentsLoading ? <div className="flex justify-center p-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> :
+                      comments.length > 0 ? comments.map((comment: any) => (
+                        <div key={comment.id} className="flex gap-3 mb-6">
+                          <Avatar className="h-8 w-8"><AvatarImage src={comment.authorAvatar} /></Avatar>
+                          <div className="flex-1 bg-zinc-900/50 p-3 rounded-2xl">
+                            <p className="text-[11px] font-bold text-zinc-500 mb-1">@{comment.authorHandle}</p>
                             <p className="text-sm text-zinc-200">{comment.text}</p>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-40 opacity-20">
-                        <MessageSquare className="h-10 w-10 mb-2" />
-                        <p className="text-xs">{isRtl ? "لا توجد تعليقات بعد" : "No comments yet"}</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="p-4 glass border-t border-zinc-900 absolute bottom-0 left-0 right-0 z-20">
-                    <div className={cn("flex gap-2 items-center", isRtl && "flex-row-reverse")}>
-                      <Input 
-                        placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} 
-                        className="bg-zinc-900 border-none rounded-full h-11 px-5"
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                      />
-                      <Button size="icon" className="rounded-full h-11 w-11 shrink-0 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}>
-                        <Send className={cn("h-5 w-5", isRtl && "rotate-180")} />
-                      </Button>
+                      )) : <div className="text-center opacity-20 py-20"><MessageSquare className="h-10 w-10 mx-auto mb-2" /><p>{isRtl ? "لا توجد تعليقات بعد" : "No comments yet"}</p></div>
+                    }
+                  </ScrollArea>
+                  <div className="p-4 border-t border-zinc-900 bg-zinc-950">
+                    <div className="flex gap-2 items-center">
+                      <Input placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} className="bg-zinc-900 border-none rounded-full h-11" value={newComment} onChange={(e) => setNewComment(e.target.value)} />
+                      <Button size="icon" className="rounded-full h-11 w-11 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}><Send className="h-5 w-5" /></Button>
                     </div>
                   </div>
                 </SheetContent>
               </Sheet>
-
-              <div className="flex items-center gap-1.5 group cursor-pointer transition-colors">
-                <div className="p-2 rounded-full group-hover:bg-green-500/10">
-                  <Repeat2 className="h-5 w-5 text-zinc-500 group-hover:text-green-500" />
-                </div>
-                <span className="text-xs font-bold text-zinc-500 group-hover:text-green-500">{reposts}</span>
-              </div>
             </div>
-            
-            <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 text-zinc-500 hover:text-white" onClick={(e) => {
-              e.stopPropagation();
-              if (navigator.share) {
-                navigator.share({ title: 'Unbound Post', url: `${window.location.origin}/post/${id}` });
-              } else {
-                navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
-                toast({ title: isRtl ? "تم النسخ" : "Link Copied" });
-              }
-            }}>
-              <Share2 className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-between text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-1">
-             <div className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer">
-               <Languages className="h-3 w-3" />
-               <span>{isRtl ? "ترجمة" : "Translate"}</span>
-             </div>
-             <span>{time}</span>
           </div>
         </div>
       </CardContent>

@@ -49,7 +49,21 @@
             "textColor": { "type": "string" },
             "textBg": { "type": "boolean" },
             "textX": { "type": "number" },
-            "textY": { "type": "number" }
+            "textY": { "type": "number" },
+            "stickers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "text": { "type": "string" },
+                  "color": { "type": "string" },
+                  "x": { "type": "number" },
+                  "y": { "type": "number" },
+                  "scale": { "type": "number" },
+                  "rotation": { "type": "number" }
+                }
+              }
+            }
           }
         }
       }

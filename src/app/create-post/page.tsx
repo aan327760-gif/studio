@@ -63,6 +63,8 @@ function CreatePostContent() {
   const textBg = searchParams.get("textBg") === "true";
   const textX = parseFloat(searchParams.get("textX") || "50");
   const textY = parseFloat(searchParams.get("textY") || "50");
+  const stickersRaw = searchParams.get("stickers");
+  const stickers = stickersRaw ? JSON.parse(stickersRaw) : [];
 
   const handleSubmit = async () => {
     if (!content.trim() && !imageUrl && !videoUrl && !audioUrl) return;
@@ -108,7 +110,8 @@ function CreatePostContent() {
           textColor: textColor,
           textBg: textBg,
           textX: textX,
-          textY: textY
+          textY: textY,
+          stickers: stickers
         },
         authorId: user?.uid || "anonymous",
         author: {
@@ -145,137 +148,50 @@ function CreatePostContent() {
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
       <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-20">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => router.back()}
-          className="rounded-full hover:bg-white/10 text-white"
-        >
-          <X className="h-6 w-6" />
-        </Button>
-        <h1 className="text-sm font-bold opacity-70">
-          New post
-        </h1>
-        <Button 
-          onClick={handleSubmit} 
-          disabled={isSubmitting || content.length > MAX_CHARS}
-          className="rounded-full px-6 font-bold bg-white text-black hover:bg-zinc-200 h-8 transition-all"
-        >
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><X className="h-6 w-6" /></Button>
+        <h1 className="text-sm font-bold opacity-70">New post</h1>
+        <Button onClick={handleSubmit} disabled={isSubmitting || content.length > MAX_CHARS} className="rounded-full px-6 font-bold bg-white text-black hover:bg-zinc-200">
           {isSubmitting ? "Uploading..." : "Post"}
         </Button>
       </header>
 
-      <main className="flex-1 overflow-y-auto custom-scrollbar">
+      <main className="flex-1 overflow-y-auto pb-32">
         <div className="p-4 flex gap-3">
-          <Avatar className="h-10 w-10 shrink-0">
-            <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/100/100"} />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <Textarea
-              placeholder="Say something..."
-              className="w-full bg-transparent border-none text-zinc-300 resize-none focus-visible:ring-0 p-0 placeholder:text-zinc-600 min-h-[120px] text-lg"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-            />
-          </div>
+          <Avatar><AvatarImage src={user?.photoURL || ""} /><AvatarFallback>U</AvatarFallback></Avatar>
+          <Textarea 
+            placeholder="Say something..." 
+            className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg min-h-[120px]" 
+            value={content} 
+            onChange={(e) => setContent(e.target.value)} 
+          />
         </div>
 
         {(imageUrl || videoUrl || audioUrl) && (
           <div className="px-4 pb-6">
-            <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-[3/4] w-48 shadow-xl group">
+            <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video w-full">
               {imageUrl && (
                 <div className="relative w-full h-full">
                   <img src={imageUrl} alt="Preview" className={cn("w-full h-full object-cover", filterClass)} />
-                  {textOverlay && (
-                    <div 
-                      className="absolute pointer-events-none"
-                      style={{ left: `${textX}%`, top: `${textY}%`, transform: 'translate(-50%, -50%)' }}
-                    >
-                      <span className={cn(
-                        "text-[8px] font-black text-center px-1.5 py-0.5 rounded-md break-words max-w-full drop-shadow-md",
-                        textColor,
-                        textBg ? "bg-black/50 backdrop-blur-sm" : ""
-                      )}>
-                        {textOverlay}
-                      </span>
-                    </div>
-                  )}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {textOverlay && (
+                      <div className="absolute" style={{ left: `${textX}%`, top: `${textY}%`, transform: 'translate(-50%, -50%)' }}>
+                        <span className={cn("text-xs font-black px-2 py-1 rounded-md", textColor, textBg ? "bg-black/50" : "")}>{textOverlay}</span>
+                      </div>
+                    )}
+                    {stickers.map((s: any, i: number) => (
+                      <div key={i} className="absolute" style={{ left: `${s.x}%`, top: `${s.y}%`, transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` }}>
+                        <div className={cn("px-2 py-0.5 rounded-md font-black text-[8px]", s.color)}>{s.text}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              {videoUrl && (
-                <div className="relative w-full h-full">
-                  <video src={videoUrl} className="w-full h-full object-cover" />
-                </div>
-              )}
-              {audioUrl && (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-4 bg-zinc-900">
-                  <Mic className="h-12 w-12 text-primary animate-pulse" />
-                  <span className="text-xs font-bold text-zinc-500">Voice clip ready</span>
-                </div>
-              )}
+              {videoUrl && <video src={videoUrl} className="w-full h-full object-cover" />}
+              {audioUrl && <div className="w-full h-full flex flex-col items-center justify-center gap-2"><Mic className="h-10 w-10 text-primary" /><span className="text-xs">Voice clip ready</span></div>}
             </div>
           </div>
         )}
-
-        <div className="flex flex-col border-t border-zinc-900 pt-2 pb-24">
-          <div className="flex items-center justify-between p-4 hover:bg-zinc-900/50 cursor-pointer" onClick={() => {
-            const next = TOPICS[(TOPICS.indexOf(selectedTopic) + 1) % TOPICS.length];
-            setSelectedTopic(next);
-          }}>
-            <div className="flex items-center gap-4">
-              <LayoutGrid className="h-5 w-5 text-zinc-400" />
-              <span className="text-sm font-medium">Topic</span>
-            </div>
-            <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 font-normal hover:bg-zinc-800 uppercase tracking-tighter">
-              {selectedTopic}
-            </Badge>
-          </div>
-
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-4">
-              <Download className="h-5 w-5 text-zinc-400" />
-              <span className="text-sm font-medium">Allow download</span>
-            </div>
-            <Switch 
-              checked={settings.allowDownload} 
-              onCheckedChange={(val) => setSettings(s => ({...s, allowDownload: val}))}
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-4">
-              <Bot className="h-5 w-5 text-zinc-400" />
-              <span className="text-sm font-medium">Mark as AI generated</span>
-            </div>
-            <Switch 
-              checked={settings.isAiGenerated} 
-              onCheckedChange={(val) => setSettings(s => ({...s, isAiGenerated: val}))}
-            />
-          </div>
-        </div>
       </main>
-
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-black border-t border-zinc-900 flex items-center justify-between">
-        <div className="flex gap-4">
-          <Plus className="h-6 w-6 text-primary cursor-pointer" />
-          <LayoutGrid className="h-6 w-6 text-zinc-500 cursor-pointer" />
-        </div>
-        
-        <div className="relative flex items-center">
-          <svg className="h-10 w-10 transform -rotate-90">
-            <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-zinc-800" />
-            <circle
-              cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="2" fill="transparent"
-              strokeDasharray={100} strokeDashoffset={100 - progress}
-              className={cn("transition-all duration-300", content.length > MAX_CHARS ? "text-red-500" : "text-primary")}
-            />
-          </svg>
-          <span className={cn("absolute text-[10px] w-full text-center font-bold", content.length > MAX_CHARS ? "text-red-500" : "text-zinc-500")}>
-            {content.length > 0 && MAX_CHARS - content.length}
-          </span>
-        </div>
-      </div>
     </div>
   );
 }
