@@ -46,7 +46,7 @@ interface PostCardProps {
 export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, reposts, time, mediaSettings }: PostCardProps) {
   const { isRtl } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
-  const { user } = userUser();
+  const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
   
@@ -203,10 +203,15 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 </div>
               )}
 
+              {/* طبقة التعديلات (نصوص وملصقات) */}
               <div className="absolute inset-0 pointer-events-none">
                 {mediaSettings?.textOverlay && (
                   <div className="absolute" style={{ left: `${mediaSettings.textX ?? 50}%`, top: `${mediaSettings.textY ?? 50}%`, transform: 'translate(-50%, -50%)' }}>
-                    <span className={cn("text-base font-black text-center px-3 py-1.5 rounded-lg drop-shadow-xl", mediaSettings.textColor || "text-white", mediaSettings.textBg ? "bg-black/50 backdrop-blur-md" : "")}>
+                    <span className={cn(
+                      "text-base font-black text-center px-3 py-1.5 rounded-lg drop-shadow-xl", 
+                      mediaSettings.textColor || "text-white", 
+                      mediaSettings.textBg ? "bg-black/50 backdrop-blur-md" : ""
+                    )}>
                       {mediaSettings.textOverlay}
                     </span>
                   </div>
@@ -217,7 +222,10 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     top: `${sticker.y}%`, 
                     transform: `translate(-50%, -50%) scale(${sticker.scale || 1}) rotate(${sticker.rotation || 0}deg)` 
                   }}>
-                    <div className={cn("px-3 py-1 rounded-md font-black text-[10px] shadow-lg border border-white/10", sticker.color || "bg-white text-black")}>
+                    <div className={cn(
+                      "px-3 py-1 rounded-md font-black text-[10px] shadow-lg border border-white/10", 
+                      sticker.color || "bg-white text-black"
+                    )}>
                       {sticker.text}
                     </div>
                   </div>
@@ -253,8 +261,10 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     </div>
                   </SheetHeader>
                   <ScrollArea className="flex-1 p-4">
-                    {commentsLoading ? <div className="flex justify-center p-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> :
-                      comments.length > 0 ? comments.map((comment: any) => (
+                    {commentsLoading ? (
+                      <div className="flex justify-center p-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                    ) : comments.length > 0 ? (
+                      comments.map((comment: any) => (
                         <div key={comment.id} className="flex gap-3 mb-6">
                           <Avatar className="h-8 w-8"><AvatarImage src={comment.authorAvatar} /></Avatar>
                           <div className="flex-1 bg-zinc-900/50 p-3 rounded-2xl">
@@ -262,13 +272,25 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                             <p className="text-sm text-zinc-200">{comment.text}</p>
                           </div>
                         </div>
-                      )) : <div className="text-center opacity-20 py-20"><MessageSquare className="h-10 w-10 mx-auto mb-2" /><p>{isRtl ? "لا توجد تعليقات بعد" : "No comments yet"}</p></div>
-                    }
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-40 opacity-20">
+                        <MessageSquare className="h-10 w-10 mb-2" />
+                        <p className="text-xs">{isRtl ? "لا توجد تعليقات بعد" : "No comments yet"}</p>
+                      </div>
+                    )}
                   </ScrollArea>
                   <div className="p-4 border-t border-zinc-900 bg-zinc-950">
                     <div className="flex gap-2 items-center">
-                      <Input placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} className="bg-zinc-900 border-none rounded-full h-11" value={newComment} onChange={(e) => setNewComment(e.target.value)} />
-                      <Button size="icon" className="rounded-full h-11 w-11 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}><Send className="h-5 w-5" /></Button>
+                      <Input 
+                        placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} 
+                        className="bg-zinc-900 border-none rounded-full h-11" 
+                        value={newComment} 
+                        onChange={(e) => setNewComment(e.target.value)} 
+                      />
+                      <Button size="icon" className="rounded-full h-11 w-11 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}>
+                        <Send className="h-5 w-5" />
+                      </Button>
                     </div>
                   </div>
                 </SheetContent>
