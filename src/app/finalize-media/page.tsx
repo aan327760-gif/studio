@@ -123,6 +123,9 @@ function FinalizeMediaContent() {
   const handleGlobalDrag = (e: any) => {
     if ((!isDraggingText && !isDraggingSticker) || !containerRef.current) return;
 
+    // Prevent scrolling on touch
+    if (e.cancelable) e.preventDefault();
+
     const rect = containerRef.current.getBoundingClientRect();
     let clientX, clientY;
 
@@ -137,7 +140,6 @@ function FinalizeMediaContent() {
     let x = ((clientX - rect.left) / rect.width) * 100;
     let y = ((clientY - rect.top) / rect.height) * 100;
     
-    // قيود لضمان عدم خروج العنصر عن الإطار
     x = Math.max(5, Math.min(95, x));
     y = Math.max(5, Math.min(95, y));
 
@@ -154,9 +156,9 @@ function FinalizeMediaContent() {
       ref={containerRef}
       onMouseMove={handleGlobalDrag}
       onMouseUp={() => { setIsDraggingText(false); setIsDraggingSticker(false); }}
-      onTouchMove={(e) => { handleGlobalDrag(e); }}
+      onTouchMove={handleGlobalDrag}
       onTouchEnd={() => { setIsDraggingText(false); setIsDraggingSticker(false); }}
-      onClick={(e) => { 
+      onClick={() => { 
         if (!isDraggingText && !isDraggingSticker) setActiveStickerId(null);
       }}
     >
@@ -172,7 +174,10 @@ function FinalizeMediaContent() {
 
       {finalText && (
         <div 
-          className={cn("absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing transition-transform touch-none", isDraggingText && "scale-110")}
+          className={cn(
+            "absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing transition-transform touch-none", 
+            isDraggingText && "scale-110 ring-2 ring-primary rounded-xl"
+          )}
           style={{ 
             left: `${textPos.x}%`, 
             top: `${textPos.y}%`, 
@@ -239,15 +244,6 @@ function FinalizeMediaContent() {
             </div>
           </div>
         ))}
-        <div className="flex items-center gap-4 opacity-50">
-          <div className="h-11 w-11 flex items-center justify-center rounded-xl bg-black/40 border border-white/10">
-            <Music className="h-5 w-5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-bold">موسيقى</span>
-            <span className="text-[8px] text-primary font-bold uppercase tracking-tighter">قيد التطوير</span>
-          </div>
-        </div>
       </div>
 
       {activeStickerId && (
