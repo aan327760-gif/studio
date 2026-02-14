@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // قواعد المستخدمين: الجميع يقرأ، والصاحب فقط يكتب
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // قواعد المنشورات: الجميع يقرأ، والمسجل ينشر، والصاحب يحذف
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+      
+      // قواعد التعليقات داخل المنشورات
+      match /comments/{commentId} {
+        allow read: if true;
+        allow write: if request.auth != null;
+      }
+    }
+    
+    // قواعد المتابعة
+    match /follows/{followId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // قواعد التنبيهات: صاحب التنبيه فقط يقرأ ويحذف
+    match /notifications/{notificationId} {
+      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null;
+    }
+    
+    // قواعد المجموعات (اللمة)
+    match /groups/{groupId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      
+      match /messages/{messageId} {
+        allow read: if true;
+        allow write: if request.auth != null;
+      }
+    }
+  }
+}

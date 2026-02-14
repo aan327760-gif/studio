@@ -26,7 +26,7 @@ import { PostCard } from "@/components/feed/PostCard";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { toast } from "@/hooks/use-toast";
-import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 
 export default function UserProfilePage() {
@@ -44,20 +44,20 @@ export default function UserProfilePage() {
   const { data: profile, loading: profileLoading } = useDoc<any>(profileRef);
 
   // Follow state
-  const followId = `${currentUser?.uid}_${uid}`;
-  const followRef = useMemoFirebase(() => (currentUser && uid && !isOwnProfile) ? doc(db, "follows", followId) : null, [db, currentUser, uid, isOwnProfile]);
+  const followId = currentUser && uid ? `${currentUser.uid}_${uid}` : null;
+  const followRef = useMemoFirebase(() => (followId && !isOwnProfile) ? doc(db, "follows", followId) : null, [db, followId, isOwnProfile]);
   const { data: followDoc } = useDoc<any>(followRef);
   const isFollowing = !!followDoc;
 
   const handleFollow = async () => {
-    if (!currentUser || !uid || isOwnProfile) return;
+    if (!currentUser || !uid || isOwnProfile || !followRef) return;
     
     if (isFollowing) {
-      deleteDoc(followRef!);
+      deleteDoc(followRef);
       updateDoc(doc(db, "users", currentUser.uid), { followingCount: increment(-1) });
       updateDoc(doc(db, "users", uid as string), { followersCount: increment(-1) });
     } else {
-      setDoc(followRef!, {
+      setDoc(followRef, {
         followerId: currentUser.uid,
         followingId: uid,
         createdAt: serverTimestamp()
@@ -108,13 +108,21 @@ export default function UserProfilePage() {
     );
   }
 
+  // If profile is missing but it's the current user, show a "Welcome" or placeholder state
   if (!profile && !profileLoading) {
     return (
       <div className="h-screen bg-black flex flex-col items-center justify-center text-white p-4">
         <p className="text-zinc-500 mb-4">{isRtl ? "المستخدم غير موجود" : "User not found"}</p>
-        <Button onClick={() => router.push("/")} variant="outline" className="rounded-full">
-          {isRtl ? "العودة للرئيسية" : "Go Home"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => router.push("/")} variant="outline" className="rounded-full">
+            {isRtl ? "العودة للرئيسية" : "Go Home"}
+          </Button>
+          {isOwnProfile && (
+            <Button onClick={handleLogout} variant="destructive" className="rounded-full">
+              {isRtl ? "تسجيل الخروج" : "Logout"}
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -236,6 +244,7 @@ export default function UserProfilePage() {
                   }}
                   content={post.content}
                   image={post.mediaUrl}
+                  mediaType={post.mediaType}
                   likes={post.likesCount || 0}
                   comments={0}
                   reposts={0}
