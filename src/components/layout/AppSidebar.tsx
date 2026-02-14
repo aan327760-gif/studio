@@ -1,7 +1,6 @@
-
 "use client";
 
-import { Home, Search, Plus, Bell, User, Video, Mic, Image as ImageIcon, PenLine, X, StopCircle, LogOut, MessageSquare } from "lucide-react";
+import { Home, Search, Plus, Bell, User, Video, Mic, Image as ImageIcon, PenLine, X, StopCircle, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -17,12 +16,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
-import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { signOut } from "firebase/auth";
-import { collection, addDoc, serverTimestamp, query, where } from "firebase/firestore";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 
 export function AppSidebar() {
-  const { isRtl, t } = useLanguage();
+  const { isRtl } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useUser();
@@ -37,12 +35,11 @@ export function AppSidebar() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // جلب عدد التنبيهات غير المقروءة
   const unreadNotifsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(db, "notifications"), where("userId", "==", user.uid), where("read", "==", false));
   }, [db, user]);
-  const { data: unreadNotifs } = useCollection(unreadNotifsQuery);
+  const { data: unreadNotifs } = useCollection<any>(unreadNotifsQuery);
 
   const navItems = [
     { icon: Home, href: "/", label: "Home" },
@@ -175,9 +172,9 @@ export function AppSidebar() {
   ];
 
   return (
-    <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-black border-t border-zinc-800 z-50 px-4 py-2 flex justify-around items-center h-16 shadow-2xl">
-      <input type="file" accept="image/*,image/heic,image/heif,image/webp,image/avif,image/png,image/jpeg" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
-      <input type="file" accept="video/*,video/quicktime,video/mp4,video/webm,video/x-matroska" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
+    <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto glass border-t border-zinc-800 z-50 px-2 h-16 shadow-2xl flex justify-around items-center">
+      <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
+      <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
 
       {navItems.map((item) => {
         const isActive = pathname === item.href;
@@ -186,35 +183,38 @@ export function AppSidebar() {
           return (
             <Sheet key="create-sheet" open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-white hover:bg-white/10">
-                  <Plus className="h-8 w-8" />
-                </Button>
+                <div className="p-1">
+                  <Button className="h-12 w-12 rounded-2xl bg-white text-black hover:bg-zinc-200 shadow-lg shadow-white/5 active:scale-95 transition-transform">
+                    <Plus className="h-7 w-7 stroke-[3px]" />
+                  </Button>
+                </div>
               </SheetTrigger>
-              <SheetContent side="bottom" className="bg-zinc-950 border-zinc-800 rounded-t-3xl pb-10 outline-none">
-                <SheetHeader className="mb-6">
-                  <SheetTitle className="text-white text-center">
-                    {isRecording ? (isRtl ? "جاري التسجيل..." : "Recording...") : (isRtl ? "إنشاء جديد" : "Create New")}
+              <SheetContent side="bottom" className="bg-zinc-950 border-zinc-900 rounded-t-[3rem] pb-12 outline-none">
+                <SheetHeader className="mb-8 pt-2">
+                  <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6" />
+                  <SheetTitle className="text-white text-center font-bold text-xl">
+                    {isRecording ? (isRtl ? "جاري التسجيل..." : "Recording...") : (isRtl ? "إضافة محتوى" : "Create New")}
                   </SheetTitle>
                 </SheetHeader>
                 
                 {isRecording ? (
-                  <div className="flex flex-col items-center gap-4 py-6">
-                    <div className="text-4xl font-mono text-red-500 animate-pulse">
+                  <div className="flex flex-col items-center gap-6 py-4">
+                    <div className="text-5xl font-mono text-red-500 animate-pulse">
                       {formatTime(recordingTime)}
                     </div>
-                    <Button variant="destructive" size="lg" className="rounded-full gap-2" onClick={handleStopRecording}>
+                    <Button variant="destructive" size="lg" className="rounded-full h-14 px-8 font-bold gap-3" onClick={handleStopRecording}>
                       <StopCircle className="h-6 w-6" />
-                      {isRtl ? "إيقاف التسجيل" : "Stop Recording"}
+                      {isRtl ? "إيقاف وحفظ" : "Stop Recording"}
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex justify-around items-center gap-2">
+                  <div className="grid grid-cols-5 gap-2 px-2">
                     {createOptions.map((opt, index) => (
-                      <div key={index} className="flex flex-col items-center gap-2 group cursor-pointer" onClick={opt.onClick}>
-                        <div className={cn("h-14 w-14 rounded-full flex items-center justify-center text-white transition-transform group-active:scale-95 shadow-lg", opt.color)}>
+                      <div key={index} className="flex flex-col items-center gap-3 group cursor-pointer" onClick={opt.onClick}>
+                        <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-white transition-all group-active:scale-90 shadow-xl", opt.color)}>
                           <opt.icon className="h-7 w-7" />
                         </div>
-                        <span className="text-[10px] font-bold text-zinc-400 text-center leading-tight max-w-[60px]">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter text-center">
                           {opt.label}
                         </span>
                       </div>
@@ -227,22 +227,23 @@ export function AppSidebar() {
         }
 
         return (
-          <Link key={item.href} href={item.href}>
-            <Button variant="ghost" size="icon" className={cn("h-12 w-12 rounded-full transition-all relative", isActive ? "text-white" : "text-muted-foreground")}>
+          <Link key={item.href} href={item.href} className="flex-1">
+            <div className="flex flex-col items-center justify-center relative h-full active:scale-90 transition-transform">
               {item.isAvatar ? (
-                <Avatar className={cn("h-7 w-7 border", isActive ? "border-white" : "border-transparent")}>
+                <Avatar className={cn("h-7 w-7 transition-all", isActive ? "ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-60")}>
                   <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/50/50"} />
                   <AvatarFallback>{user?.displayName?.[0] || "U"}</AvatarFallback>
                 </Avatar>
               ) : (
-                <>
-                  <item.icon className={cn("h-7 w-7", isActive && "stroke-[2.5px]")} />
+                <div className="relative">
+                  <item.icon className={cn("h-7 w-7 transition-colors", isActive ? "text-white stroke-[2.5px]" : "text-zinc-600")} />
                   {item.hasBadge && (
-                    <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-black" />
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-black" />
                   )}
-                </>
+                </div>
               )}
-            </Button>
+              <div className={cn("h-1 w-1 rounded-full mt-1.5 transition-all", isActive ? "bg-white opacity-100" : "bg-transparent opacity-0")} />
+            </div>
           </Link>
         );
       })}

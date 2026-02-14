@@ -1,7 +1,6 @@
-
 "use client";
 
-import { Heart, MessageCircle, Repeat2, Share2, MoreHorizontal, Languages, Send, Loader2, X, Info, ThumbsUp, ThumbsDown, MessageSquare, Trash2, Mic } from "lucide-react";
+import { Heart, MessageCircle, Repeat2, Share2, MoreHorizontal, Languages, Send, Loader2, X, Info, Trash2, Mic, PlayCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -33,7 +32,7 @@ interface PostCardProps {
   time: string;
 }
 
-export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, comments: initialCommentsCount, reposts, time }: PostCardProps) {
+export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, reposts, time }: PostCardProps) {
   const { isRtl } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const { user } = useUser();
@@ -149,43 +148,43 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   };
 
   return (
-    <Card className="bg-black text-white border-none rounded-none mb-2 border-b border-zinc-900 cursor-pointer" onClick={navigateToDetail}>
-      <CardHeader className="p-4 flex flex-row items-center space-y-0 gap-3" onClick={(e) => e.stopPropagation()}>
+    <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/50 cursor-pointer active:bg-zinc-950/50 transition-colors" onClick={navigateToDetail}>
+      <CardHeader className="p-4 pb-2 flex flex-row items-center space-y-0 gap-3" onClick={(e) => e.stopPropagation()}>
         <Link href={`/profile/${postAuthorId || '#'}`}>
-          <Avatar className="h-10 w-10 border-none cursor-pointer">
+          <Avatar className="h-10 w-10 ring-1 ring-zinc-800 ring-offset-1 ring-offset-black">
             <AvatarImage src={author.avatar} />
             <AvatarFallback>{author.name?.[0] || "U"}</AvatarFallback>
           </Avatar>
         </Link>
         <div className="flex-1 overflow-hidden">
           <Link href={`/profile/${postAuthorId || '#'}`}>
-            <div className="flex items-center gap-1 cursor-pointer">
+            <div className="flex flex-col">
               <h3 className="font-bold text-sm truncate hover:underline">{author.name}</h3>
-              <span className="text-xs text-muted-foreground">@{author.handle}</span>
+              <span className="text-[10px] text-zinc-500">@{author.handle}</span>
             </div>
           </Link>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {user && postAuthorId === user.uid && (
-            <Button variant="ghost" size="icon" onClick={handleDelete} className="text-zinc-600 hover:text-red-500 h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={handleDelete} className="text-zinc-600 hover:text-red-500 h-8 w-8 rounded-full">
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
-            <MoreHorizontal className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white h-8 w-8 rounded-full">
+            <MoreHorizontal className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
 
       <CardContent className="p-0">
-        <div className="px-4 pb-2 text-sm leading-relaxed">
-          <p className={cn("whitespace-pre-wrap", !isExpanded && content.length > 150 ? "line-clamp-3" : "")}>
+        <div className="px-4 pb-3 text-[15px] leading-snug">
+          <p className={cn("whitespace-pre-wrap", !isExpanded && content.length > 180 ? "line-clamp-3" : "")}>
             {content}
           </p>
-          {!isExpanded && content.length > 150 && (
+          {!isExpanded && content.length > 180 && (
             <button 
               onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }}
-              className="text-primary font-semibold mt-1"
+              className="text-primary text-xs font-bold mt-1"
             >
               {isRtl ? "عرض المزيد" : "Show more"}
             </button>
@@ -193,165 +192,150 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
         </div>
 
         {image && (
-          <div className="px-4">
-            {mediaType === "audio" ? (
-              <div className="bg-zinc-900 p-4 rounded-2xl border border-zinc-800 flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
-                <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
-                  <Mic className="h-5 w-5 text-white" />
+          <div className="px-4 mb-2">
+            <div className="rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-900/40" onClick={(e) => e.stopPropagation()}>
+              {mediaType === "audio" ? (
+                <div className="p-4 flex items-center gap-4 bg-gradient-to-br from-zinc-900 to-black">
+                  <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-primary shadow-inner">
+                    <Mic className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1">
+                     <audio controls src={image} className="w-full h-10 brightness-90 filter invert" />
+                  </div>
                 </div>
-                <div className="flex-1">
-                   <audio controls src={image} className="w-full h-8 brightness-90 contrast-125" />
+              ) : mediaType === "video" ? (
+                <div className="relative group aspect-video bg-black flex items-center justify-center">
+                  <video src={image} controls className="w-full h-full max-h-[500px]" />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-active:scale-95 transition-transform">
+                     {!image && <PlayCircle className="h-12 w-12 text-white/50" />}
+                  </div>
                 </div>
-              </div>
-            ) : mediaType === "video" ? (
-              <div className="relative w-full bg-zinc-900 overflow-hidden rounded-2xl border border-zinc-800" onClick={(e) => e.stopPropagation()}>
-                <video src={image} controls className="w-full h-auto max-h-[500px]" />
-              </div>
-            ) : (
-              <div className="relative w-full bg-zinc-900 overflow-hidden">
+              ) : (
                 <img 
                   src={image} 
-                  alt="Post content" 
-                  className="w-full h-auto max-h-[500px] object-cover rounded-2xl border border-zinc-800"
+                  alt="Post media" 
+                  className="w-full h-auto max-h-[600px] object-cover hover:opacity-95 transition-opacity"
                   loading="lazy"
                 />
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
 
-        <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+        <div className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div 
-                className="flex items-center gap-1.5 group cursor-pointer"
+                className="flex items-center gap-1.5 group cursor-pointer transition-colors"
                 onClick={handleLike}
               >
-                <Heart 
-                  className={cn(
-                    "h-5 w-5 transition-all",
-                    isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-500 group-hover:text-red-500"
-                  )} 
-                />
-                <span className={cn("text-xs font-medium", isLiked ? "text-red-500" : "text-zinc-500")}>
+                <div className={cn(
+                  "p-2 rounded-full transition-colors",
+                  isLiked ? "bg-red-500/10" : "group-hover:bg-red-500/10"
+                )}>
+                  <Heart 
+                    className={cn(
+                      "h-5 w-5 transition-all",
+                      isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-500 group-hover:text-red-500"
+                    )} 
+                  />
+                </div>
+                <span className={cn("text-xs font-bold", isLiked ? "text-red-500" : "text-zinc-500")}>
                   {likesCount}
                 </span>
               </div>
               
               <Sheet>
                 <SheetTrigger asChild>
-                  <div className="flex items-center gap-1.5 group cursor-pointer text-zinc-500 hover:text-primary transition-colors">
-                    <MessageCircle className="h-5 w-5" />
-                    <span className="text-xs font-medium">{comments.length}</span>
+                  <div className="flex items-center gap-1.5 group cursor-pointer transition-colors">
+                    <div className="p-2 rounded-full group-hover:bg-primary/10">
+                      <MessageCircle className="h-5 w-5 text-zinc-500 group-hover:text-primary" />
+                    </div>
+                    <span className="text-xs font-bold text-zinc-500 group-hover:text-primary">{comments.length}</span>
                   </div>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="h-[90vh] bg-zinc-950 border-zinc-800 rounded-t-[32px] p-0 flex flex-col focus:outline-none">
-                  <SheetHeader className="p-4 flex flex-row items-center justify-between border-b border-zinc-900 sticky top-0 bg-zinc-950/95 backdrop-blur-md z-10 rounded-t-[32px]">
-                    <div className="flex items-center gap-4">
+                <SheetContent side="bottom" className="h-[90vh] bg-zinc-950 border-zinc-800 rounded-t-[2.5rem] p-0 flex flex-col focus:outline-none">
+                  <SheetHeader className="p-5 border-b border-zinc-900 glass rounded-t-[2.5rem] sticky top-0 z-10">
+                    <div className="flex items-center justify-between">
                       <SheetClose asChild>
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-8 w-8">
+                        <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
                           <X className="h-5 w-5" />
                         </Button>
                       </SheetClose>
-                      <Info className="h-5 w-5 text-white" />
+                      <SheetTitle className="text-white font-bold">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
+                      <div className="w-9" />
                     </div>
-                    <SheetTitle className="text-white font-bold text-lg">
-                      {isRtl ? "التعليقات" : "Comments"}
-                    </SheetTitle>
-                    <div className="w-10" /> 
                   </SheetHeader>
                   
                   <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar pb-32">
                     {commentsLoading ? (
                       <div className="flex justify-center p-10">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
                     ) : comments.length > 0 ? (
                       comments.map((comment: any) => (
-                        <div key={comment.id} className="relative group">
-                          <div className={cn("flex gap-3", isRtl ? "flex-row-reverse text-right" : "flex-row text-left")}>
-                            <Link href={`/profile/${comment.authorId || '#'}`}>
-                              <Avatar className="h-9 w-9 shrink-0 border border-zinc-800 shadow-sm cursor-pointer">
-                                <AvatarImage src={comment.authorAvatar} />
-                                <AvatarFallback>{comment.authorName?.[0]}</AvatarFallback>
-                              </Avatar>
-                            </Link>
-                            <div className="flex-1 space-y-1">
-                              <div className={cn("flex items-center gap-2 text-[11px] text-zinc-500", isRtl ? "justify-start flex-row-reverse" : "justify-start flex-row")}>
-                                <span className="font-bold text-zinc-300">@{comment.authorHandle || "user"}</span>
-                                <span className="text-[9px] opacity-60">• {isRtl ? "الآن" : "Now"}</span>
-                              </div>
-                              <p className="text-sm text-zinc-200 leading-relaxed">
-                                {comment.text}
-                              </p>
-                            </div>
+                        <div key={comment.id} className={cn("flex gap-3", isRtl && "flex-row-reverse")}>
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarImage src={comment.authorAvatar} />
+                            <AvatarFallback>{comment.authorName?.[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className={cn("flex-1 bg-zinc-900/50 p-3 rounded-2xl", isRtl ? "text-right" : "text-left")}>
+                            <p className="text-[11px] font-bold text-zinc-400 mb-1">@{comment.authorHandle}</p>
+                            <p className="text-sm text-zinc-200">{comment.text}</p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full opacity-40">
-                        <MessageSquare className="h-12 w-12 mb-2" />
-                        <p className="text-sm">
-                          {isRtl ? "لا توجد تعليقات بعد" : "No comments yet"}
-                        </p>
+                      <div className="flex flex-col items-center justify-center h-40 opacity-20">
+                        <MessageSquare className="h-10 w-10 mb-2" />
+                        <p className="text-xs">{isRtl ? "لا توجد تعليقات بعد" : "No comments yet"}</p>
                       </div>
                     )}
                   </div>
                   
-                  <div className="p-4 bg-zinc-950 border-t border-zinc-900 absolute bottom-0 left-0 right-0 z-20 shadow-[0_-8px_20px_rgba(0,0,0,0.5)]">
-                    <div className={cn("flex gap-3 items-center", isRtl ? "flex-row-reverse" : "flex-row")}>
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.photoURL || ""} />
-                        <AvatarFallback>U</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 relative">
-                        <Input 
-                          placeholder={isRtl ? "إضافة تعليق..." : "Add a comment..."} 
-                          className="bg-zinc-900 border-none rounded-xl h-11 text-sm focus-visible:ring-1 focus-visible:ring-primary pl-4 pr-12"
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-                        />
-                        <Button 
-                          size="icon" 
-                          variant="ghost"
-                          className="absolute right-1 top-1 text-primary hover:bg-transparent" 
-                          onClick={handleAddComment}
-                          disabled={!newComment.trim()}
-                        >
-                          <Send className="h-5 w-5" />
-                        </Button>
-                      </div>
+                  <div className="p-4 glass border-t border-zinc-900 absolute bottom-0 left-0 right-0 z-20">
+                    <div className={cn("flex gap-2 items-center", isRtl && "flex-row-reverse")}>
+                      <Input 
+                        placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} 
+                        className="bg-zinc-900 border-none rounded-full h-11 px-5"
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                      />
+                      <Button size="icon" className="rounded-full h-11 w-11 shrink-0 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}>
+                        <Send className={cn("h-5 w-5", isRtl && "rotate-180")} />
+                      </Button>
                     </div>
                   </div>
                 </SheetContent>
               </Sheet>
 
-              <div className="flex items-center gap-1.5 group cursor-pointer text-zinc-500 hover:text-green-500 transition-colors">
-                <Repeat2 className="h-5 w-5" />
-                <span className="text-xs font-medium">{reposts}</span>
+              <div className="flex items-center gap-1.5 group cursor-pointer transition-colors">
+                <div className="p-2 rounded-full group-hover:bg-green-500/10">
+                  <Repeat2 className="h-5 w-5 text-zinc-500 group-hover:text-green-500" />
+                </div>
+                <span className="text-xs font-bold text-zinc-500 group-hover:text-green-500">{reposts}</span>
               </div>
             </div>
-            <Share2 className="h-5 w-5 text-zinc-500 cursor-pointer hover:text-white" onClick={(e) => {
+            
+            <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 text-zinc-500 hover:text-white" onClick={(e) => {
               e.stopPropagation();
               if (navigator.share) {
-                navigator.share({
-                  title: 'Check out this post on Unbound',
-                  url: `${window.location.origin}/post/${id}`
-                });
+                navigator.share({ title: 'Unbound Post', url: `${window.location.origin}/post/${id}` });
               } else {
                 navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
-                toast({ title: isRtl ? "تم نسخ الرابط" : "Link Copied" });
+                toast({ title: isRtl ? "تم النسخ" : "Link Copied" });
               }
-            }} />
+            }}>
+              <Share2 className="h-5 w-5" />
+            </Button>
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-zinc-600 uppercase tracking-wider">
-            <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
-              <Languages className="h-3 w-3" />
-              <span>{isRtl ? "ترجمة" : "Translate"}</span>
-            </div>
-            <span>{time}</span>
+          <div className="flex items-center justify-between text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-1">
+             <div className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer">
+               <Languages className="h-3 w-3" />
+               <span>{isRtl ? "ترجمة" : "Translate"}</span>
+             </div>
+             <span>{time}</span>
           </div>
         </div>
       </CardContent>

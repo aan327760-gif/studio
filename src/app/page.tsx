@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppSidebar } from "@/components/layout/AppSidebar";
@@ -16,13 +15,11 @@ export default function Home() {
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
-  // "Discover" tab - shows all posts
   const discoverPostsQuery = useMemoFirebase(() => {
     return query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
   }, [db]);
   const { data: discoverPosts, loading: discoverLoading } = useCollection<any>(discoverPostsQuery);
 
-  // "Following" tab - fetch posts from followed users
   const followsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(collection(db, "follows"), where("followerId", "==", currentUser.uid));
@@ -44,42 +41,43 @@ export default function Home() {
   const { data: followingPosts, loading: followingLoading } = useCollection<any>(followingPostsQuery);
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800">
-      <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-zinc-900">
-        <div className="w-8" />
-        <div className="flex flex-col items-center">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center mb-1">
-             <span className="text-white font-bold text-xl italic">U</span>
-          </div>
+    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
+      <header className="sticky top-0 z-50 glass px-4 py-3 flex items-center justify-between border-b border-zinc-900">
+        <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center border border-white/5">
+             <span className="text-white font-black text-xl italic leading-none">U</span>
         </div>
+        
+        <h1 className="text-sm font-black uppercase tracking-[0.3em] opacity-40">Unbound</h1>
+
         <Link href="/lamma">
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
+          <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full h-10 w-10">
             <MessageSquare className="h-6 w-6" />
           </Button>
         </Link>
       </header>
 
       <Tabs defaultValue="discover" className="w-full">
-        <TabsList className="w-full bg-black h-12 rounded-none p-0 border-b border-zinc-900">
+        <TabsList className="w-full bg-black h-12 rounded-none p-0 border-b border-zinc-900 glass">
           <TabsTrigger 
             value="discover" 
-            className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:text-white text-muted-foreground font-bold text-sm border-b-2 border-transparent data-[state=active]:border-primary transition-all"
+            className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:text-white text-zinc-500 font-bold text-xs uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary transition-all"
           >
             {isRtl ? "اكتشف" : "Discover"}
           </TabsTrigger>
           <TabsTrigger 
             value="following" 
-            className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:text-white text-muted-foreground font-bold text-sm border-b-2 border-transparent data-[state=active]:border-primary transition-all"
+            className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:text-white text-zinc-500 font-bold text-xs uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary transition-all"
           >
             {isRtl ? "متابعة" : "Following"}
           </TabsTrigger>
         </TabsList>
 
-        <main className="pb-24">
-          <TabsContent value="discover" className="m-0">
+        <main className="pb-32">
+          <TabsContent value="discover" className="m-0 focus-visible:ring-0">
             {discoverLoading ? (
-              <div className="flex justify-center p-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
+                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest animate-pulse">Loading Feed</p>
               </div>
             ) : discoverPosts.length > 0 ? (
               <div className="flex flex-col">
@@ -99,26 +97,39 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <div className="p-10 text-center text-muted-foreground flex flex-col items-center gap-4">
-                <Sparkles className="h-10 w-10 opacity-20" />
-                <p>{isRtl ? "لا توجد منشورات حتى الآن" : "Be the first to share something!"}</p>
+              <div className="py-24 px-10 text-center flex flex-col items-center gap-6">
+                <div className="h-20 w-20 rounded-3xl bg-zinc-900 flex items-center justify-center border border-white/5">
+                  <Sparkles className="h-10 w-10 text-zinc-700" />
+                </div>
+                <div className="space-y-2">
+                  <p className="font-bold text-lg">{isRtl ? "هدوء تام هنا..." : "Silence is deep..."}</p>
+                  <p className="text-zinc-500 text-sm leading-relaxed">{isRtl ? "كن أول من يكسر الصمت ويشارك فكرة أو صورة." : "Be the one to break the silence. Share a thought or a snap."}</p>
+                </div>
+                <Link href="/create-post">
+                  <Button className="rounded-full px-8 bg-white text-black font-bold h-12 shadow-xl active:scale-95 transition-transform">
+                    {isRtl ? "ابدأ الآن" : "Start Now"}
+                  </Button>
+                </Link>
               </div>
             )}
           </TabsContent>
           
-          <TabsContent value="following" className="m-0">
+          <TabsContent value="following" className="m-0 focus-visible:ring-0">
             {!currentUser ? (
-              <div className="p-10 text-center text-muted-foreground flex flex-col items-center gap-4">
-                <p>{isRtl ? "سجل الدخول لرؤية منشورات من تتابعهم" : "Login to see posts from people you follow."}</p>
+              <div className="py-32 px-10 text-center flex flex-col items-center gap-6">
+                <div className="h-16 w-16 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5">
+                  <UserPlus className="h-8 w-8 text-zinc-700" />
+                </div>
+                <p className="text-zinc-500 text-sm">{isRtl ? "سجل الدخول لرؤية ما يشاركه من تتابعهم." : "Sign in to see updates from the ones you follow."}</p>
                 <Link href="/auth">
-                  <Button className="rounded-full bg-white text-black hover:bg-zinc-200">
+                  <Button className="rounded-full bg-white text-black font-bold px-8 h-12">
                     {isRtl ? "تسجيل الدخول" : "Sign In"}
                   </Button>
                 </Link>
               </div>
             ) : followingLoading ? (
-              <div className="flex justify-center p-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
               </div>
             ) : followingPosts && followingPosts.length > 0 ? (
               <div className="flex flex-col">
@@ -138,11 +149,16 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <div className="p-10 text-center text-muted-foreground flex flex-col items-center gap-4">
-                <UserPlus className="h-10 w-10 opacity-20" />
-                <p>{isRtl ? "أنت لا تتابع أحداً بعد، ابدأ بالاكتشاف!" : "No posts yet. Start following people to see their updates here."}</p>
+              <div className="py-24 px-10 text-center flex flex-col items-center gap-6">
+                <div className="h-20 w-20 rounded-3xl bg-zinc-900 flex items-center justify-center border border-white/5">
+                  <UserPlus className="h-10 w-10 text-zinc-700" />
+                </div>
+                <div className="space-y-2">
+                  <p className="font-bold text-lg">{isRtl ? "لا متابعات بعد" : "No connections yet"}</p>
+                  <p className="text-zinc-500 text-sm">{isRtl ? "ابدأ بمتابعة أشخاص لتظهر منشوراتهم هنا." : "Follow people to populate your feed."}</p>
+                </div>
                 <Link href="/explore">
-                  <Button variant="outline" className="rounded-full border-zinc-700">
+                  <Button variant="outline" className="rounded-full border-zinc-800 font-bold h-12 px-8">
                     {isRtl ? "اكتشف أشخاصاً" : "Discover People"}
                   </Button>
                 </Link>
