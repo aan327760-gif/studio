@@ -26,9 +26,10 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (resource.data.followerId == request.auth.uid);
     }
     
-    // قواعد المنشورات
+    // قواعد المنشورات - السماح بالوصول العام للقراءة
     match /posts/{postId} {
       allow read: if true;
+      allow list: if true;
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likesCount']));
       allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
@@ -54,8 +55,8 @@ service cloud.firestore {
       
       // الرسائل داخل المجموعات
       match /messages/{messageId} {
-        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
-        allow write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+        allow read: if isSignedIn();
+        allow write: if isSignedIn();
       }
     }
   }

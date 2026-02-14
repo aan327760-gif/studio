@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -23,15 +22,28 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
       query,
       (snapshot: QuerySnapshot<T>) => {
         const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        setData(items);
+        setData(items as (T & { id: string })[]);
         setLoading(false);
       },
-      async (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: (query as any)._query?.path?.segments?.join('/') || 'unknown',
-          operation: 'list',
-        });
-        errorEmitter.emit('permission-error', permissionError);
+      async (err: any) => {
+        // التحقق مما إذا كان الخطأ فعلياً هو نقص في الصلاحيات
+        if (err.code === 'permission-denied') {
+          const permissionError = new FirestorePermissionError({
+            path: (query as any)._query?.path?.segments?.join('/') || 'unknown',
+            operation: 'list',
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        } else {
+          // إذا كان خطأ آخر (مثل نقص الفهارس)، نعرضه كما هو
+          console.error("Firestore Error:", err);
+          errorEmitter.emit('permission-error', {
+            context: {
+              path: (query as any)._query?.path?.segments?.join('/') || 'unknown',
+              operation: 'list',
+              message: err.message
+            }
+          });
+        }
         setError(err);
         setLoading(false);
       }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -10,11 +9,15 @@ export function FirebaseErrorListener() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const handlePermissionError = (error: FirestorePermissionError) => {
+    const handlePermissionError = (error: any) => {
+      // التعامل مع الخطأ سواء كان كائناً مهيئاً أو خطأ خاماً
+      const context = error.context || {};
+      const message = context.message || `You don't have permission to ${context.operation || 'access'} at ${context.path || 'this location'}`;
+      
       toast({
         variant: 'destructive',
-        title: 'Permission Denied',
-        description: `You don't have permission to ${error.context.operation} at ${error.context.path}`,
+        title: context.message ? 'Database Error' : 'Permission Denied',
+        description: message,
       });
     };
 
