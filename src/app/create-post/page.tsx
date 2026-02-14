@@ -2,13 +2,8 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { 
-  X,
-  Mic,
-  Avatar,
-  AvatarImage,
-  AvatarFallback
-} from "lucide-react";
+import { X, Mic } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -132,7 +127,7 @@ function CreatePostContent() {
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
-      <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-20">
+      <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-20 border-b border-zinc-900">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><X className="h-6 w-6" /></Button>
         <h1 className="text-sm font-bold opacity-70">New post</h1>
         <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6 font-bold bg-white text-black hover:bg-zinc-200">
@@ -162,7 +157,7 @@ function CreatePostContent() {
                   <img src={imageUrl} alt="Preview" className={cn("w-full h-full object-cover", filterClass)} />
                   {textOverlay && (
                     <div className={cn("absolute", textEffect)} style={{ left: `${textX}%`, top: `${textY}%`, transform: 'translate(-50%, -50%)' }}>
-                      <span className={cn("text-xs font-black px-2 py-1 rounded-md", textColor, textBg ? "bg-black/50" : "")}>{textOverlay}</span>
+                      <span className={cn("text-sm font-black px-2 py-1 rounded-md", textColor, textBg ? "bg-black/50" : "")}>{textOverlay}</span>
                     </div>
                   )}
                   {stickers.map((s: any) => (
@@ -175,9 +170,7 @@ function CreatePostContent() {
                         transform: `translate(-50%, -50%) scale(${s.scale * 0.5}) rotate(${s.rotation}deg)` 
                       }}
                     >
-                      <div className="px-2 py-1 rounded-lg bg-white text-black font-black text-[10px] shadow-lg">
-                        {s.text}
-                      </div>
+                      <img src={s.imageUrl} className="w-20 h-20 object-contain drop-shadow-xl" alt="Sticker" />
                     </div>
                   ))}
                 </div>

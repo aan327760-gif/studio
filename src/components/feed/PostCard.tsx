@@ -212,7 +212,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     <img 
                       src={s.imageUrl} 
                       alt="Sticker" 
-                      className="w-16 h-16 object-contain drop-shadow-2xl" 
+                      className="w-20 h-20 object-contain drop-shadow-2xl" 
                     />
                   </div>
                 ))}
