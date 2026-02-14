@@ -1,9 +1,11 @@
+
 "use client";
 
 import { Home, Compass, Users, User, Settings, LogOut, PlusCircle, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { NotificationsDropdown } from "./NotificationsDropdown";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -26,11 +28,14 @@ export function AppSidebar() {
       "fixed bottom-0 w-full bg-white border-t z-50 md:sticky md:top-0 md:h-screen md:w-64 md:border-t-0 md:border-x px-4 py-2 flex md:flex-col justify-between items-center md:items-stretch shadow-lg md:shadow-none",
       isRtl ? "md:border-l" : "md:border-r"
     )}>
-      <div className="hidden md:flex items-center gap-2 px-2 py-6 mb-4">
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-          <span className="text-white font-bold text-lg leading-none">L</span>
+      <div className="hidden md:flex items-center justify-between px-2 py-6 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+            <span className="text-white font-bold text-lg leading-none">L</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-primary">{t("appName")}</h1>
         </div>
-        <h1 className="text-xl font-bold tracking-tight text-primary">{t("appName")}</h1>
+        <NotificationsDropdown />
       </div>
 
       <nav className="flex md:flex-col items-center md:items-stretch justify-around md:justify-start w-full gap-1 md:gap-2">
@@ -52,7 +57,8 @@ export function AppSidebar() {
           );
         })}
         
-        <div className="md:mt-4 md:hidden">
+        <div className="md:mt-4 md:hidden flex items-center gap-2">
+          <NotificationsDropdown />
           <Button variant="default" size="icon" className="h-10 w-10 rounded-full bg-accent hover:bg-accent/90">
             <PlusCircle className="h-6 w-6" />
           </Button>

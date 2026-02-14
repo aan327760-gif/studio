@@ -1,20 +1,22 @@
+
 "use client";
 
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 
 const COMMUNITIES = [
-  { id: 1, name: "Politics & News", topic: "Politics", members: "150k", activeNow: 1200, icon: "📰" },
-  { id: 2, name: "Home Cooking", topic: "Food", members: "80k", activeNow: 450, icon: "🍲" },
-  { id: 3, name: "Startup Hub", topic: "Business", members: "45k", activeNow: 310, icon: "🚀" },
-  { id: 4, name: "Mental Health Support", topic: "Wellness", members: "25k", activeNow: 98, icon: "🌱" },
-  { id: 5, name: "Football Fans", topic: "Sports", members: "300k", activeNow: 4500, icon: "⚽" },
-  { id: 6, name: "Learning Arabic", topic: "Education", members: "60k", activeNow: 220, icon: "📚" },
+  { id: "politics", name: "Politics & News", topic: "Politics", members: "150k", activeNow: 1200, icon: "📰" },
+  { id: "cooking", name: "Home Cooking", topic: "Food", members: "80k", activeNow: 450, icon: "🍲" },
+  { id: "startup", name: "Startup Hub", topic: "Business", members: "45k", activeNow: 310, icon: "🚀" },
+  { id: "wellness", name: "Mental Health Support", topic: "Wellness", members: "25k", activeNow: 98, icon: "🌱" },
+  { id: "sports", name: "Football Fans", topic: "Sports", members: "300k", activeNow: 4500, icon: "⚽" },
+  { id: "education", name: "Learning Arabic", topic: "Education", members: "60k", activeNow: 220, icon: "📚" },
 ];
 
 export default function LammaPage() {
@@ -44,7 +46,7 @@ export default function LammaPage() {
 
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 pb-20 md:pb-6">
           {COMMUNITIES.map((comm) => (
-            <Card key={comm.id} className="group hover:border-primary transition-all cursor-pointer shadow-sm">
+            <Card key={comm.id} className="group hover:border-primary transition-all shadow-sm">
               <CardHeader className="p-4 flex flex-row items-start justify-between space-y-0">
                 <div className="flex gap-4">
                   <div className="text-4xl bg-muted h-16 w-16 rounded-2xl flex items-center justify-center shrink-0">
@@ -64,10 +66,12 @@ export default function LammaPage() {
                 </div>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <Button className="w-full rounded-xl gap-2 font-semibold">
-                  <MessageSquare className="h-4 w-4" />
-                  {isRtl ? "انضم للدردشة" : "Join Chat"}
-                </Button>
+                <Link href={`/lamma/${comm.id}`}>
+                  <Button className="w-full rounded-xl gap-2 font-semibold">
+                    <MessageSquare className="h-4 w-4" />
+                    {isRtl ? "انضم للدردشة" : "Join Chat"}
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}

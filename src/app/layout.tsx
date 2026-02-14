@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +7,20 @@ import { Toaster } from "@/components/ui/toaster";
 export const metadata: Metadata = {
   title: "LammaFeed - Connect Globally, Connect Locally",
   description: "The modern social platform for everyone, with a special touch for the Arabic community.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "LammaFeed",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1E6FC9",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
