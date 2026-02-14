@@ -8,7 +8,7 @@ import {
   signInWithEmailAndPassword, 
   updateProfile 
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/context/LanguageContext";
 import { Loader2, Mail, Lock, Phone, User as UserIcon } from "lucide-react";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function AuthPage() {
   const { isRtl } = useLanguage();
@@ -39,7 +41,32 @@ export default function AuthPage() {
 
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        const user = userCredential.user;
+        
+        // التحقق من وجود بيانات المستخدم في قاعدة البيانات، وإن لم توجد نقوم بإنشائها (للحالات الاستثنائية)
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (!userDoc.exists()) {
+          setDoc(doc(db, "users", user.uid), {
+            uid: user.uid,
+            displayName: user.displayName || "User",
+            email: user.email,
+            phoneNumber: null,
+            photoURL: user.photoURL || "https://picsum.photos/seed/" + user.uid + "/200/200",
+            createdAt: serverTimestamp(),
+            isPro: false,
+            followersCount: 0,
+            followingCount: 0,
+            bio: ""
+          }).catch(async (err) => {
+            const permissionError = new FirestorePermissionError({
+              path: `users/${user.uid}`,
+              operation: 'create',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+          });
+        }
+
         toast({
           title: isRtl ? "تم تسجيل الدخول" : "Logged In",
           description: isRtl ? "مرحباً بك مجدداً في Unbound" : "Welcome back to Unbound",
@@ -48,18 +75,37 @@ export default function AuthPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
         const user = userCredential.user;
 
-        await updateProfile(user, { displayName: formData.displayName });
+        // تحديث الاسم في ملف التعريف الخاص بـ Auth
+        await updateProfile(user, { 
+          displayName: formData.displayName,
+          photoURL: "https://picsum.photos/seed/" + user.uid + "/200/200"
+        });
 
-        // Save user profile to Firestore
-        await setDoc(doc(db, "users", user.uid), {
+        // حفظ بيانات المستخدم في Firestore
+        const userProfileData = {
           uid: user.uid,
           displayName: formData.displayName,
           email: formData.email,
           phoneNumber: formData.phone || null,
           photoURL: "https://picsum.photos/seed/" + user.uid + "/200/200",
-          createdAt: new Date().toISOString(),
-          isPro: false
-        });
+          createdAt: serverTimestamp(),
+          isPro: false,
+          followersCount: 0,
+          followingCount: 0,
+          bio: "",
+          language: isRtl ? "ar" : "en"
+        };
+
+        // نستخدم setDoc ونقوم بمعالجة الأخطاء عبر البنية التي أعددناها
+        setDoc(doc(db, "users", user.uid), userProfileData)
+          .catch(async (err) => {
+            const permissionError = new FirestorePermissionError({
+              path: `users/${user.uid}`,
+              operation: 'create',
+              requestResourceData: userProfileData
+            });
+            errorEmitter.emit('permission-error', permissionError);
+          });
 
         toast({
           title: isRtl ? "تم إنشاء الحساب" : "Account Created",
