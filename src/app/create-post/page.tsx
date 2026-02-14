@@ -75,7 +75,6 @@ function CreatePostContent() {
         finalMediaUrl = await uploadToCloudinary(imageUrl, 'image');
         mediaType = 'image';
       } else if (videoUrl) {
-        // Note: For large videos, we'd need a different approach, but for this prototype:
         finalMediaUrl = await uploadToCloudinary(videoUrl, 'video');
         mediaType = 'video';
       } else if (audioUrl) {
@@ -103,7 +102,7 @@ function CreatePostContent() {
 
       toast({
         title: isRtl ? "تم النشر" : "Posted",
-        description: isRtl ? "تم نشر منشورك بنجاح على Cloudinary" : "Your post has been published successfully to Cloudinary.",
+        description: isRtl ? "تم نشر منشورك بنجاح" : "Your post has been published successfully.",
       });
       
       router.push("/");
