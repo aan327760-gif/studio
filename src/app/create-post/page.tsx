@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { moderateContent } from "@/ai/flows/content-moderation-assistant";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const MAX_CHARS = 2500;
 
