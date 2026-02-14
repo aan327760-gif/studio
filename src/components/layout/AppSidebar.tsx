@@ -55,7 +55,6 @@ export function AppSidebar() {
     },
   ];
 
-  // استخدام Blob URLs بدلاً من Base64 لتفادي مشاكل طول الرابط في الهواتف
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
