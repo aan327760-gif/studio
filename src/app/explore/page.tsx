@@ -5,11 +5,12 @@ import { useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Input } from "@/components/ui/input";
-import { Search, TrendingUp, Users, Hash, Loader2 } from "lucide-react";
+import { Search, TrendingUp, Users, Hash, Loader2, UserPlus, UserCheck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where, limit, orderBy } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc } from "firebase/firestore";
+import { toast } from "@/hooks/use-toast";
 
 const TRENDING_TOPICS = [
   { tag: "Algeria", posts: "120K", category: "Politics" },
@@ -21,6 +22,7 @@ const TRENDING_TOPICS = [
 export default function ExplorePage() {
   const { t, isRtl } = useLanguage();
   const db = useFirestore();
+  const { user: currentUser } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
 
   const searchResultsQuery = useMemoFirebase(() => {
@@ -34,6 +36,51 @@ export default function ExplorePage() {
   }, [db, searchQuery]);
 
   const { data: searchResults, loading: searchLoading } = useCollection<any>(searchResultsQuery);
+
+  // Get current user's follows to show follow/unfollow state
+  const followsQuery = useMemoFirebase(() => {
+    if (!currentUser) return null;
+    return query(collection(db, "follows"), where("followerId", "==", currentUser.uid));
+  }, [db, currentUser]);
+  const { data: userFollows } = useCollection<any>(followsQuery);
+
+  const isFollowing = (userId: string) => {
+    return userFollows.some(f => f.followingId === userId);
+  };
+
+  const handleFollow = async (targetUserId: string, targetName: string, targetAvatar: string) => {
+    if (!currentUser || !db) return;
+    
+    const followId = `${currentUser.uid}_${targetUserId}`;
+    const followRef = doc(db, "follows", followId);
+
+    if (isFollowing(targetUserId)) {
+      // Unfollow
+      deleteDoc(followRef);
+      updateDoc(doc(db, "users", currentUser.uid), { followingCount: increment(-1) });
+      updateDoc(doc(db, "users", targetUserId), { followersCount: increment(-1) });
+    } else {
+      // Follow
+      setDoc(followRef, {
+        followerId: currentUser.uid,
+        followingId: targetUserId,
+        createdAt: serverTimestamp()
+      });
+      updateDoc(doc(db, "users", currentUser.uid), { followingCount: increment(1) });
+      updateDoc(doc(db, "users", targetUserId), { followersCount: increment(1) });
+
+      // Notify target user
+      setDoc(doc(collection(db, "notifications")), {
+        userId: targetUserId,
+        type: "follow",
+        fromUserId: currentUser.uid,
+        fromUserName: currentUser.displayName || "Someone",
+        fromUserAvatar: currentUser.photoURL || "",
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800">
@@ -61,7 +108,7 @@ export default function ExplorePage() {
               </div>
             ) : searchResults.length > 0 ? (
               <div className="space-y-4">
-                {searchResults.map((user: any) => (
+                {searchResults.filter(u => u.uid !== currentUser?.uid).map((user: any) => (
                   <div key={user.id} className="flex items-center justify-between">
                     <div className="flex gap-3">
                       <Avatar>
@@ -73,8 +120,27 @@ export default function ExplorePage() {
                         <p className="text-xs text-zinc-500">@{user.email?.split('@')[0]}</p>
                       </div>
                     </div>
-                    <Button size="sm" className="rounded-full bg-white text-black hover:bg-zinc-200 font-bold px-4 h-8 text-xs">
-                      {isRtl ? "عرض" : "View"}
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleFollow(user.uid, user.displayName, user.photoURL)}
+                      className={cn(
+                        "rounded-full font-bold px-4 h-8 text-xs transition-all",
+                        isFollowing(user.uid) 
+                          ? "bg-zinc-800 text-white hover:bg-zinc-700" 
+                          : "bg-white text-black hover:bg-zinc-200"
+                      )}
+                    >
+                      {isFollowing(user.uid) ? (
+                        <div className="flex items-center gap-1">
+                          <UserCheck className="h-3 w-3" />
+                          {isRtl ? "يتابع" : "Following"}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <UserPlus className="h-3 w-3" />
+                          {isRtl ? "متابعة" : "Follow"}
+                        </div>
+                      )}
                     </Button>
                   </div>
                 ))}
@@ -123,4 +189,8 @@ export default function ExplorePage() {
       <AppSidebar />
     </div>
   );
+}
+
+function cn(...classes: string[]) {
+  return classes.filter(Boolean).join(' ');
 }

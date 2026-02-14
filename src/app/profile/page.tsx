@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   ArrowLeft, 
   MoreHorizontal, 
@@ -10,7 +10,9 @@ import {
   CheckCircle2, 
   Edit2, 
   LogOut,
-  Loader2
+  Loader2,
+  UserPlus,
+  UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,11 +21,12 @@ import { useLanguage } from "@/context/LanguageContext";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import Link from "next/link";
 import { PostCard } from "@/components/feed/PostCard";
-import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
-import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc } from "firebase/firestore";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { t, isRtl } = useLanguage();
@@ -32,6 +35,10 @@ export default function ProfilePage() {
   const { user: currentUser } = useUser();
   const db = useFirestore();
   const router = useRouter();
+
+  // Real-time user profile data
+  const profileRef = useMemoFirebase(() => currentUser ? doc(db, "users", currentUser.uid) : null, [db, currentUser]);
+  const { data: userProfile, loading: profileLoading } = useDoc<any>(profileRef);
 
   const handleLogout = async () => {
     try {
@@ -57,18 +64,18 @@ export default function ProfilePage() {
   const { data: userPosts, loading: postsLoading } = useCollection<any>(userPostsQuery);
 
   const profileData = {
-    name: currentUser?.displayName || (isRtl ? "مستخدم Unbound" : "Unbound User"),
+    name: userProfile?.displayName || (isRtl ? "مستخدم Unbound" : "Unbound User"),
     handle: currentUser?.email?.split('@')[0] || "user",
-    bio: isRtl 
+    bio: userProfile?.bio || (isRtl 
       ? "تطبيق Unbound هو مساحتك الحرة، شارك أفكارك، اصنع محتوى، وكن جزءاً من المجتمع." 
-      : "Unbound is your free space. Share your thoughts, create content, and be part of the community.",
-    followers: 0,
-    following: 0,
+      : "Unbound is your free space. Share your thoughts, create content, and be part of the community."),
+    followers: userProfile?.followersCount || 0,
+    following: userProfile?.followingCount || 0,
     joinDate: isRtl ? "فبراير ٢٠٢٦" : "February 2026",
     location: isRtl ? "الجزائر" : "Algeria",
     isVerified: true,
     coverImage: "https://picsum.photos/seed/cover/1200/400",
-    avatarImage: currentUser?.photoURL || "https://picsum.photos/seed/avatar/200/200"
+    avatarImage: userProfile?.photoURL || "https://picsum.photos/seed/avatar/200/200"
   };
 
   return (
