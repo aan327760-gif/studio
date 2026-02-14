@@ -120,13 +120,13 @@ function FinalizeMediaContent() {
     if (activeStickerId === id) setActiveStickerId(null);
   };
 
-  const handleGlobalDrag = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleGlobalDrag = (e: any) => {
     if ((!isDraggingText && !isDraggingSticker) || !containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     let clientX, clientY;
 
-    if ('touches' in e) {
+    if (e.touches && e.touches.length > 0) {
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
     } else {
@@ -136,8 +136,10 @@ function FinalizeMediaContent() {
 
     let x = ((clientX - rect.left) / rect.width) * 100;
     let y = ((clientY - rect.top) / rect.height) * 100;
-    x = Math.max(10, Math.min(90, x));
-    y = Math.max(10, Math.min(90, y));
+    
+    // قيود لضمان عدم خروج العنصر عن الإطار
+    x = Math.max(5, Math.min(95, x));
+    y = Math.max(5, Math.min(95, y));
 
     if (isDraggingText) {
       setTextPos({ x, y });
@@ -152,9 +154,11 @@ function FinalizeMediaContent() {
       ref={containerRef}
       onMouseMove={handleGlobalDrag}
       onMouseUp={() => { setIsDraggingText(false); setIsDraggingSticker(false); }}
-      onTouchMove={handleGlobalDrag}
+      onTouchMove={(e) => { handleGlobalDrag(e); }}
       onTouchEnd={() => { setIsDraggingText(false); setIsDraggingSticker(false); }}
-      onClick={() => setActiveStickerId(null)}
+      onClick={(e) => { 
+        if (!isDraggingText && !isDraggingSticker) setActiveStickerId(null);
+      }}
     >
       <div className="absolute inset-0 z-0">
         {imageUrl && (
@@ -168,13 +172,18 @@ function FinalizeMediaContent() {
 
       {finalText && (
         <div 
-          className={cn("absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing transition-transform", isDraggingText && "scale-110")}
-          style={{ left: `${textPos.x}%`, top: `${textPos.y}%`, transform: 'translate(-50%, -50%)' }}
+          className={cn("absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing transition-transform touch-none", isDraggingText && "scale-110")}
+          style={{ 
+            left: `${textPos.x}%`, 
+            top: `${textPos.y}%`, 
+            transform: 'translate(-50%, -50%)',
+            touchAction: 'none'
+          }}
           onMouseDown={(e) => { e.stopPropagation(); setIsDraggingText(true); setActiveStickerId(null); }}
           onTouchStart={(e) => { e.stopPropagation(); setIsDraggingText(true); setActiveStickerId(null); }}
         >
           <span className={cn(
-            "text-xl font-black text-center px-4 py-2 rounded-xl break-words max-w-[70vw] drop-shadow-2xl",
+            "text-xl font-black text-center px-4 py-2 rounded-xl break-words max-w-[70vw] drop-shadow-2xl block",
             finalColor,
             finalBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
           )}>
@@ -187,13 +196,14 @@ function FinalizeMediaContent() {
         <div 
           key={sticker.id}
           className={cn(
-            "absolute z-40 pointer-events-auto cursor-grab active:cursor-grabbing transition-all",
+            "absolute z-40 pointer-events-auto cursor-grab active:cursor-grabbing transition-all touch-none",
             activeStickerId === sticker.id && "ring-2 ring-primary ring-offset-4 ring-offset-transparent rounded-lg"
           )}
           style={{ 
             left: `${sticker.x}%`, 
             top: `${sticker.y}%`, 
-            transform: `translate(-50%, -50%) scale(${sticker.scale}) rotate(${sticker.rotation}deg)` 
+            transform: `translate(-50%, -50%) scale(${sticker.scale}) rotate(${sticker.rotation}deg)`,
+            touchAction: 'none'
           }}
           onMouseDown={(e) => { e.stopPropagation(); setActiveStickerId(sticker.id); setIsDraggingSticker(true); }}
           onTouchStart={(e) => { e.stopPropagation(); setActiveStickerId(sticker.id); setIsDraggingSticker(true); }}
@@ -223,9 +233,21 @@ function FinalizeMediaContent() {
             <div className={cn("h-11 w-11 flex items-center justify-center rounded-xl backdrop-blur-md border border-white/10 shadow-xl", action.active ? "bg-primary border-primary" : "bg-black/40")}>
               <action.icon className="h-5 w-5" />
             </div>
-            <span className="text-xs font-bold drop-shadow-md">{action.label}</span>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold drop-shadow-md">{action.label}</span>
+              {action.label === "الفلاتر" && <span className="text-[8px] text-primary font-bold uppercase tracking-tighter">قيد التطوير</span>}
+            </div>
           </div>
         ))}
+        <div className="flex items-center gap-4 opacity-50">
+          <div className="h-11 w-11 flex items-center justify-center rounded-xl bg-black/40 border border-white/10">
+            <Music className="h-5 w-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-bold">موسيقى</span>
+            <span className="text-[8px] text-primary font-bold uppercase tracking-tighter">قيد التطوير</span>
+          </div>
+        </div>
       </div>
 
       {activeStickerId && (
