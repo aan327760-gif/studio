@@ -169,8 +169,8 @@ export function AppSidebar() {
 
   return (
     <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-black border-t border-zinc-800 z-50 px-4 py-2 flex justify-around items-center h-16 shadow-2xl">
-      <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
-      <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
+      <input type="file" accept="image/*,image/heic,image/heif,image/webp" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
+      <input type="file" accept="video/*,video/quicktime,video/mp4,video/webm" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
 
       {navItems.map((item) => {
         const isActive = pathname === item.href;
