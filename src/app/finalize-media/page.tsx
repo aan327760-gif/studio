@@ -29,7 +29,9 @@ const TEXT_COLORS = [
   "text-red-500",
   "text-yellow-400",
   "text-green-500",
-  "text-purple-500"
+  "text-purple-500",
+  "text-orange-500",
+  "text-pink-500"
 ];
 
 function FinalizeMediaContent() {
@@ -95,13 +97,13 @@ function FinalizeMediaContent() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
       </div>
 
-      {/* Text Overlay Render */}
+      {/* Text Overlay Render - This is the "Writing on Image" part */}
       {finalText && (
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none p-6">
           <span className={cn(
-            "text-3xl font-black text-center px-4 py-2 rounded-xl break-words max-w-full transition-all drop-shadow-2xl",
+            "text-3xl font-black text-center px-6 py-3 rounded-2xl break-words max-w-full transition-all drop-shadow-2xl",
             finalColor,
-            finalBg ? "bg-black/50 backdrop-blur-sm" : ""
+            finalBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
           )}>
             {finalText}
           </span>
@@ -123,13 +125,11 @@ function FinalizeMediaContent() {
       {/* Left Sidebar Actions */}
       <div className="relative z-10 flex-1 flex flex-col justify-center px-4 gap-7">
         {[
-          { icon: Type, label: "Text", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
-          { icon: Layers, label: "Filters", onClick: () => router.back(), active: filterClass !== "filter-none" },
-          { icon: Smile, label: "Stickers", onClick: () => handleUnderDev("Stickers") },
-          { icon: Sparkles, label: "Effects", onClick: () => handleUnderDev("Effects") },
-          { icon: Music, label: "Music", onClick: () => handleUnderDev("Music") },
-          { icon: FastForward, label: "Time", onClick: () => handleUnderDev("Time") },
-          { icon: Grid2X2, label: "Blur", onClick: () => handleUnderDev("Blur") },
+          { icon: Type, label: "الكتابة", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
+          { icon: Layers, label: "الفلاتر", onClick: () => router.back(), active: filterClass !== "filter-none" },
+          { icon: Smile, label: "ملصقات", onClick: () => handleUnderDev("الملصقات") },
+          { icon: Sparkles, label: "تأثيرات", onClick: () => handleUnderDev("التأثيرات") },
+          { icon: Music, label: "موسيقى", onClick: () => handleUnderDev("الموسيقى") },
         ].map((action) => (
           <div 
             key={action.label} 
@@ -137,16 +137,16 @@ function FinalizeMediaContent() {
             onClick={action.onClick}
           >
             <div className={cn(
-              "h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md transition-all shadow-sm border border-white/10",
-              action.active ? "bg-primary border-primary scale-110" : "bg-black/20 group-hover:bg-black/40"
+              "h-11 w-11 flex items-center justify-center rounded-2xl backdrop-blur-md transition-all shadow-xl border border-white/10",
+              action.active ? "bg-primary border-primary scale-110" : "bg-black/30 group-hover:bg-black/50"
             )}>
               <action.icon className="h-6 w-6 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white drop-shadow-lg">
+              <span className="text-sm font-bold text-white drop-shadow-lg">
                 {action.label}
               </span>
-              {action.active && <span className="text-[7px] text-primary font-bold uppercase drop-shadow-md">Active</span>}
+              {action.active && <span className="text-[8px] text-primary font-black uppercase tracking-widest drop-shadow-md">نشط</span>}
             </div>
           </div>
         ))}
@@ -156,52 +156,55 @@ function FinalizeMediaContent() {
       <div className="relative z-10 p-6 flex justify-end">
         <Button 
           onClick={handleNext}
-          className="rounded-full bg-white text-black hover:bg-zinc-200 px-10 py-7 text-lg font-bold shadow-2xl transition-transform active:scale-95"
+          className="rounded-full bg-white text-black hover:bg-zinc-200 px-12 py-7 text-xl font-black shadow-2xl transition-transform active:scale-95"
         >
-          Next
+          {imageUrl || videoUrl ? "التالي" : "تخطي"}
         </Button>
       </div>
 
-      {/* Text Tool Dialog */}
+      {/* Text Tool Dialog - The Interface to write on the image */}
       <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
-        <DialogContent className="bg-zinc-950/95 backdrop-blur-xl border-zinc-800 text-white max-w-[90%] rounded-[2rem] p-6">
+        <DialogContent className="bg-zinc-950/95 backdrop-blur-2xl border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-8">
           <DialogHeader>
-            <DialogTitle className="text-center font-bold">Add Text Overlay</DialogTitle>
+            <DialogTitle className="text-center font-black text-xl">أضف نصاً فوق الصورة</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 mt-4">
+          <div className="space-y-8 mt-6">
             <div className="relative">
               <Input 
-                placeholder="Type your message..." 
+                placeholder="اكتب شيئاً..." 
                 value={textOverlay} 
                 onChange={(e) => setTextOverlay(e.target.value)}
                 className={cn(
-                  "bg-zinc-900 border-none rounded-2xl h-14 text-center text-xl font-bold focus-visible:ring-2 focus-visible:ring-primary",
+                  "bg-zinc-900/50 border-none rounded-3xl h-16 text-center text-2xl font-black focus-visible:ring-2 focus-visible:ring-primary placeholder:opacity-30",
                   textColor
                 )}
                 autoFocus
               />
             </div>
             
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-zinc-500 uppercase">Colors</span>
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">الألوان</span>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className={cn("h-8 rounded-full text-[10px] font-bold", textBg ? "bg-primary text-white" : "text-zinc-400")}
+                  className={cn(
+                    "h-9 rounded-full px-4 text-[10px] font-black transition-all", 
+                    textBg ? "bg-primary text-white" : "bg-zinc-900 text-zinc-500"
+                  )}
                   onClick={() => setTextBg(!textBg)}
                 >
-                  Background
+                  خلفية النص
                 </Button>
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+              <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
                 {TEXT_COLORS.map((color) => (
                   <button
                     key={color}
                     className={cn(
-                      "h-8 w-8 rounded-full border-2 shrink-0 transition-transform active:scale-90",
+                      "h-10 w-10 rounded-full border-4 shrink-0 transition-all active:scale-90 shadow-lg",
                       color.replace('text-', 'bg-'),
-                      textColor === color ? "border-white scale-110" : "border-transparent"
+                      textColor === color ? "border-white scale-110" : "border-transparent opacity-80"
                     )}
                     onClick={() => setTextColor(color)}
                   />
@@ -209,12 +212,12 @@ function FinalizeMediaContent() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button variant="ghost" className="flex-1 rounded-full font-bold h-12" onClick={() => setIsTextDialogOpen(false)}>
-                Cancel
+            <div className="flex gap-4 pt-4">
+              <Button variant="ghost" className="flex-1 rounded-2xl font-bold h-14 text-zinc-400" onClick={() => setIsTextDialogOpen(false)}>
+                إلغاء
               </Button>
-              <Button className="flex-1 rounded-full font-bold bg-primary hover:bg-primary/90 h-12" onClick={applyText}>
-                Apply
+              <Button className="flex-1 rounded-2xl font-black bg-primary hover:bg-primary/90 h-14 shadow-lg shadow-primary/20" onClick={applyText}>
+                تطبيق
               </Button>
             </div>
           </div>

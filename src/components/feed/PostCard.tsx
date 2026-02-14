@@ -216,9 +216,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                   {mediaSettings?.textOverlay && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
                       <span className={cn(
-                        "text-lg font-black text-center px-3 py-1.5 rounded-xl break-words max-w-full drop-shadow-2xl",
+                        "text-lg font-black text-center px-4 py-2 rounded-xl break-words max-w-full drop-shadow-2xl shadow-black",
                         mediaSettings.textColor || "text-white",
-                        mediaSettings.textBg ? "bg-black/50 backdrop-blur-sm" : ""
+                        mediaSettings.textBg ? "bg-black/50 backdrop-blur-md border border-white/5" : ""
                       )}>
                         {mediaSettings.textOverlay}
                       </span>
@@ -236,9 +236,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                   {mediaSettings?.textOverlay && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
                       <span className={cn(
-                        "text-lg font-black text-center px-3 py-1.5 rounded-xl break-words max-w-full drop-shadow-2xl",
+                        "text-lg font-black text-center px-4 py-2 rounded-xl break-words max-w-full drop-shadow-2xl shadow-black",
                         mediaSettings.textColor || "text-white",
-                        mediaSettings.textBg ? "bg-black/50 backdrop-blur-sm" : ""
+                        mediaSettings.textBg ? "bg-black/50 backdrop-blur-md border border-white/5" : ""
                       )}>
                         {mediaSettings.textOverlay}
                       </span>

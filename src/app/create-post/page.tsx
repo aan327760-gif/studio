@@ -27,7 +27,7 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 const MAX_CHARS = 2500;
 const TOPICS = ["General", "News", "Entertainment", "Sports", "Tech", "Life"];
 
-async function urlToBase64(url: string): Promise<string> {
+async function urlToBlob(url: string): Promise<string> {
   const response = await fetch(url);
   const blob = await response.blob();
   return new Promise((resolve, reject) => {
@@ -83,15 +83,15 @@ function CreatePostContent() {
       let mediaType: "image" | "video" | "audio" | null = null;
 
       if (imageUrl) {
-        const base64 = await urlToBase64(imageUrl);
+        const base64 = await urlToBlob(imageUrl);
         finalMediaUrl = await uploadToCloudinary(base64, 'image');
         mediaType = 'image';
       } else if (videoUrl) {
-        const base64 = await urlToBase64(videoUrl);
+        const base64 = await urlToBlob(videoUrl);
         finalMediaUrl = await uploadToCloudinary(base64, 'video');
         mediaType = 'video';
       } else if (audioUrl) {
-        const base64 = await urlToBase64(audioUrl);
+        const base64 = await urlToBlob(audioUrl);
         finalMediaUrl = await uploadToCloudinary(base64, 'raw');
         mediaType = 'audio';
       }
