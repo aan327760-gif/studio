@@ -10,7 +10,8 @@ import {
   CheckCircle2, 
   Search, 
   Edit2, 
-  Compass
+  Compass,
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,30 +20,46 @@ import { useLanguage } from "@/context/LanguageContext";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import Link from "next/link";
 import { PostCard } from "@/components/feed/PostCard";
+import { useAuth, useUser } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import { toast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
   const { t, isRtl } = useLanguage();
   const [activeTab, setActiveTab] = useState("posts");
+  const auth = useAuth();
+  const { user: currentUser } = useUser();
+  const router = useRouter();
 
-  // Mock user data
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: isRtl ? "تم تسجيل الخروج" : "Logged Out" });
+      router.push("/auth");
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to logout" });
+    }
+  };
+
+  // Profile data
   const user = {
-    name: isRtl ? "تطبيق لمة" : "Unbound App",
-    handle: "BoBibo38876",
+    name: currentUser?.displayName || (isRtl ? "مستخدم Unbound" : "Unbound User"),
+    handle: currentUser?.email?.split('@')[0] || "user",
     bio: isRtl 
-      ? "للمة ليست تطبيقاً عادياً، إنها مساحة حرة، تشارك فيها أفكارك، تصنع محتوى، ويُسمع صوتك بصدق. هنا التفاعل يُكافئ!" 
-      : "Unbound is not just an app, it's a free space where you share your thoughts, create content, and your voice is truly heard.",
+      ? "للمة ليست تطبيقاً عادياً، إنها مساحة حرة، تشارك فيها أفكارك، تصنع محتوى، ويُسمع صوتك بصدق." 
+      : "Unbound is not just an app, it's a free space where you share your thoughts and create content.",
     followers: 116,
     following: 3,
     joinDate: isRtl ? "فبراير ٢٠٢٦" : "February 2026",
     location: isRtl ? "الجزائر" : "Algeria",
     isVerified: true,
     coverImage: "https://picsum.photos/seed/cover/1200/400",
-    avatarImage: "https://picsum.photos/seed/avatar/200/200"
+    avatarImage: currentUser?.photoURL || "https://picsum.photos/seed/avatar/200/200"
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20">
-      {/* Header / Navigation */}
       <div className="relative h-48 w-full group">
         <img 
           src={user.coverImage} 
@@ -58,37 +75,28 @@ export default function ProfilePage() {
             </Button>
           </Link>
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/20 backdrop-blur-md hover:bg-black/40 text-white">
-              <Compass className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/20 backdrop-blur-md hover:bg-black/40 text-white">
-              <Search className="h-5 w-5" />
+            <Button onClick={handleLogout} variant="ghost" size="icon" className="rounded-full bg-black/20 backdrop-blur-md hover:bg-red-500/40 text-white">
+              <LogOut className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" className="rounded-full bg-black/20 backdrop-blur-md hover:bg-black/40 text-white">
               <Edit2 className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/20 backdrop-blur-md hover:bg-black/40 text-white">
-              <MoreHorizontal className="h-5 w-5" />
-            </Button>
           </div>
         </div>
 
-        {/* Live Banner Prompt */}
         <div className="absolute bottom-4 right-4 bg-orange-500 rounded-lg px-3 py-1.5 flex items-center gap-2 cursor-pointer shadow-lg hover:bg-orange-600 transition-colors">
           <div className="h-5 w-5 rounded-full border-2 border-white flex items-center justify-center">
             <div className="h-2 w-2 bg-white rounded-full animate-pulse" />
           </div>
-          <span className="text-xs font-bold">{isRtl ? "ابدأ بثاً مباشراً" : "Start Live"}</span>
+          <span className="text-xs font-bold">{isRtl ? "بث مباشر" : "Live"}</span>
         </div>
       </div>
 
-      {/* Profile Info Section */}
       <div className="px-4 relative">
-        {/* Overlapping Avatar */}
         <div className="absolute -top-12 left-4">
           <Avatar className="h-24 w-24 border-4 border-black ring-2 ring-zinc-800 shadow-xl">
             <AvatarImage src={user.avatarImage} />
-            <AvatarFallback className="bg-primary text-3xl font-bold">Bi</AvatarFallback>
+            <AvatarFallback className="bg-primary text-3xl font-bold">U</AvatarFallback>
           </Avatar>
         </div>
 
@@ -96,18 +104,12 @@ export default function ProfilePage() {
           <div className="flex items-center gap-1.5">
             <h2 className="text-xl font-bold tracking-tight">{user.name}</h2>
             {user.isVerified && <CheckCircle2 className="h-5 w-5 text-primary fill-primary text-black" />}
-            <Link href="#" className="text-xs text-primary font-bold ml-1 hover:underline">
-              {isRtl ? "وثق حسابك" : "Verify Account"}
-            </Link>
           </div>
           <p className="text-muted-foreground text-sm">@{user.handle}</p>
         </div>
 
         <div className="mt-4 text-[13px] leading-relaxed text-zinc-300">
           {user.bio}
-          <Link href="https://unbound.social" className="text-primary block mt-1 hover:underline">
-            unbound.social
-          </Link>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
@@ -133,59 +135,22 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Profile Tabs */}
       <Tabs defaultValue="posts" className="mt-6 w-full" onValueChange={setActiveTab}>
         <TabsList className="w-full bg-black rounded-none h-12 p-0 border-b border-zinc-900 justify-start overflow-x-auto no-scrollbar">
-          <TabsTrigger 
-            value="posts" 
-            className="flex-1 rounded-none px-4 h-full data-[state=active]:bg-transparent data-[state=active]:text-white text-muted-foreground font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all whitespace-nowrap"
-          >
+          <TabsTrigger value="posts" className="flex-1 px-4 h-full font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all">
             {isRtl ? "المنشورات" : "Posts"}
           </TabsTrigger>
-          <TabsTrigger 
-            value="replies" 
-            className="flex-1 rounded-none px-4 h-full data-[state=active]:bg-transparent data-[state=active]:text-white text-muted-foreground font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all whitespace-nowrap"
-          >
-            {isRtl ? "الردود" : "Replies"}
-          </TabsTrigger>
-          <TabsTrigger 
-            value="featured" 
-            className="flex-1 rounded-none px-4 h-full data-[state=active]:bg-transparent data-[state=active]:text-white text-muted-foreground font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all whitespace-nowrap"
-          >
-            {isRtl ? "المميزة" : "Featured"}
-          </TabsTrigger>
-          <TabsTrigger 
-            value="articles" 
-            className="flex-1 rounded-none px-4 h-full data-[state=active]:bg-transparent data-[state=active]:text-white text-muted-foreground font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all whitespace-nowrap"
-          >
-            {isRtl ? "المقالات" : "Articles"}
-          </TabsTrigger>
-          <TabsTrigger 
-            value="media" 
-            className="flex-1 rounded-none px-4 h-full data-[state=active]:bg-transparent data-[state=active]:text-white text-muted-foreground font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all whitespace-nowrap"
-          >
+          <TabsTrigger value="media" className="flex-1 px-4 h-full font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all">
             {isRtl ? "الوسائط" : "Media"}
+          </TabsTrigger>
+          <TabsTrigger value="likes" className="flex-1 px-4 h-full font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all">
+            {isRtl ? "الإعجابات" : "Likes"}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="posts" className="m-0">
-          <div className="flex flex-col">
-            <div className="p-3 border-b border-zinc-900 flex items-center justify-between">
-               <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                  <CheckCircle2 className="h-3 w-3 text-primary" />
-                  <span>{isRtl ? "منشور مثبت" : "Pinned Post"}</span>
-               </div>
-            </div>
-            <PostCard 
-              id="pinned-1"
-              author={{ name: user.name, handle: user.handle, avatar: user.avatarImage }}
-              content={isRtl ? "مرحباً بكم في منصة Unbound! هنا التفاعل هو الأساس." : "Welcome to Unbound! Engagement is key here."}
-              image="https://picsum.photos/seed/promo/600/600"
-              likes={1500}
-              comments={240}
-              reposts={85}
-              time={isRtl ? "منذ يومين" : "2 days ago"}
-            />
+          <div className="p-10 text-center text-zinc-500 text-sm">
+            {isRtl ? "لا توجد منشورات حتى الآن" : "No posts yet"}
           </div>
         </TabsContent>
       </Tabs>
