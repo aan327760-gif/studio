@@ -55,6 +55,15 @@ export function AppSidebar() {
     }
   };
 
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const videoUrl = URL.createObjectURL(file);
+      setIsSheetOpen(false);
+      router.push(`/edit-video?video=${encodeURIComponent(videoUrl)}`);
+    }
+  };
+
   const handleStartRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -154,7 +163,7 @@ export function AppSidebar() {
         accept="video/*" 
         className="hidden" 
         ref={videoInputRef} 
-        onChange={() => toast({ title: isRtl ? "تم اختيار الفيديو" : "Video Selected" })}
+        onChange={handleVideoChange}
       />
 
       {navItems.map((item) => {
