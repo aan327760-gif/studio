@@ -29,7 +29,7 @@ import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { signOut } from "firebase/auth";
-import { useAuth, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useAuth, useUser, useDoc, useMemoFirebase, useFirestore } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VerificationBadge } from "@/components/ui/verification-badge";
@@ -39,7 +39,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const auth = useAuth();
   const { user } = useUser();
-  const db = useFirebase().db;
+  const db = useFirestore();
 
   const profileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(profileRef);
@@ -80,10 +80,15 @@ export default function SettingsPage() {
                 <AvatarFallback className="bg-zinc-900 text-xl font-black">{user?.displayName?.[0]}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <h2 className="font-black text-lg truncate">{user?.displayName || (isRtl ? "مواطن" : "Citizen")}</h2>
                   {profile?.isVerified && <VerificationBadge className="h-4 w-4" />}
-                  {profile?.isPro && <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />}
+                  {profile?.isPro && (
+                    <div className="flex items-center gap-0.5 bg-yellow-500/10 border border-yellow-500/20 px-1.5 py-0.5 rounded-full">
+                       <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                       <span className="text-[7px] font-black text-yellow-500 uppercase tracking-widest">{isRtl ? "إعلام" : "Media"}</span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs text-zinc-500 font-bold truncate">@{user?.email?.split('@')[0]}</p>
               </div>
@@ -248,4 +253,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
