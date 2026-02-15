@@ -10,31 +10,36 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, orderBy, limit, where } from "firebase/firestore";
-import { Badge } from "@/components/ui/badge";
+import { useMemo } from "react";
 
 export default function Home() {
   const { isRtl } = useLanguage();
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
-  // استعلام اكتشف
+  // استعلام اكتشف - يحتاج فهرس بسيط (موجود تلقائياً)
   const discoverPostsQuery = useMemoFirebase(() => {
     return query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
   }, [db]);
   const { data: discoverPosts, loading: discoverLoading } = useCollection<any>(discoverPostsQuery);
 
-  // استعلام رسائل النظام (آخر رسالة بث خاصة بالمستخدم)
+  // استعلام رسائل النظام - قمنا بإزالة orderBy لنتجنب الحاجة لفهرس مركب
   const systemAlertQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(
       collection(db, "notifications"), 
       where("userId", "==", currentUser.uid),
-      where("type", "==", "system"), 
-      orderBy("createdAt", "desc"), 
-      limit(1)
+      where("type", "==", "system")
     );
   }, [db, currentUser]);
-  const { data: systemAlerts = [] } = useCollection<any>(systemAlertQuery);
+  const { data: rawSystemAlerts = [] } = useCollection<any>(systemAlertQuery);
+
+  // ترتيب التنبيهات في الذاكرة لتجنب الفهرس
+  const systemAlerts = useMemo(() => {
+    return [...rawSystemAlerts].sort((a, b) => 
+      (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+    ).slice(0, 1);
+  }, [rawSystemAlerts]);
 
   // استعلام المتابعات
   const followsQuery = useMemoFirebase(() => {
@@ -43,22 +48,28 @@ export default function Home() {
   }, [db, currentUser]);
   const { data: userFollows = [] } = useCollection<any>(followsQuery);
 
-  // استخراج معرّفات المتابعين بشكل مستقر للـ useMemo
-  const followingIdsString = JSON.stringify(userFollows.map(f => f.followingId));
+  // استخراج معرّفات المتابعين
+  const followingIds = useMemo(() => userFollows.map(f => f.followingId), [userFollows]);
+  const followingIdsString = JSON.stringify(followingIds);
 
-  // استعلام منشورات المتابعة
+  // استعلام منشورات المتابعة - أزلنا orderBy لتجنب الفهرس المركب (صعب جداً مع IN)
   const followingPostsQuery = useMemoFirebase(() => {
     const ids = JSON.parse(followingIdsString);
     if (!currentUser || ids.length === 0) return null;
     return query(
       collection(db, "posts"), 
-      where("authorId", "in", ids.slice(0, 10)),
-      orderBy("createdAt", "desc"),
-      limit(20)
+      where("authorId", "in", ids.slice(0, 10))
     );
   }, [db, currentUser, followingIdsString]);
   
-  const { data: followingPosts, loading: followingLoading } = useCollection<any>(followingPostsQuery);
+  const { data: rawFollowingPosts = [], loading: followingLoading } = useCollection<any>(followingPostsQuery);
+
+  // ترتيب المنشورات في الذاكرة
+  const followingPosts = useMemo(() => {
+    return [...rawFollowingPosts].sort((a, b) => 
+      (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+    );
+  }, [rawFollowingPosts]);
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
