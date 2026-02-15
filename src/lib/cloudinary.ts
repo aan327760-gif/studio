@@ -3,26 +3,33 @@
 
 import { v2 as cloudinary } from 'cloudinary';
 
+// مكتبة Cloudinary تلتقط CLOUDINARY_URL من متغيرات البيئة تلقائياً.
+// نقوم فقط بضبط الإعدادات لضمان استخدام الروابط الآمنة (HTTPS).
 cloudinary.config({
-  cloudinary_url: process.env.CLOUDINARY_URL
+  secure: true
 });
 
 /**
- * Uploads a base64 encoded file or a data URI to Cloudinary.
- * @param fileData The file data as a base64 string or data URI.
- * @param resourceType The type of resource ('image', 'video', or 'raw' for audio).
- * @returns The secure URL of the uploaded file.
+ * يقوم برفع ملف مشفر (base64) أو رابط بيانات إلى Cloudinary.
+ * @param fileData بيانات الملف كسلسلة base64 أو رابط بيانات.
+ * @param resourceType نوع المورد ('image' أو 'video' أو 'raw' للملفات الصوتية).
+ * @returns الرابط الآمن للملف المرفوع.
  */
 export async function uploadToCloudinary(fileData: string, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<string> {
+  // التحقق من أن Cloudinary مهيأ بشكل صحيح وليس بقيم افتراضية
+  const cloudinaryUrl = process.env.CLOUDINARY_URL;
+  if (!cloudinaryUrl || cloudinaryUrl.includes('<your_') || cloudinaryUrl.includes('your_cloud_name')) {
+    throw new Error('Cloudinary is not configured. Please set a valid CLOUDINARY_URL in your .env file.');
+  }
+
   try {
-    // التحقق من حجم البيانات قبل الرفع لتجنب الأخطاء
     if (!fileData) throw new Error('No data provided for upload.');
 
     const result = await cloudinary.uploader.upload(fileData, {
       resource_type: resourceType,
       folder: 'unbound_media',
-      // تحسين جودة الضغط لزيادة سرعة الرفع والعرض لاحقاً
-      quality: 'auto:eco',
+      // تحسين الجودة والضغط لضمان سرعة التحميل
+      quality: 'auto',
       fetch_format: 'auto',
     });
     
