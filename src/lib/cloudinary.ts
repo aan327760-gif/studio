@@ -16,10 +16,12 @@ cloudinary.config({
  * @returns الرابط الآمن للملف المرفوع.
  */
 export async function uploadToCloudinary(fileData: string, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<string> {
-  // التحقق من أن Cloudinary مهيأ بشكل صحيح وليس بقيم افتراضية
   const cloudinaryUrl = process.env.CLOUDINARY_URL;
+
+  // فحص ما إذا كان الرابط مهيأ أم لا يزال يحتوي على القيم الافتراضية
   if (!cloudinaryUrl || cloudinaryUrl.includes('<your_') || cloudinaryUrl.includes('your_cloud_name')) {
-    throw new Error('Cloudinary is not configured. Please set a valid CLOUDINARY_URL in your .env file.');
+    console.error('Cloudinary error: URL is missing or contains placeholders.');
+    throw new Error('Cloudinary is not configured. Please add your valid CLOUDINARY_URL to the .env file.');
   }
 
   try {
@@ -28,14 +30,15 @@ export async function uploadToCloudinary(fileData: string, resourceType: 'image'
     const result = await cloudinary.uploader.upload(fileData, {
       resource_type: resourceType,
       folder: 'unbound_media',
-      // تحسين الجودة والضغط لضمان سرعة التحميل
+      // تحسين الجودة والضغط لضمان سرعة التحميل للموبايل
       quality: 'auto',
       fetch_format: 'auto',
     });
     
     return result.secure_url;
   } catch (error: any) {
-    console.error('Cloudinary upload error:', error);
+    console.error('Cloudinary upload error details:', error);
+    // إرجاع رسالة خطأ واضحة للمستخدم في الواجهة
     throw new Error(error.message || 'Failed to upload media to cloud storage.');
   }
 }

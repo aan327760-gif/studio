@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   serverActions: {
+    // رفع الحد الأقصى لدعم الفيديوهات حتى 5 دقائق (حوالي 500 ميجابايت)
     bodySizeLimit: '500mb',
   },
   images: {
