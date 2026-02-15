@@ -1,7 +1,6 @@
-
 "use client";
 
-import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine } from "lucide-react";
+import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, Bookmark } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -53,7 +52,7 @@ export function AppSidebar() {
 
   const navItems = [
     { icon: Home, href: "/", label: "Home" },
-    { icon: MessageSquare, href: "/messages", label: "Messages" },
+    { icon: Bookmark, href: "/bookmarks", label: "Archive" },
     { icon: Plus, href: "#", label: "Add", special: true },
     { icon: Bell, href: "/notifications", label: "Notifications", hasBadge: unreadNotifs.length > 0 },
     { 
@@ -69,13 +68,10 @@ export function AppSidebar() {
     if (files && files.length > 0) {
       setIsSheetOpen(false);
       if (files.length > 1) {
-        // إذا تم اختيار أكثر من صورة، نتوجه مباشرة لصفحة الإنشاء كألبوم
         const urls = Array.from(files).map(f => URL.createObjectURL(f));
-        // تخزين مؤقت للروابط في SessionStorage لنقلها لصفحة الإنشاء
         sessionStorage.setItem('pending_album_images', JSON.stringify(urls));
         router.push('/create-post?source=album');
       } else {
-        // صورة واحدة، نتوجه للمحرر
         const imageUrl = URL.createObjectURL(files[0]);
         router.push(`/edit-image?image=${encodeURIComponent(imageUrl)}`);
       }
@@ -136,7 +132,6 @@ export function AppSidebar() {
   return (
     <>
       <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto glass border-t border-zinc-800 z-50 px-2 h-16 shadow-2xl flex justify-around items-center">
-        {/* تفعيل خاصية multiple لاختيار عدة صور */}
         <input type="file" accept="image/*" multiple className="hidden" ref={imageInputRef} onChange={handleImageChange} />
         <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
 
