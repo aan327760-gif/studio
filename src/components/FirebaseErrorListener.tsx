@@ -3,8 +3,7 @@
 import { useEffect } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { ExternalLink, Info } from 'lucide-react';
+import { Info, AlertTriangle } from 'lucide-react';
 
 export function FirebaseErrorListener() {
   const { toast } = useToast();
@@ -21,21 +20,36 @@ export function FirebaseErrorListener() {
       
       if (isIndexError) {
         toast({
-          duration: 15000,
-          title: 'إعداد قاعدة البيانات مطلوب (فهرس)',
+          duration: 20000,
+          title: 'إعداد قاعدة البيانات مطلوب (فهرسين)',
           description: (
-            <div className="space-y-3 mt-2">
-              <p className="text-xs leading-relaxed">
-                هذا الجزء يتطلب "فهرس" (Index) في Firestore ليعمل الترتيب بشكل صحيح.
+            <div className="space-y-4 mt-2">
+              <p className="text-xs leading-relaxed text-zinc-300">
+                يا زعيم، لتعمل الصفحة الشخصية بالكامل، نحتاج لإنشاء فهرسين في Firebase Console:
               </p>
-              <div className="bg-zinc-900 p-2 rounded border border-zinc-800 space-y-1">
-                <p className="text-[10px] font-bold text-primary">الخطوات اليدوية:</p>
-                <p className="text-[9px] text-zinc-400">1. اذهب لـ Firestore ثم تبويب Indexes.</p>
-                <p className="text-[9px] text-zinc-400">2. أضف فهرس لمجموعة posts بالحقول (authorId تصاعدي و createdAt تنازلي).</p>
+              
+              <div className="space-y-3">
+                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                  <p className="text-[10px] font-black text-primary mb-1 uppercase tracking-widest">الفهرس 1 (للمنشورات):</p>
+                  <ul className="text-[9px] text-zinc-400 space-y-1">
+                    <li>• المجموعة: <span className="text-white">posts</span></li>
+                    <li>• الحقول: <span className="text-white">authorId</span> (Asc) ثم <span className="text-white">createdAt</span> (Desc)</li>
+                  </ul>
+                </div>
+
+                <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                  <p className="text-[10px] font-black text-orange-500 mb-1 uppercase tracking-widest">الفهرس 2 (للإعجابات):</p>
+                  <ul className="text-[9px] text-zinc-400 space-y-1">
+                    <li>• المجموعة: <span className="text-white">posts</span></li>
+                    <li>• الحقول: <span className="text-white">likedBy</span> (Arrays) ثم <span className="text-white">createdAt</span> (Desc)</li>
+                  </ul>
+                </div>
               </div>
-              <p className="text-[10px] font-bold opacity-70 italic flex items-center gap-1">
-                <Info className="h-3 w-3" /> الرابط المباشر متاح الآن في الـ Console (F12).
-              </p>
+
+              <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
+                <Info className="h-3 w-3 text-primary" />
+                <p className="text-[9px] text-primary-foreground font-medium">الرابط المباشر لكل فهرس موجود الآن في الـ Console (اضغط F12).</p>
+              </div>
             </div>
           ),
         });
