@@ -177,7 +177,6 @@ export default function ExplorePage() {
                       mediaType={post.mediaType}
                       likes={post.likesCount || 0}
                       time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
-                      mediaSettings={post.mediaSettings}
                     />
                   ))}
                 </div>
