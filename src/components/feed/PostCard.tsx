@@ -36,7 +36,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { VerificationBadge } from "@/components/ui/verification-badge";
-import { translateContent } from "@/ai/flows/translation-flow";
 import { Badge } from "@/components/ui/badge";
 
 interface PostCardProps {
@@ -64,9 +63,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
-  const [translatedText, setTranslatedText] = useState<string | null>(null);
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [showOriginal, setShowOriginal] = useState(true);
 
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
@@ -112,24 +108,12 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     setNewComment("");
   };
 
-  const handleTranslate = async (e: React.MouseEvent) => {
+  const handleTranslate = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!showOriginal) { setShowOriginal(true); return; }
-    if (translatedText) { setShowOriginal(false); return; }
-
-    setIsTranslating(true);
-    try {
-      const result = await translateContent({ 
-        text: content, 
-        targetLang: language === 'ar' ? 'Arabic' : 'English' 
-      });
-      setTranslatedText(result);
-      setShowOriginal(false);
-    } catch (error) {
-      toast({ variant: "destructive", title: isRtl ? "فشلت الترجمة" : "Translation failed" });
-    } finally {
-      setIsTranslating(false);
-    }
+    toast({
+      title: isRtl ? "الترجمة السيادية" : "Sovereign Translation",
+      description: isRtl ? "هذه الميزة الذكية قيد التطوير وستتوفر قريباً." : "This AI feature is under development and will be available soon.",
+    });
   };
 
   const handleReport = async (e: React.MouseEvent) => {
@@ -209,27 +193,18 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
       <CardContent className="p-0">
         <div className="px-5 pb-3">
-          <div className="relative mb-4">
-            <p className={cn("text-[15px] leading-relaxed transition-all", !showOriginal && "text-primary font-bold")}>
-              {showOriginal ? content : translatedText}
-            </p>
-            {!showOriginal && (
-              <Badge className="bg-primary/10 text-primary border-primary/20 text-[7px] font-black uppercase tracking-widest mt-2 pointer-events-none">
-                Sovereign Translation Active
-              </Badge>
-            )}
-          </div>
+          <p className="text-[15px] leading-relaxed">
+            {content}
+          </p>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-8 px-3 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-primary font-black text-[9px] uppercase tracking-widest gap-2.5 transition-all"
+            className="h-8 px-3 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-primary font-black text-[9px] uppercase tracking-widest gap-2.5 mt-3 transition-all"
             onClick={handleTranslate}
-            disabled={isTranslating}
           >
-            {isTranslating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3.5 w-3.5" />}
-            {isTranslating ? (isRtl ? "جاري الترجمة..." : "Syncing...") : 
-             (showOriginal ? (isRtl ? "ترجمة سيادية" : "Sovereign Translate") : (isRtl ? "النص الأصلي" : "Original View"))}
+            <Languages className="h-3.5 w-3.5" />
+            {isRtl ? "الترجمة السيادية (قريباً)" : "Sovereign Translate (Soon)"}
           </Button>
         </div>
 
