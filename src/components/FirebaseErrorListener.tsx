@@ -39,8 +39,8 @@ export function FirebaseErrorListener() {
 
                 <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
                   <p className="text-[10px] font-black text-orange-500 mb-1 uppercase tracking-widest">Index 2 (الإعجابات):</p>
-                  <ul className="text-[9px] text-zinc-400 space-y-1">
-                    <li>1. <span className="text-white">likedBy</span> : (Tableaux / Arrays)</li>
+                  <ul className="text-[9px] text-zinc-400 space-y-1 text-right">
+                    <li>1. <span className="text-white">likedBy</span> : <span className="text-orange-400 font-bold">(Tableaux)</span> ⬅️ هام جداً</li>
                     <li>2. <span className="text-white">createdAt</span> : (Décroissant)</li>
                   </ul>
                 </div>
