@@ -63,7 +63,7 @@ export default function UserProfilePage() {
   const userPostsQuery = useMemoFirebase(() => uid ? query(collection(db, "posts"), where("authorId", "==", uid), limit(30)) : null, [db, uid]);
   const { data: userPosts = [], loading: postsLoading } = useCollection<any>(userPostsQuery);
 
-  // استعلام المحفوظات (يظهر فقط لصاحب الملف)
+  // استعلام المحفوظات (يظهر فقط لصاحب الملف - الخصوصية السيادية)
   const savedPostsQuery = useMemoFirebase(() => {
     if (!isOwnProfile) return null;
     return query(collection(db, "posts"), where("savedBy", "array-contains", uid), limit(30));
@@ -162,7 +162,7 @@ export default function UserProfilePage() {
                     <MessageSquare className="h-5 w-5 text-primary" />
                   </Button>
                 ) : (
-                  <Button variant="outline" size="icon" className="rounded-full opacity-40 cursor-not-allowed" disabled><Lock className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" className="rounded-full opacity-40 cursor-not-allowed" disabled title={isRtl ? "المراسلة للأصدقاء فقط" : "Friends only"}><Lock className="h-4 w-4" /></Button>
                 )}
                 <Button onClick={handleFollow} className={cn("rounded-full font-black px-8", isFollowing ? "bg-zinc-900 text-white border border-zinc-800" : "bg-white text-black")}>
                   {isFollowing ? (isRtl ? "يتبع" : "Following") : (isRtl ? "متابعة" : "Follow")}
@@ -278,7 +278,7 @@ function FollowListDialog({ open, onOpenChange, userId, type, isRtl }: any) {
           <DialogTitle className="text-center font-black uppercase text-sm">{type === 'followers' ? (isRtl ? "المتابعون" : "Followers") : (isRtl ? "يتابع" : "Following")}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 p-4">
-          {loading || fetching ? <Loader2 className="h-6 w-6 animate-spin mx-auto opacity-20" /> : users.map((u) => (
+          {loading || fetching ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin opacity-20" /></div> : users.map((u) => (
             <Link key={u.id} href={`/profile/${u.id}`} onClick={() => onOpenChange(false)}>
               <div className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl transition-all">
                 <Avatar className="h-10 w-10 border border-zinc-800"><AvatarImage src={u.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>

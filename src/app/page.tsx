@@ -12,6 +12,8 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebas
 import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import { useMemo } from "react";
 
+const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
+
 export default function Home() {
   const { isRtl } = useLanguage();
   const db = useFirestore();
@@ -33,7 +35,7 @@ export default function Home() {
         
         // 1. وزن رتبة المواطن (Sovereign Rank Weight)
         if (author.isPro) score += 1000;
-        if (author.isVerified || author.role === 'admin' || author.email === "adelbenmaza3@gmail.com") score += 500;
+        if (author.isVerified || author.role === 'admin' || author.email === ADMIN_EMAIL) score += 500;
         
         // 2. وزن التفاعل البشري (Engagement Weight)
         score += (post.likesCount || 0) * 10;
@@ -43,7 +45,7 @@ export default function Home() {
         // 3. وزن التوقيت (Time Decay Weight)
         const postTime = post.createdAt?.seconds ? post.createdAt.seconds * 1000 : Date.now();
         const hoursPassed = (Date.now() - postTime) / (1000 * 60 * 60);
-        score -= hoursPassed * 25; // فقدان 25 نقطة كل ساعة
+        score -= hoursPassed * 25; // فقدان 25 نقطة كل ساعة لضمان تجدد المحتوى
         
         return score;
       };
@@ -51,7 +53,7 @@ export default function Home() {
     }).slice(0, 30);
   }, [rawDiscoverPosts]);
 
-  // استعلام تنبيهات النظام
+  // استعلام تنبيهات النظام الرسمية
   const systemAlertQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(
@@ -68,7 +70,7 @@ export default function Home() {
     ).slice(0, 1);
   }, [rawSystemAlerts]);
 
-  // استعلام المتابعة
+  // استعلام المتابعة لرؤية أفكار الأصدقاء
   const followsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(collection(db, "follows"), where("followerId", "==", currentUser.uid), limit(100));

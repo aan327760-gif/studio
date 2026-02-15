@@ -16,7 +16,7 @@ interface UploadContextType {
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
 /**
- * محرك الضغط السيادي - معالجة خفيفة لا ترهق المعالج
+ * محرك الضغط السيادي - معالجة خفيفة لضمان سرعة الرفع
  */
 const compressImage = async (url: string): Promise<string> => {
   return new Promise((resolve) => {
@@ -25,7 +25,7 @@ const compressImage = async (url: string): Promise<string> => {
     img.src = url;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 1080; // عرض قياسي عالمي
+      const MAX_WIDTH = 1080; 
       let width = img.width;
       let height = img.height;
 
@@ -49,7 +49,7 @@ const compressImage = async (url: string): Promise<string> => {
 };
 
 /**
- * نظام الرفع في الخلفية - إصدار "السيادة السلسة"
+ * نظام الرفع في الخلفية - يتيح للمواطن التصفح أثناء معالجة الوسائط
  */
 export function UploadProvider({ children }: { children: React.ReactNode }) {
   const [isUploading, setIsUploading] = useState(false);
@@ -66,7 +66,7 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
       let finalMediaUrls: string[] = [];
       let mediaType: "image" | "video" | "audio" | "album" | null = null;
 
-      // 1. معالجة الصور (الضغط التدريجي)
+      // 1. معالجة الصور (الألبومات أو الصورة المفردة)
       if (localImages && localImages.length > 0) {
         mediaType = localImages.length > 1 ? 'album' : 'image';
         
@@ -80,7 +80,7 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
         finalMediaUrls = await Promise.all(uploadPromises);
       } 
       
-      // 2. معالجة الفيديوهات (التدفق المباشر)
+      // 2. معالجة الفيديوهات
       else if (videoUrl) {
         mediaType = 'video';
         setProgress(30);
@@ -98,7 +98,7 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
         setProgress(95);
       }
 
-      // 3. التوثيق النهائي في Firestore
+      // 3. التسجيل في Firestore
       await addDoc(collection(db, "posts"), {
         content,
         mediaUrl: finalMediaUrls[0] || null,
@@ -119,13 +119,13 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
       setProgress(100);
       toast({ title: isRtl ? "تم النشر بنجاح" : "Sovereign Post Published" });
     } catch (error: any) {
-      console.error("Sovereign Upload Engine Failure:", error);
-      toast({ variant: "destructive", title: isRtl ? "فشل البروتوكول" : "Upload Failed" });
+      console.error("Sovereign Upload Failure:", error);
+      toast({ variant: "destructive", title: isRtl ? "فشل الرفع" : "Upload Failed" });
     } finally {
       setTimeout(() => {
         setIsUploading(false);
         setProgress(0);
-      }, 1500);
+      }, 1000);
     }
   };
 

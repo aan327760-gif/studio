@@ -31,12 +31,13 @@ export default function DirectChatRoomPage() {
   const otherUserRef = useMemoFirebase(() => otherUserId ? doc(db, "users", otherUserId) : null, [db, otherUserId]);
   const { data: otherUser } = useDoc<any>(otherUserRef);
 
+  // بروتوكول الصداقة السيادية (Mutual Follow)
   const followId = user && otherUserId ? `${user.uid}_${otherUserId}` : null;
-  const followRef = useMemoFirebase(() => followId ? doc(db, "follows", followId) : null, [db, followId]);
+  const followRef = useMemoFirebase(() => (followId) ? doc(db, "follows", followId) : null, [db, followId]);
   const { data: followDoc } = useDoc<any>(followRef);
 
   const reverseFollowId = user && otherUserId ? `${otherUserId}_${user.uid}` : null;
-  const reverseFollowRef = useMemoFirebase(() => reverseFollowId ? doc(db, "follows", reverseFollowId) : null, [db, reverseFollowId]);
+  const reverseFollowRef = useMemoFirebase(() => (reverseFollowId) ? doc(db, "follows", reverseFollowId) : null, [db, reverseFollowId]);
   const { data: reverseFollowDoc } = useDoc<any>(reverseFollowRef);
 
   const isFriend = !!followDoc && !!reverseFollowDoc;
@@ -115,7 +116,7 @@ export default function DirectChatRoomPage() {
               const prevMsg = index > 0 ? messages[index - 1] : null;
               const prevDate = prevMsg?.createdAt?.toDate ? prevMsg.createdAt.toDate() : null;
               
-              // عرض الفاصل الزمني إذا مر أكثر من ساعة أو هو أول رسالة في اليوم
+              // عرض الفاصل الزمني المركزي
               const showTimeSeparator = !prevDate || (msgDate.getTime() - prevDate.getTime() > 3600000);
 
               return (
