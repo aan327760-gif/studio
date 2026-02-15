@@ -58,10 +58,10 @@ export default function AuthPage() {
         }
 
         toast({
-          title: isRtl ? "تم تسجيل الدخول" : "Logged In",
+          title: isRtl ? "تم تسجيل الدخول بنجاح" : "Logged In Successfully",
           description: user.email === SUPER_ADMIN_EMAIL 
-            ? (isRtl ? "مرحباً أيها المدير العام!" : "Welcome, Master Admin!") 
-            : (isRtl ? "مرحباً بك مجدداً في Unbound" : "Welcome back back to Unbound"),
+            ? (isRtl ? "مرحباً أيها المدير العام، السلطة بين يديك." : "Welcome back, Super Admin.") 
+            : (isRtl ? "مرحباً بك مجدداً في Unbound" : "Welcome back to Unbound"),
         });
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
@@ -102,14 +102,14 @@ export default function AuthPage() {
 
         toast({
           title: isRtl ? "تم إنشاء الحساب" : "Account Created",
-          description: isRtl ? "مرحباً بك في مجتمع Unbound" : "Welcome to the Unbound community",
+          description: isRtl ? "مرحباً بك في مجتمع Unbound الحر" : "Welcome to the Unbound community",
         });
       }
       router.push("/");
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: isRtl ? "خطأ" : "Error",
+        title: isRtl ? "خطأ في المصادقة" : "Auth Error",
         description: error.message,
       });
     } finally {
@@ -119,33 +119,33 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-zinc-950 border-zinc-800 text-white shadow-2xl">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-2xl italic">U</span>
+      <Card className="w-full max-w-md bg-zinc-950 border-zinc-800 text-white shadow-2xl rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="space-y-1 text-center py-10">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center rotate-3 shadow-xl shadow-primary/20">
+              <span className="text-white font-black text-3xl italic">U</span>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">
-            {isLogin ? (isRtl ? "تسجيل الدخول" : "Welcome Back") : (isRtl ? "إنشاء حساب جديد" : "Create Account")}
+          <CardTitle className="text-3xl font-black tracking-tighter">
+            {isLogin ? (isRtl ? "عودة حميدة" : "Welcome Back") : (isRtl ? "ابدأ رحلتك" : "Start Journey")}
           </CardTitle>
-          <CardDescription className="text-zinc-500">
+          <CardDescription className="text-zinc-500 font-medium">
             {isLogin 
-              ? (isRtl ? "أدخل بياناتك للعودة إلى حسابك" : "Enter your details to access your account")
-              : (isRtl ? "انضم إلى Unbound وشارك أفكارك بحرية" : "Join Unbound and share your voice freely")}
+              ? (isRtl ? "أدخل بياناتك لتكمل تواصلك بحرية" : "Enter details to continue freely")
+              : (isRtl ? "كن جزءاً من منصة بلا قيود" : "Be part of Unbound OS")}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
+        <CardContent className="px-8">
+          <form onSubmit={handleAuth} className="space-y-5">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="displayName">{isRtl ? "الاسم الكامل" : "Full Name"}</Label>
+                <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "الاسم الكامل" : "Full Name"}</Label>
                 <div className="relative">
-                  <UserIcon className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
                   <Input
                     id="displayName"
                     placeholder={isRtl ? "أحمد محمد" : "John Doe"}
-                    className="bg-zinc-900 border-zinc-800 pl-10"
+                    className="bg-zinc-900 border-zinc-800 pl-12 h-12 rounded-2xl focus:ring-primary"
                     required
                     value={formData.displayName}
                     onChange={(e) => setFormData({...formData, displayName: e.target.value})}
@@ -154,14 +154,14 @@ export default function AuthPage() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">{isRtl ? "البريد الإلكتروني" : "Email"}</Label>
+              <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "البريد الإلكتروني" : "Email"}</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="name@example.com"
-                  className="bg-zinc-900 border-zinc-800 pl-10"
+                  className="bg-zinc-900 border-zinc-800 pl-12 h-12 rounded-2xl focus:ring-primary"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -169,13 +169,13 @@ export default function AuthPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">{isRtl ? "كلمة السر" : "Password"}</Label>
+              <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "كلمة السر" : "Password"}</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
                 <Input
                   id="password"
                   type="password"
-                  className="bg-zinc-900 border-zinc-800 pl-10"
+                  className="bg-zinc-900 border-zinc-800 pl-12 h-12 rounded-2xl focus:ring-primary"
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
@@ -184,32 +184,36 @@ export default function AuthPage() {
             </div>
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="phone">{isRtl ? "رقم الهاتف (اختياري)" : "Phone Number (Optional)"}</Label>
+                <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "رقم الهاتف (اختياري)" : "Phone (Optional)"}</Label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
                   <Input
                     id="phone"
                     type="tel"
                     placeholder="+213..."
-                    className="bg-zinc-900 border-zinc-800 pl-10"
+                    className="bg-zinc-900 border-zinc-800 pl-12 h-12 rounded-2xl"
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   />
                 </div>
               </div>
             )}
-            <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 font-bold h-11 rounded-xl mt-6" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLogin ? (isRtl ? "دخول" : "Sign In") : (isRtl ? "إنشاء حساب" : "Create Account")}
+            <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 font-black h-14 rounded-2xl mt-4 shadow-xl active:scale-95 transition-all" disabled={loading}>
+              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : (isLogin ? (isRtl ? "دخول" : "Sign In") : (isRtl ? "إنشاء حساب" : "Join Now"))}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="text-center text-sm text-zinc-500">
-            {isLogin ? (isRtl ? "ليس لديك حساب؟" : "Don't have an account?") : (isRtl ? "لديك حساب بالفعل؟" : "Already have an account?")}{" "}
-            <button onClick={() => setIsLogin(!isLogin)} className="text-primary font-bold hover:underline">
-              {isLogin ? (isRtl ? "سجل الآن" : "Sign Up") : (isRtl ? "تسجيل الدخول" : "Log In")}
+        <CardFooter className="flex flex-col space-y-6 pb-10">
+          <div className="text-center text-xs font-bold text-zinc-600">
+            {isLogin ? (isRtl ? "ليس لديك حساب؟" : "New to Unbound?") : (isRtl ? "لديك حساب بالفعل؟" : "Already member?")}{" "}
+            <button onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline ml-1">
+              {isLogin ? (isRtl ? "سجل الآن" : "Create one") : (isRtl ? "دخول" : "Sign In")}
             </button>
+          </div>
+          <div className="flex items-center gap-2 opacity-10">
+            <div className="h-[1px] flex-1 bg-white" />
+            <span className="text-[8px] font-black uppercase tracking-[0.4em]">Secure Auth</span>
+            <div className="h-[1px] flex-1 bg-white" />
           </div>
         </CardFooter>
       </Card>
