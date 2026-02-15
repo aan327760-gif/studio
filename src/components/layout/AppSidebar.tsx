@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, StopCircle, Info } from "lucide-react";
+import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -192,7 +192,7 @@ export function AppSidebar() {
       </aside>
 
       <Dialog open={isProclamationOpen} onOpenChange={setIsProclamationOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2.5rem] p-0 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2.5rem] p-0 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col outline-none">
           <ScrollArea className="flex-1 p-6 sm:p-8">
             <DialogHeader className="space-y-6">
               <div className="mx-auto h-16 w-16 sm:h-20 sm:w-20 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-2">

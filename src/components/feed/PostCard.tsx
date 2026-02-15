@@ -8,8 +8,6 @@ import {
   Send, 
   Trash2, 
   Flag, 
-  Languages, 
-  Star, 
   Play, 
   Pause, 
   Volume2,
@@ -20,7 +18,8 @@ import {
   MoreVertical,
   MessageSquare,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Star
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -58,7 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface PostCardProps {
   id: string;
@@ -129,20 +128,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     updateDoc(postRef, updateData).catch(async (err) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: postRef.path, operation: 'update', requestResourceData: updateData }));
     });
-
-    if (!isLiked && author?.uid !== user.uid) {
-      addDoc(collection(db, "notifications"), {
-        userId: author?.uid || author?.id,
-        type: "like",
-        fromUserId: user.uid,
-        fromUserName: currentUserProfile?.displayName || user.displayName,
-        fromUserAvatar: currentUserProfile?.photoURL || user.photoURL,
-        postId: id,
-        message: isRtl ? "أعجب بمنشورك" : "liked your post",
-        read: false,
-        createdAt: serverTimestamp()
-      }).catch(() => {});
-    }
   };
 
   const handleAddComment = () => {
@@ -255,7 +240,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 <span className="text-xs font-black text-zinc-600">{comments.length}</span>
               </div>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 flex flex-col">
+            <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 flex flex-col outline-none">
               <SheetHeader className="p-4 border-b border-zinc-900">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -320,9 +305,7 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
     const updateData = isCommentLiked 
       ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) }
       : { likedBy: arrayUnion(user.uid), likesCount: increment(1) };
-    updateDoc(commentRef, updateData).catch(async (e) => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: commentRef.path, operation: 'update', requestResourceData: updateData }));
-    });
+    updateDoc(commentRef, updateData);
   };
 
   const handleAddReply = () => {
