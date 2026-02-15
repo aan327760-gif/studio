@@ -9,14 +9,14 @@ import {
   Calendar, 
   MapPin, 
   CheckCircle2, 
-  Edit2, 
-  LogOut,
   Loader2,
-  UserPlus,
-  UserCheck,
-  MessageSquare,
   Settings,
-  Hammer
+  Grid3X3,
+  Heart,
+  FileText,
+  MessageSquare,
+  Share2,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 
 export default function UserProfilePage() {
   const { uid } = useParams();
-  const { t, isRtl } = useLanguage();
+  const { isRtl } = useLanguage();
   const auth = useAuth();
   const { user: currentUser } = useUser();
   const db = useFirestore();
@@ -41,13 +41,42 @@ export default function UserProfilePage() {
 
   const isOwnProfile = currentUser?.uid === uid;
 
+  // جلب بيانات الملف الشخصي
   const profileRef = useMemoFirebase(() => uid ? doc(db, "users", uid as string) : null, [db, uid]);
   const { data: profile, loading: profileLoading } = useDoc<any>(profileRef);
 
+  // نظام المتابعة
   const followId = currentUser && uid ? `${currentUser.uid}_${uid}` : null;
   const followRef = useMemoFirebase(() => (followId && !isOwnProfile) ? doc(db, "follows", followId) : null, [db, followId, isOwnProfile]);
   const { data: followDoc } = useDoc<any>(followRef);
   const isFollowing = !!followDoc;
+
+  // جلب منشورات المستخدم (التبويب الأول)
+  const userPostsQuery = useMemoFirebase(() => {
+    if (!uid) return null;
+    return query(
+      collection(db, "posts"),
+      where("authorId", "==", uid),
+      orderBy("createdAt", "desc"),
+      limit(30)
+    );
+  }, [db, uid]);
+  const { data: userPosts, loading: postsLoading } = useCollection<any>(userPostsQuery);
+
+  // جلب المنشورات التي أعجب بها (تبويب الإعجابات)
+  const likedPostsQuery = useMemoFirebase(() => {
+    if (!uid) return null;
+    return query(
+      collection(db, "posts"),
+      where("likedBy", "array-contains", uid),
+      orderBy("createdAt", "desc"),
+      limit(20)
+    );
+  }, [db, uid]);
+  const { data: likedPosts, loading: likedLoading } = useCollection<any>(likedPostsQuery);
+
+  // تصفية الوسائط من منشورات المستخدم (تبويب الوسائط)
+  const userMedia = userPosts.filter(p => p.mediaUrl);
 
   const handleFollow = async () => {
     if (!currentUser || !uid || isOwnProfile || !followRef) return;
@@ -77,27 +106,6 @@ export default function UserProfilePage() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push("/auth");
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "Failed to logout" });
-    }
-  };
-
-  const userPostsQuery = useMemoFirebase(() => {
-    if (!uid) return null;
-    return query(
-      collection(db, "posts"),
-      where("authorId", "==", uid),
-      orderBy("createdAt", "desc"),
-      limit(20)
-    );
-  }, [db, uid]);
-
-  const { data: userPosts, loading: postsLoading } = useCollection<any>(userPostsQuery);
-
   if (profileLoading) {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
@@ -118,115 +126,125 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20">
-      <div className="relative h-44 w-full">
+    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20 overflow-x-hidden">
+      {/* Banner & Header */}
+      <div className="relative h-48 w-full">
         <div className="w-full h-full bg-zinc-900 overflow-hidden">
            {profile?.bannerURL ? (
              <img src={profile.bannerURL} alt="Cover" className="w-full h-full object-cover" />
            ) : (
-             <img src={`https://picsum.photos/seed/${uid}/1200/400`} alt="Default Cover" className="w-full h-full object-cover opacity-40 grayscale" />
+             <img src={`https://picsum.photos/seed/${uid}/1200/400`} alt="Default Cover" className="w-full h-full object-cover opacity-30 grayscale" />
            )}
-           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
         </div>
         <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-          <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white" onClick={() => router.back()}>
+          <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10" onClick={() => router.back()}>
             <ArrowLeft className={isRtl ? "rotate-180" : ""} />
           </Button>
           <div className="flex gap-2">
             {isOwnProfile && (
               <Link href="/settings">
-                <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white">
+                <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10">
                   <Settings className="h-5 w-5" />
                 </Button>
               </Link>
             )}
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white">
+            <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10">
               <MoreHorizontal className="h-5 w-5" />
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="px-4 relative -mt-12">
-        <Avatar className="h-24 w-24 border-4 border-black shadow-xl mb-4">
+      {/* Profile Info */}
+      <div className="px-4 relative -mt-14">
+        <Avatar className="h-28 w-28 border-[6px] border-black shadow-2xl mb-4">
           <AvatarImage src={profile?.photoURL} />
-          <AvatarFallback className="bg-zinc-800 text-2xl">U</AvatarFallback>
+          <AvatarFallback className="bg-zinc-800 text-3xl font-black">
+            {profile?.displayName?.[0]?.toUpperCase()}
+          </AvatarFallback>
         </Avatar>
 
         <div className="flex justify-between items-start">
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             <div className="flex items-center gap-1.5">
-              <h2 className="text-xl font-bold">{profile?.displayName}</h2>
-              <CheckCircle2 className="h-4 w-4 text-primary fill-primary text-black" />
+              <h2 className="text-2xl font-black tracking-tight">{profile?.displayName}</h2>
+              <CheckCircle2 className="h-5 w-5 text-primary fill-primary text-black" />
             </div>
-            <p className="text-zinc-500 text-sm">@{profile?.email?.split('@')[0] || "user"}</p>
+            <p className="text-zinc-500 text-sm font-medium">@{profile?.email?.split('@')[0] || "user"}</p>
           </div>
           
           {isOwnProfile ? (
             <Link href="/profile/edit">
-              <Button variant="outline" className="rounded-full font-bold px-6 border-zinc-700 hover:bg-zinc-800">
+              <Button variant="outline" className="rounded-full font-black px-6 border-zinc-700 hover:bg-zinc-800 hover:text-white transition-all">
                 {isRtl ? "تعديل الملف" : "Edit profile"}
               </Button>
             </Link>
           ) : (
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleFollow}
-                className={cn(
-                  "rounded-full font-bold px-6 h-9 transition-all",
-                  isFollowing ? "bg-zinc-800 text-white hover:bg-zinc-700" : "bg-white text-black hover:bg-zinc-200"
-                )}
-              >
-                {isFollowing ? (isRtl ? "يتابع" : "Following") : (isRtl ? "متابعة" : "Follow")}
-              </Button>
-            </div>
+            <Button 
+              onClick={handleFollow}
+              className={cn(
+                "rounded-full font-black px-8 h-10 transition-all shadow-lg active:scale-95",
+                isFollowing ? "bg-zinc-900 text-white border border-zinc-800" : "bg-white text-black hover:bg-zinc-200"
+              )}
+            >
+              {isFollowing ? (isRtl ? "يتابع" : "Following") : (isRtl ? "متابعة" : "Follow")}
+            </Button>
           )}
         </div>
 
-        <div className="mt-4 text-sm leading-relaxed text-zinc-300">
-          {profile?.bio || (isRtl ? "لا توجد سيرة ذاتية" : "No bio yet")}
+        <div className="mt-4 text-[15px] leading-relaxed text-zinc-300 font-medium">
+          {profile?.bio || (isRtl ? "لم يكتب سيرة ذاتية بعد.. يفضل الصمت أحياناً." : "No bio yet. Silence is golden.")}
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500">
-          <div className="flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
+        <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500 font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5" />
             <span>{isRtl ? "الجزائر" : "Algeria"}</span>
           </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" />
             <span>{isRtl ? "انضم في 2026" : "Joined 2026"}</span>
           </div>
         </div>
 
-        <div className="mt-4 flex gap-5 text-sm">
-          <div className="flex gap-1">
-            <span className="font-bold text-white">{profile?.followingCount || 0}</span>
-            <span className="text-zinc-500">{isRtl ? "متابِع" : "Following"}</span>
+        <div className="mt-6 flex gap-6 border-y border-zinc-900 py-4">
+          <div className="flex flex-col items-center flex-1">
+            <span className="font-black text-lg text-white">{profile?.followingCount || 0}</span>
+            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "يتابع" : "Following"}</span>
           </div>
-          <div className="flex gap-1">
-            <span className="font-bold text-white">{profile?.followersCount || 0}</span>
-            <span className="text-zinc-500">{isRtl ? "متابَع" : "Followers"}</span>
+          <div className="flex flex-col items-center flex-1 border-x border-zinc-900">
+            <span className="font-black text-lg text-white">{profile?.followersCount || 0}</span>
+            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "متابع" : "Followers"}</span>
+          </div>
+          <div className="flex flex-col items-center flex-1">
+            <span className="font-black text-lg text-white">{userPosts.length}</span>
+            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "منشور" : "Posts"}</span>
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="posts" className="mt-6 w-full">
-        <TabsList className="w-full bg-black rounded-none h-12 p-0 border-b border-zinc-900 justify-start">
-          <TabsTrigger value="posts" className="flex-1 px-4 h-full font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all">
+      {/* Tabs */}
+      <Tabs defaultValue="posts" className="mt-2 w-full">
+        <TabsList className="w-full bg-black rounded-none h-14 p-0 border-b border-zinc-900 justify-around glass">
+          <TabsTrigger value="posts" className="flex-1 px-4 h-full font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-white text-zinc-500 transition-all">
+            <FileText className="h-4 w-4 mr-2 hidden md:inline" />
             {isRtl ? "المنشورات" : "Posts"}
           </TabsTrigger>
-          <TabsTrigger value="media" className="flex-1 px-4 h-full font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all">
+          <TabsTrigger value="media" className="flex-1 px-4 h-full font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-white text-zinc-500 transition-all">
+            <Grid3X3 className="h-4 w-4 mr-2 hidden md:inline" />
             {isRtl ? "الوسائط" : "Media"}
           </TabsTrigger>
-          <TabsTrigger value="likes" className="flex-1 px-4 h-full font-bold text-xs border-b-2 border-transparent data-[state=active]:border-primary transition-all">
+          <TabsTrigger value="likes" className="flex-1 px-4 h-full font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-white text-zinc-500 transition-all">
+            <Heart className="h-4 w-4 mr-2 hidden md:inline" />
             {isRtl ? "الإعجابات" : "Likes"}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="posts" className="m-0">
+        <TabsContent value="posts" className="m-0 focus-visible:ring-0">
           {postsLoading ? (
-            <div className="flex justify-center p-10">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <div className="flex justify-center p-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
             </div>
           ) : userPosts.length > 0 ? (
             <div className="flex flex-col">
@@ -247,24 +265,76 @@ export default function UserProfilePage() {
                   comments={0}
                   reposts={0}
                   time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
+                  mediaSettings={post.mediaSettings}
                 />
               ))}
             </div>
           ) : (
-            <div className="p-10 text-center text-zinc-500 text-sm">
-              {isRtl ? "لا توجد منشورات" : "No posts yet"}
+            <div className="p-20 text-center flex flex-col items-center gap-4">
+              <FileText className="h-12 w-12 text-zinc-800" />
+              <p className="text-zinc-500 text-sm font-bold">{isRtl ? "لم ينشر أي شيء بعد" : "Nothing published yet"}</p>
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="media" className="m-0 p-10 text-center text-zinc-500 text-sm flex flex-col items-center gap-4">
-           <Hammer className="h-10 w-10 opacity-20" />
-           <p>{isRtl ? "معرض الوسائط قيد التطوير" : "Media gallery under development"}</p>
+        <TabsContent value="media" className="m-0 focus-visible:ring-0">
+          {userMedia.length > 0 ? (
+            <div className="grid grid-cols-3 gap-1 p-1">
+              {userMedia.map((post: any) => (
+                <Link key={post.id} href={`/post/${post.id}`}>
+                  <div className="aspect-square bg-zinc-900 relative overflow-hidden group">
+                    {post.mediaType === 'video' ? (
+                      <video src={post.mediaUrl} className="w-full h-full object-cover" />
+                    ) : (
+                      <img src={post.mediaUrl} alt="Media" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                      <div className="flex items-center gap-1">
+                         <Heart className="h-4 w-4 fill-white" />
+                         <span className="text-[10px] font-bold">{post.likesCount || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="p-20 text-center flex flex-col items-center gap-4">
+              <Grid3X3 className="h-12 w-12 text-zinc-800" />
+              <p className="text-zinc-500 text-sm font-bold">{isRtl ? "لا توجد صور أو فيديوهات" : "No media found"}</p>
+            </div>
+          )}
         </TabsContent>
 
-        <TabsContent value="likes" className="m-0 p-10 text-center text-zinc-500 text-sm flex flex-col items-center gap-4">
-           <Hammer className="h-10 w-10 opacity-20" />
-           <p>{isRtl ? "سجل الإعجابات قيد التطوير" : "Likes history under development"}</p>
+        <TabsContent value="likes" className="m-0 focus-visible:ring-0">
+          {likedLoading ? (
+            <div className="flex justify-center p-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
+            </div>
+          ) : likedPosts.length > 0 ? (
+            <div className="flex flex-col">
+              {likedPosts.map((post: any) => (
+                <PostCard 
+                  key={post.id} 
+                  id={post.id}
+                  author={post.author || { name: "User", handle: "user", avatar: "" }}
+                  content={post.content}
+                  image={post.mediaUrl}
+                  mediaType={post.mediaType}
+                  likes={post.likesCount || 0}
+                  comments={0}
+                  reposts={0}
+                  time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
+                  mediaSettings={post.mediaSettings}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="p-20 text-center flex flex-col items-center gap-4">
+              <Heart className="h-12 w-12 text-zinc-800" />
+              <p className="text-zinc-500 text-sm font-bold">{isRtl ? "لم يعجب بأي منشور بعد" : "No liked posts yet"}</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
