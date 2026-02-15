@@ -8,6 +8,17 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // وظيفة للتحقق من أن المستخدم هو المدير
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == "adelbenmaza3@gmail.com";
+    }
+
+    // وظيفة للتحقق من أن المستخدم ليس محظوراً
+    function isNotBanned() {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return !userDoc.data.has('isBannedUntil') || userDoc.data.isBannedUntil < request.time;
+    }
+
     // وظيفة للتحقق من ملكية الوثيقة
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
@@ -17,13 +28,13 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isSignedIn();
-      allow update: if isOwner(userId);
+      allow update: if isAdmin() || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isBannedUntil', 'role', 'isVerified']));
     }
     
     // قواعد المتابعة
     match /follows/{followId} {
       allow read: if true;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && isNotBanned();
       allow delete: if isSignedIn() && (resource.data.followerId == request.auth.uid);
     }
     
@@ -31,37 +42,36 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if true;
       allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likesCount']));
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow create: if isSignedIn() && isNotBanned();
+      allow update: if isAdmin() || (isSignedIn() && isNotBanned() && (resource.data.authorId == request.auth.uid || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likesCount'])));
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       
       match /comments/{commentId} {
         allow read: if true;
-        allow write: if isSignedIn();
+        allow write: if isSignedIn() && isNotBanned();
       }
     }
     
     // قواعد التنبيهات
     match /notifications/{notificationId} {
       allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn();
+      allow create: if isSignedIn() && isNotBanned();
     }
     
     // قواعد المجموعات (اللمة)
     match /groups/{groupId} {
-      // السماح بالقراءة إذا كان المستخدم عضواً أو المجموعة ليست خاصة
-      // للسماح بالـ list (البحث)، يجب أن تتطابق شروط الاستعلام مع القواعد
       allow read: if isSignedIn() && (
         (request.auth.uid in resource.data.members) || 
         (resource.data.isPrivate == false)
       );
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && (request.auth.uid in resource.data.members);
+      allow create: if isSignedIn() && isNotBanned();
+      allow update: if isAdmin() || (isSignedIn() && isNotBanned() && (request.auth.uid in resource.data.members));
+      allow delete: if isAdmin();
       
       // الرسائل داخل المجموعات
       match /messages/{messageId} {
         allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members);
-        allow write: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members);
+        allow write: if isSignedIn() && isNotBanned() && (request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members);
       }
     }
   }

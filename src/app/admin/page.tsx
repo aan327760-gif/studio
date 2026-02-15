@@ -12,7 +12,9 @@ import {
   deleteDoc, 
   doc, 
   getDocs,
-  getCountFromServer
+  getCountFromServer,
+  updateDoc,
+  Timestamp
 } from "firebase/firestore";
 import { 
   Users, 
@@ -25,7 +27,9 @@ import {
   Loader2,
   Search,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Ban,
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -48,7 +52,6 @@ export default function AdminDashboard() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // جلب البيانات العالمية للإدارة
   const { data: allUsers, loading: usersLoading } = useCollection<any>(
     query(collection(db, "users"), limit(100))
   );
@@ -62,7 +65,6 @@ export default function AdminDashboard() {
   );
 
   useEffect(() => {
-    // حماية الصفحة: إذا لم يكن المستخدم هو المدير، يتم تحويله
     if (!userLoading && (!user || user.email !== ADMIN_EMAIL)) {
       router.replace("/");
     }
@@ -101,15 +103,33 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (userId === user?.uid) return;
-    if (confirm(isRtl ? "حذف هذا المستخدم وجميع بياناته؟" : "Delete this user and all data?")) {
+  const handleBanUser = async (userId: string) => {
+    const banUntil = new Date();
+    banUntil.setDate(banUntil.getDate() + 3); // 3 days ban
+
+    if (confirm(isRtl ? "حظر هذا المستخدم من النشر والتعليق لمدة 3 أيام؟" : "Ban this user from posting and commenting for 3 days?")) {
       try {
-        await deleteDoc(doc(db, "users", userId));
-        toast({ title: isRtl ? "تم حذف المستخدم" : "User deleted" });
+        await updateDoc(doc(db, "users", userId), {
+          isBannedUntil: Timestamp.fromDate(banUntil)
+        });
+        toast({ 
+          title: isRtl ? "تم الحظر" : "User Banned",
+          description: isRtl ? "تم إيقاف صلاحيات المستخدم لمدة 3 أيام." : "User restrictions applied for 3 days."
+        });
       } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Failed to delete user" });
+        toast({ variant: "destructive", title: "Error", description: "Failed to apply ban" });
       }
+    }
+  };
+
+  const handleUnbanUser = async (userId: string) => {
+    try {
+      await updateDoc(doc(db, "users", userId), {
+        isBannedUntil: null
+      });
+      toast({ title: isRtl ? "تم إلغاء الحظر" : "Ban Lifted" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to lift ban" });
     }
   };
 
@@ -143,7 +163,6 @@ export default function AdminDashboard() {
       </header>
 
       <main className="p-6 space-y-8">
-        {/* ملخص الإحصائيات */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard 
             title={isRtl ? "المستخدمين" : "Users"} 
@@ -181,11 +200,7 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
 
-          {/* تبويب المنشورات */}
           <TabsContent value="posts" className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-               <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500">{isRtl ? "أحدث المنشورات" : "Latest Content"}</h3>
-            </div>
             {postsLoading ? (
               <div className="py-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-zinc-800" /></div>
             ) : allPosts.map((post: any) => (
@@ -210,17 +225,11 @@ export default function AdminDashboard() {
                     </Button>
                   </div>
                   <p className="mt-2 text-sm text-zinc-300 line-clamp-2">{post.content}</p>
-                  {post.mediaUrl && (
-                    <div className="mt-3 rounded-2xl overflow-hidden border border-zinc-900 max-h-40">
-                      <img src={post.mediaUrl} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all" alt="Media" />
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
           </TabsContent>
 
-          {/* تبويب المستخدمين */}
           <TabsContent value="users" className="space-y-4">
              <div className="relative mb-6">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
@@ -233,79 +242,95 @@ export default function AdminDashboard() {
              </div>
              {usersLoading ? (
                <div className="py-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-zinc-800" /></div>
-             ) : allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) || u.email?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
-               <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl hover:bg-zinc-900/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                       <AvatarImage src={member.photoURL} />
-                       <AvatarFallback>{member.displayName?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="text-left">
-                       <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold">{member.displayName}</p>
-                          {member.role === 'admin' && <CheckCircle className="h-3 w-3 text-primary" />}
-                       </div>
-                       <p className="text-[10px] text-zinc-600">{member.email}</p>
+             ) : allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) || u.email?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => {
+               const isBanned = member.isBannedUntil && member.isBannedUntil.toDate() > new Date();
+               
+               return (
+                 <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl hover:bg-zinc-900/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                         <AvatarImage src={member.photoURL} />
+                         <AvatarFallback>{member.displayName?.[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="text-left">
+                         <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold">{member.displayName}</p>
+                            {isBanned && <Clock className="h-3 w-3 text-red-500" />}
+                         </div>
+                         <p className="text-[10px] text-zinc-600">{member.email}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <span className={cn(
-                       "text-[8px] font-black uppercase px-2 py-0.5 rounded-full border",
-                       member.isVerified ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-zinc-800 text-zinc-500 border-zinc-700"
-                     )}>
-                        {member.isVerified ? (isRtl ? "موثق" : "Verified") : (isRtl ? "عادي" : "User")}
-                     </span>
-                     {member.uid !== user?.uid && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-zinc-800 hover:text-red-500 hover:bg-red-500/10 rounded-full"
-                          onClick={() => handleDeleteUser(member.uid)}
-                        >
-                           <Trash2 className="h-4 w-4" />
-                        </Button>
-                     )}
-                  </div>
-               </div>
-             ))}
+                    <div className="flex items-center gap-2">
+                       {member.email !== ADMIN_EMAIL && (
+                         <>
+                           {isBanned ? (
+                             <Button 
+                               variant="ghost" 
+                               size="sm" 
+                               className="h-8 text-[10px] font-black uppercase text-green-500 hover:bg-green-500/10"
+                               onClick={() => handleUnbanUser(member.id)}
+                             >
+                               {isRtl ? "إلغاء الحظر" : "Unban"}
+                             </Button>
+                           ) : (
+                             <Button 
+                               variant="ghost" 
+                               size="icon" 
+                               className="h-8 w-8 text-zinc-700 hover:text-orange-500 hover:bg-orange-500/10 rounded-full"
+                               onClick={() => handleBanUser(member.id)}
+                               title={isRtl ? "حظر 3 أيام" : "Ban 3 days"}
+                             >
+                               <Ban className="h-4 w-4" />
+                             </Button>
+                           )}
+                           <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-zinc-800 hover:text-red-500 hover:bg-red-500/10 rounded-full"
+                              onClick={async () => {
+                                if (confirm(isRtl ? "حذف نهائي؟" : "Permanent delete?")) {
+                                  await deleteDoc(doc(db, "users", member.id));
+                                }
+                              }}
+                           >
+                              <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </>
+                       )}
+                    </div>
+                 </div>
+               );
+             })}
           </TabsContent>
 
-          {/* تبويب المجموعات */}
           <TabsContent value="groups" className="space-y-4">
              {groupsLoading ? (
                <div className="py-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-zinc-800" /></div>
-             ) : allGroups.length > 0 ? (
-               allGroups.map((group: any) => (
-                 <div key={group.id} className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                       <div className="h-12 w-12 rounded-2xl bg-zinc-900 flex items-center justify-center text-2xl border border-zinc-800">
-                          {group.icon || "👥"}
-                       </div>
-                       <div className="text-left">
-                          <p className="text-sm font-bold">{group.name}</p>
-                          <p className="text-[10px] text-zinc-600">{group.memberCount} {isRtl ? "عضو" : "members"}</p>
-                       </div>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-zinc-800 hover:text-red-500 rounded-full h-9 w-9"
-                      onClick={() => {
-                        if (confirm(isRtl ? "حذف هذه المجموعة؟" : "Delete this group?")) {
-                          deleteDoc(doc(db, "groups", group.id));
-                        }
-                      }}
-                    >
-                       <Trash2 className="h-4 w-4" />
-                    </Button>
-                 </div>
-               ))
-             ) : (
-               <div className="py-20 text-center opacity-20">
-                  <AlertTriangle className="h-12 w-12 mx-auto mb-2" />
-                  <p className="text-sm font-bold">{isRtl ? "لا توجد مجموعات" : "No groups found"}</p>
+             ) : allGroups.map((group: any) => (
+               <div key={group.id} className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                     <div className="h-12 w-12 rounded-2xl bg-zinc-900 flex items-center justify-center text-2xl border border-zinc-800">
+                        {group.icon || "👥"}
+                     </div>
+                     <div className="text-left">
+                        <p className="text-sm font-bold">{group.name}</p>
+                        <p className="text-[10px] text-zinc-600">{group.memberCount} {isRtl ? "عضو" : "members"}</p>
+                     </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-zinc-800 hover:text-red-500 rounded-full h-9 w-9"
+                    onClick={() => {
+                      if (confirm(isRtl ? "حذف هذه المجموعة؟" : "Delete this group?")) {
+                        deleteDoc(doc(db, "groups", group.id));
+                      }
+                    }}
+                  >
+                     <Trash2 className="h-4 w-4" />
+                  </Button>
                </div>
-             )}
+             ))}
           </TabsContent>
         </Tabs>
       </main>

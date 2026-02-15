@@ -15,7 +15,9 @@
         "isPro": { "type": "boolean", "description": "Subscription status" },
         "language": { "type": "string", "enum": ["en", "ar"] },
         "followersCount": { "type": "number" },
-        "followingCount": { "type": "number" }
+        "followingCount": { "type": "number" },
+        "isBannedUntil": { "type": "string", "format": "date-time", "description": "Timestamp until which the user is restricted" },
+        "role": { "type": "string", "enum": ["user", "admin"] }
       },
       "required": ["uid", "displayName"]
     },
