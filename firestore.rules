@@ -34,7 +34,6 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isSignedIn();
-      // المدير العام يعدل أي شيء، المشرف يعدل فقط الحظر، المالك يعدل بياناته ما عدا الرتبة والحظر
       allow update: if isSuperAdmin() 
                     || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isBannedUntil']))
                     || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isBannedUntil', 'role', 'isVerified']));
@@ -49,8 +48,7 @@ service cloud.firestore {
     
     // قواعد المنشورات
     match /posts/{postId} {
-      allow read: if true;
-      allow list: if true;
+      allow read, list: if true;
       allow create: if isSignedIn() && isNotBanned();
       allow update: if isAdmin() || (isSignedIn() && isNotBanned() && (resource.data.authorId == request.auth.uid || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likesCount'])));
       allow delete: if isAdmin() || (isSignedIn() && resource.data.authorId == request.auth.uid);
@@ -77,11 +75,18 @@ service cloud.firestore {
       allow update: if isAdmin() || (isSignedIn() && isNotBanned() && (request.auth.uid in resource.data.members));
       allow delete: if isAdmin();
       
-      // الرسائل داخل المجموعات
       match /messages/{messageId} {
         allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members);
         allow write: if isSignedIn() && isNotBanned() && (request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members);
       }
+    }
+
+    // قواعد البلاغات
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && isNotBanned();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }

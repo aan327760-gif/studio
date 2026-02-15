@@ -100,6 +100,20 @@
         "text": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
+    },
+    "Report": {
+      "title": "Content Report",
+      "description": "Reports against posts or users",
+      "type": "object",
+      "properties": {
+        "targetId": { "type": "string", "description": "Post ID or User ID being reported" },
+        "targetType": { "type": "string", "enum": ["post", "user"] },
+        "reason": { "type": "string" },
+        "reportedBy": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved"] },
+        "assignedTo": { "type": "string", "description": "Admin/Moderator ID handling this report" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -133,6 +147,10 @@
     "/groups/{groupId}/messages/{messageId}": {
       "schema": "ChatMessage",
       "description": "Messages in a group chat"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Content reports for moderation"
     }
   }
 }
