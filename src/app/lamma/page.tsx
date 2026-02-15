@@ -35,6 +35,7 @@ export default function LammaPage() {
   // جلب المتابعين للدعوة
   const followersQuery = useMemoFirebase(() => {
     if (!user) return null;
+    // المتابعون هم من يتابعونني (followingId == myUid)
     return query(collection(db, "follows"), where("followingId", "==", user.uid), limit(50));
   }, [db, user]);
   
@@ -148,7 +149,7 @@ export default function LammaPage() {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-zinc-500">{isRtl ? "دعوة المواطنين" : "Invite Citizens"}</Label>
                   <div className="max-h-40 overflow-y-auto space-y-1 bg-zinc-900/50 p-2 rounded-xl border border-zinc-800">
-                    {followersDetails.map((f) => (
+                    {followersDetails.length > 0 ? followersDetails.map((f) => (
                       <div key={f.uid} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg cursor-pointer" onClick={() => toggleFollower(f.uid)}>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8"><AvatarImage src={f.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
@@ -156,7 +157,9 @@ export default function LammaPage() {
                         </div>
                         <Checkbox checked={selectedFollowers.includes(f.uid)} className="rounded-full" />
                       </div>
-                    ))}
+                    )) : (
+                      <p className="text-[10px] text-center py-4 opacity-40">{isRtl ? "لا يوجد متابعون حالياً" : "No followers found"}</p>
+                    )}
                   </div>
                 </div>
                 <Button className="w-full bg-white text-black font-black rounded-xl h-12" onClick={handleCreateGroup}>{isRtl ? "إنشاء الآن" : "Create Now"}</Button>
@@ -192,7 +195,7 @@ export default function LammaPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
                         <h3 className="font-bold text-white truncate">{group.name}</h3>
-                        {group.isPrivate && <Lock className="h-3 w-3 text-zinc-700" />}
+                        {group.isPrivate && <ShieldCheck className="h-3 w-3 text-primary" />}
                       </div>
                       <p className="text-[10px] text-zinc-500 truncate mt-0.5">{group.description || (isRtl ? "مجموعة سيادية" : "Sovereign group")}</p>
                     </div>
