@@ -67,6 +67,13 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const CONTENT_LIMIT = 280;
+  const shouldTruncate = content.length > CONTENT_LIMIT;
+  const displayContent = shouldTruncate && !isExpanded 
+    ? content.substring(0, CONTENT_LIMIT) + "..." 
+    : content;
 
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
@@ -213,7 +220,21 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
       <CardContent className="p-0">
         <div className="px-5 pb-3">
-          {content && <p className="text-[15px] leading-relaxed mb-3">{content}</p>}
+          {content && (
+            <div className="space-y-2 mb-3">
+              <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                {displayContent}
+              </p>
+              {shouldTruncate && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                  className="text-primary text-[10px] font-black uppercase tracking-[0.2em] hover:opacity-80 transition-opacity"
+                >
+                  {isExpanded ? (isRtl ? "عرض أقل" : "Show less") : (isRtl ? "أقرأ المزيد" : "Read more")}
+                </button>
+              )}
+            </div>
+          )}
           
           <Button 
             variant="ghost" 
