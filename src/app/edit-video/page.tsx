@@ -8,17 +8,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/context/LanguageContext";
 
 function VideoEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isRtl } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [isTooLong, setIsTooLong] = useState(false);
   const videoUrl = searchParams.get("video");
 
-  // الحد الأقصى: 5 دقائق (300 ثانية)
   const MAX_DURATION = 300;
 
   useEffect(() => {
@@ -30,13 +31,13 @@ function VideoEditorContent() {
           setIsTooLong(true);
           toast({
             variant: "destructive",
-            title: "فيديو طويل جداً",
-            description: "عذراً يا زعيم، الفيديوهات يجب ألا تتجاوز 5 دقائق.",
+            title: isRtl ? "فيديو طويل جداً" : "Video too long",
+            description: isRtl ? "عذراً يا زعيم، الفيديوهات يجب ألا تتجاوز 5 دقائق." : "Sorry, videos must not exceed 5 minutes.",
           });
         }
       };
     }
-  }, [videoUrl]);
+  }, [videoUrl, isRtl]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -53,12 +54,19 @@ function VideoEditorContent() {
     if (isTooLong) {
       toast({
         variant: "destructive",
-        title: "خطأ في المدة",
-        description: "يرجى اختيار فيديو أقصر من 5 دقائق للمتابعة.",
+        title: isRtl ? "خطأ في المدة" : "Duration Error",
+        description: isRtl ? "يرجى اختيار فيديو أقصر من 5 دقائق للمتابعة." : "Please select a shorter video.",
       });
       return;
     }
     router.push(`/finalize-media?video=${encodeURIComponent(videoUrl || "")}`);
+  };
+
+  const handleUnderDev = () => {
+    toast({
+      title: isRtl ? "قيد التطوير" : "Under Development",
+      description: isRtl ? "هذه الأداة ستتوفر قريباً في التحديث القادم." : "This tool will be available in the next update.",
+    });
   };
 
   const formatTime = (seconds: number) => {
@@ -77,7 +85,6 @@ function VideoEditorContent() {
 
   return (
     <div className="flex flex-col h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
-      {/* Video Preview Container */}
       <div className="relative flex-1 bg-zinc-900 flex items-center justify-center">
         <video 
           ref={videoRef}
@@ -87,7 +94,6 @@ function VideoEditorContent() {
           playsInline
         />
         
-        {/* Top Overlay Controls */}
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
           <Button 
             variant="ghost" 
@@ -122,44 +128,41 @@ function VideoEditorContent() {
           <div className="absolute bottom-20 left-4 right-4 z-20">
             <Alert variant="destructive" className="bg-red-950/90 border-red-500 backdrop-blur-md">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>الفيديو طويل جداً</AlertTitle>
+              <AlertTitle>{isRtl ? "الفيديو طويل جداً" : "Video too long"}</AlertTitle>
               <AlertDescription>
-                مدة هذا الفيديو ({formatTime(duration)}) تتجاوز الحد المسموح به وهو 5 دقائق.
+                {isRtl ? `مدة هذا الفيديو (${formatTime(duration)}) تتجاوز الحد المسموح به.` : `Duration (${formatTime(duration)}) exceeds limit.`}
               </AlertDescription>
             </Alert>
           </div>
         )}
 
-        {/* Bottom Right Fullscreen/Crop Icon */}
         <div className="absolute bottom-4 right-4 z-10">
-          <Button variant="ghost" size="icon" className="text-white bg-black/40 rounded-lg h-10 w-10">
+          <Button variant="ghost" size="icon" className="text-white bg-black/40 rounded-lg h-10 w-10" onClick={handleUnderDev}>
             <Square className="h-5 w-5" />
           </Button>
         </div>
       </div>
 
-      {/* Toolbar Section */}
       <div className="bg-black py-8 px-4 border-t border-zinc-900">
         <div className="flex justify-around items-center mb-8">
-          <div className="flex flex-col items-center gap-2 group cursor-pointer opacity-40">
-            <RotateCw className="h-6 w-6 text-white" />
-            <span className="text-[10px] text-zinc-400">تدوير</span>
+          <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={handleUnderDev}>
+            <RotateCw className="h-6 w-6 text-white group-hover:text-primary transition-colors" />
+            <span className="text-[10px] text-zinc-400">{isRtl ? "تدوير" : "Rotate"}</span>
           </div>
-          <div className="flex flex-col items-center gap-2 group cursor-pointer opacity-40">
-            <Columns2 className="h-6 w-6 text-white" />
-            <span className="text-[10px] text-zinc-400">تقسيم</span>
+          <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={handleUnderDev}>
+            <Columns2 className="h-6 w-6 text-white group-hover:text-primary transition-colors" />
+            <span className="text-[10px] text-zinc-400">{isRtl ? "تقسيم" : "Split"}</span>
           </div>
-          <div className="flex flex-col items-center gap-2 group cursor-pointer">
-            <Scissors className="h-6 w-6 text-white group-hover:text-primary" />
-            <span className="text-[10px] text-zinc-400">قص</span>
+          <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={handleUnderDev}>
+            <Scissors className="h-6 w-6 text-white group-hover:text-primary transition-colors" />
+            <span className="text-[10px] text-zinc-400">{isRtl ? "قص" : "Trim"}</span>
           </div>
           <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => router.back()}>
-            <Trash2 className="h-6 w-6 text-red-500 group-hover:text-red-400" />
-            <span className="text-[10px] text-zinc-400">حذف</span>
+            <Trash2 className="h-6 w-6 text-red-500 group-hover:text-red-400 transition-colors" />
+            <span className="text-[10px] text-zinc-400">{isRtl ? "حذف" : "Delete"}</span>
           </div>
         </div>
 
-        {/* Timeline Mockup */}
         <div className="relative mt-4">
           <div className="flex justify-between text-[10px] text-zinc-500 mb-2 font-mono uppercase tracking-widest">
             <span>0:00.0</span>
@@ -174,9 +177,6 @@ function VideoEditorContent() {
                {Array.from({ length: 40 }).map((_, i) => (
                  <div key={i} className="flex-1 bg-zinc-600 h-full" />
                ))}
-            </div>
-            <div className="absolute bottom-1 right-2 bg-black/80 text-[8px] px-1.5 py-0.5 rounded text-white font-mono border border-white/10">
-              {formatTime(duration)}
             </div>
           </div>
           <div className="flex justify-center mt-2">

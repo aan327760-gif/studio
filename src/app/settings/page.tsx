@@ -70,7 +70,6 @@ export default function SettingsPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto">
-        {/* User Summary Card */}
         <section className="p-6">
           <div className="bg-zinc-950 border border-zinc-900 rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl transition-all group-hover:bg-primary/10" />
@@ -100,8 +99,6 @@ export default function SettingsPage() {
         </section>
 
         <div className="px-6 space-y-8 pb-10">
-          
-          {/* Preferences Section */}
           <section>
             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4 px-2">
               {isRtl ? "التفضيلات العامة" : "General Preferences"}
@@ -143,7 +140,6 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* Security & Privacy */}
           <section>
             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4 px-2">
               {isRtl ? "الأمان والخصوصية" : "Security & Privacy"}
@@ -173,7 +169,6 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* Admin Controls (Only for Admins) */}
           {isAdmin && (
             <section>
               <h2 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2">
@@ -197,7 +192,6 @@ export default function SettingsPage() {
             </section>
           )}
 
-          {/* Support & About */}
           <section>
             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4 px-2">
               {isRtl ? "الدعم والمعلومات" : "Support & About"}
@@ -225,7 +219,6 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* Danger Zone */}
           <section>
             <Button 
               variant="ghost" 
