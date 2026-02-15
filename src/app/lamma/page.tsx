@@ -9,7 +9,7 @@ import { Search, Plus, MessageSquare, Loader2, Users, UserPlus, Globe, ShieldChe
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, query, where, addDoc, serverTimestamp, getDocs, limit, doc, getDoc, updateDoc, arrayUnion, increment } from "firebase/firestore";
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -18,6 +18,8 @@ import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function LammaPage() {
   const { isRtl } = useLanguage();
@@ -32,10 +34,14 @@ export default function LammaPage() {
   const [fetchingFollowers, setFetchingFollowers] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
+  const { data: profile } = useDoc<any>(userProfileRef);
+
+  const isAuthorizedToCreate = profile?.isVerified || profile?.isPro || user?.email === ADMIN_EMAIL;
+
   // جلب المتابعين للدعوة
   const followersQuery = useMemoFirebase(() => {
     if (!user) return null;
-    // المتابعون هم من يتابعونني (followingId == myUid)
     return query(collection(db, "follows"), where("followingId", "==", user.uid), limit(50));
   }, [db, user]);
   
@@ -86,7 +92,7 @@ export default function LammaPage() {
   }, [myGroups, searchQuery]);
 
   const handleCreateGroup = async () => {
-    if (!newGroupName.trim() || !user) return;
+    if (!newGroupName.trim() || !user || !isAuthorizedToCreate) return;
     try {
       await addDoc(collection(db, "groups"), {
         name: newGroupName,
@@ -130,42 +136,45 @@ export default function LammaPage() {
       <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-zinc-900 p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black tracking-tight">{isRtl ? "اللمة" : "Lamma"}</h2>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="rounded-xl gap-2 bg-primary font-bold h-9">
-                <Plus className="h-4 w-4" />
-                {isRtl ? "لمة جديدة" : "New Lamma"}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem]">
-              <DialogHeader><DialogTitle className="text-center font-black uppercase">{isRtl ? "بدء لمة سيادية" : "Sovereign Lamma"}</DialogTitle></DialogHeader>
-              <div className="space-y-4 py-4">
-                <Input placeholder={isRtl ? "اسم المجموعة" : "Group Name"} className="bg-zinc-900 border-zinc-800 rounded-xl h-12" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
-                <Input placeholder={isRtl ? "الوصف" : "Description"} className="bg-zinc-900 border-zinc-800 rounded-xl h-12" value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} />
-                <div className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-xl border border-zinc-800">
-                   <span className="text-xs font-bold">{isRtl ? "مجموعة خاصة" : "Private Group"}</span>
-                   <Checkbox checked={isPrivate} onCheckedChange={(v) => setIsPrivate(!!v)} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-zinc-500">{isRtl ? "دعوة المواطنين" : "Invite Citizens"}</Label>
-                  <div className="max-h-40 overflow-y-auto space-y-1 bg-zinc-900/50 p-2 rounded-xl border border-zinc-800">
-                    {followersDetails.length > 0 ? followersDetails.map((f) => (
-                      <div key={f.uid} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg cursor-pointer" onClick={() => toggleFollower(f.uid)}>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8"><AvatarImage src={f.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
-                          <span className="text-xs font-bold">{f.displayName}</span>
-                        </div>
-                        <Checkbox checked={selectedFollowers.includes(f.uid)} className="rounded-full" />
-                      </div>
-                    )) : (
-                      <p className="text-[10px] text-center py-4 opacity-40">{isRtl ? "لا يوجد متابعون حالياً" : "No followers found"}</p>
-                    )}
+          
+          {isAuthorizedToCreate && (
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="rounded-xl gap-2 bg-primary font-bold h-9">
+                  <Plus className="h-4 w-4" />
+                  {isRtl ? "لمة جديدة" : "New Lamma"}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem]">
+                <DialogHeader><DialogTitle className="text-center font-black uppercase">{isRtl ? "بدء لمة سيادية" : "Sovereign Lamma"}</DialogTitle></DialogHeader>
+                <div className="space-y-4 py-4">
+                  <Input placeholder={isRtl ? "اسم المجموعة" : "Group Name"} className="bg-zinc-900 border-zinc-800 rounded-xl h-12" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
+                  <Input placeholder={isRtl ? "الوصف" : "Description"} className="bg-zinc-900 border-zinc-800 rounded-xl h-12" value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} />
+                  <div className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-xl border border-zinc-800">
+                     <span className="text-xs font-bold">{isRtl ? "مجموعة خاصة" : "Private Group"}</span>
+                     <Checkbox checked={isPrivate} onCheckedChange={(v) => setIsPrivate(!!v)} />
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase text-zinc-500">{isRtl ? "دعوة المواطنين" : "Invite Citizens"}</Label>
+                    <div className="max-h-40 overflow-y-auto space-y-1 bg-zinc-900/50 p-2 rounded-xl border border-zinc-800">
+                      {followersDetails.length > 0 ? followersDetails.map((f) => (
+                        <div key={f.id} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg cursor-pointer" onClick={() => toggleFollower(f.id)}>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8"><AvatarImage src={f.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
+                            <span className="text-xs font-bold">{f.displayName}</span>
+                          </div>
+                          <Checkbox checked={selectedFollowers.includes(f.id)} className="rounded-full" />
+                        </div>
+                      )) : (
+                        <p className="text-[10px] text-center py-4 opacity-40">{isRtl ? "لا يوجد متابعون حالياً" : "No followers found"}</p>
+                      )}
+                    </div>
+                  </div>
+                  <Button className="w-full bg-white text-black font-black rounded-xl h-12" onClick={handleCreateGroup}>{isRtl ? "إنشاء الآن" : "Create Now"}</Button>
                 </div>
-                <Button className="w-full bg-white text-black font-black rounded-xl h-12" onClick={handleCreateGroup}>{isRtl ? "إنشاء الآن" : "Create Now"}</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
         <div className="relative group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />

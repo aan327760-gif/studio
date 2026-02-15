@@ -25,8 +25,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, query, where, doc } from "firebase/firestore";
+
+const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export function AppSidebar() {
   const { isRtl } = useLanguage();
@@ -37,6 +39,9 @@ export function AppSidebar() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isProclamationOpen, setIsProclamationOpen] = useState(false);
   
+  const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
+  const { data: profile } = useDoc<any>(userProfileRef);
+
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,7 +110,17 @@ export function AppSidebar() {
       color: "bg-purple-500",
       onClick: () => {
         setIsSheetOpen(false);
-        setIsProclamationOpen(true);
+        // التحقق من الصلاحيات السيادية: التوثيق أو الإعلام أو المدير العام
+        if (profile?.isVerified || profile?.isPro || user?.email === ADMIN_EMAIL) {
+          setIsProclamationOpen(true);
+        } else {
+          toast({
+            title: isRtl ? "امتياز سيادي محدود" : "Sovereign Privilege",
+            description: isRtl 
+              ? "عذراً، ميزة الساحة الصوتية متاحة حصرياً للمواطنين الموثقين والقنوات الإعلامية." 
+              : "Sorry, the Acoustic Arena is exclusively available to verified citizens and media channels."
+          });
+        }
       }
     },
   ];
@@ -177,7 +192,6 @@ export function AppSidebar() {
         })}
       </aside>
 
-      {/* بيان الساحة الصوتية الأكاديمي */}
       <Dialog open={isProclamationOpen} onOpenChange={setIsProclamationOpen}>
         <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-8 shadow-2xl">
           <DialogHeader className="space-y-6">
