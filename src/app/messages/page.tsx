@@ -4,8 +4,8 @@
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy, doc, getDoc } from "firebase/firestore";
-import { useState, useEffect } from "react";
+import { collection, query, where, doc, getDoc } from "firebase/firestore";
+import { useState, useEffect, useMemo } from "react";
 import { Loader2, MessageSquare, Search, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -20,23 +20,32 @@ export default function MessagesInboxPage() {
   const [conversationsWithUsers, setConversationsWithUsers] = useState<any[]>([]);
   const [fetching, setFetching] = useState(false);
 
+  // تم إزالة orderBy لتجنب أخطاء الفهارس (Indexes)
   const chatsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(
       collection(db, "direct_conversations"),
-      where("participants", "array-contains", user.uid),
-      orderBy("updatedAt", "desc")
+      where("participants", "array-contains", user.uid)
     );
   }, [db, user]);
 
-  const { data: conversations = [], loading: chatsLoading } = useCollection<any>(chatsQuery);
+  const { data: rawConversations = [], loading: chatsLoading } = useCollection<any>(chatsQuery);
+
+  // ترتيب المحادثات محلياً حسب آخر تحديث
+  const sortedConversations = useMemo(() => {
+    return [...rawConversations].sort((a, b) => {
+      const timeA = a.updatedAt?.seconds || 0;
+      const timeB = b.updatedAt?.seconds || 0;
+      return timeB - timeA;
+    });
+  }, [rawConversations]);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (conversations.length > 0 && user) {
+      if (sortedConversations.length > 0 && user) {
         setFetching(true);
         const results = [];
-        for (const chat of conversations) {
+        for (const chat of sortedConversations) {
           const otherUserId = chat.participants.find((p: string) => p !== user.uid);
           if (otherUserId) {
             const userDoc = await getDoc(doc(db, "users", otherUserId));
@@ -55,7 +64,7 @@ export default function MessagesInboxPage() {
       }
     };
     fetchUserData();
-  }, [conversations, db, user]);
+  }, [sortedConversations, db, user]);
 
   const filteredConversations = conversationsWithUsers.filter(c => 
     c.otherUser?.displayName?.toLowerCase().includes(searchQuery.toLowerCase())

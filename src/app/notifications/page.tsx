@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Heart, UserPlus, MessageSquare, Settings, Loader2, Trash2, BellOff, Megaphone, Info } from "lucide-react";
@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy, limit, doc, deleteDoc, writeBatch } from "firebase/firestore";
+import { collection, query, where, limit, doc, deleteDoc, writeBatch } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -19,17 +19,26 @@ export default function NotificationsPage() {
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
+  // تم إزالة orderBy من الاستعلام لتجنب الحاجة لفهرس (Index)
   const notificationsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(
       collection(db, "notifications"),
       where("userId", "==", currentUser.uid),
-      orderBy("createdAt", "desc"),
-      limit(50)
+      limit(100) // جلب كمية أكبر قليلاً لترتيبها محلياً
     );
   }, [db, currentUser]);
 
-  const { data: notifications = [], loading } = useCollection<any>(notificationsQuery);
+  const { data: rawNotifications = [], loading } = useCollection<any>(notificationsQuery);
+
+  // ترتيب التنبيهات محلياً (أحدثها أولاً) لضمان الأداء بدون أخطاء صلاحيات أو فهارس
+  const notifications = useMemo(() => {
+    return [...rawNotifications].sort((a, b) => {
+      const timeA = a.createdAt?.seconds || 0;
+      const timeB = b.createdAt?.seconds || 0;
+      return timeB - timeA;
+    });
+  }, [rawNotifications]);
 
   useEffect(() => {
     const markAllAsRead = async () => {
@@ -44,7 +53,7 @@ export default function NotificationsPage() {
       await batch.commit();
     };
     markAllAsRead();
-  }, [notifications.length, currentUser, db]);
+  }, [notifications, currentUser, db]);
 
   const clearAllNotifications = async () => {
     if (!db || !currentUser || notifications.length === 0) return;
