@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Heart, MessageCircle, MoreHorizontal, Send, Trash2, Flag, Languages, Loader2, Star, Radio, Sparkles } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Send, Trash2, Flag, Languages, Loader2, Star, Radio, Sparkles, Globe, Lock, ShieldAlert } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -36,7 +36,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { VerificationBadge } from "@/components/ui/verification-badge";
-import { translateContent } from "@/ai/flows/translation-flow";
 
 interface PostCardProps {
   id: string;
@@ -47,10 +46,12 @@ interface PostCardProps {
   likes: number;
   time: string;
   mediaSettings?: any;
+  privacy?: string;
+  allowComments?: boolean;
 }
 
-export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, time, mediaSettings }: PostCardProps) {
-  const { isRtl, language } = useLanguage();
+export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, time, mediaSettings, privacy, allowComments = true }: PostCardProps) {
+  const { isRtl } = useLanguage();
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
@@ -63,10 +64,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
-  
-  // AI Translation State
-  const [translatedText, setTranslatedText] = useState<string | null>(null);
-  const [isTranslating, setIsTranslating] = useState(false);
 
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
@@ -100,11 +97,11 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   };
 
   const handleAddComment = async () => {
-    if (isBanned || !newComment.trim() || !user || !id) return;
+    if (isBanned || !newComment.trim() || !user || !id || !allowComments) return;
     addDoc(collection(db, "posts", id, "comments"), {
       authorId: user.uid,
-      authorName: user.displayName || "User",
-      authorAvatar: user.photoURL || "",
+      authorName: currentUserProfile?.displayName || user.displayName || "User",
+      authorAvatar: currentUserProfile?.photoURL || user.photoURL || "",
       authorHandle: user.email?.split('@')[0] || "user",
       text: newComment,
       createdAt: serverTimestamp()
@@ -112,29 +109,12 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     setNewComment("");
   };
 
-  const handleTranslate = async (e: React.MouseEvent) => {
+  const handleTranslateClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (translatedText) {
-      setTranslatedText(null); // Toggle back
-      return;
-    }
-
-    setIsTranslating(true);
-    try {
-      const result = await translateContent({
-        text: content,
-        targetLang: language === 'ar' ? 'Arabic' : 'English'
-      });
-      setTranslatedText(result);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: isRtl ? "خطأ في المترجم" : "Translation Error",
-        description: isRtl ? "فشل الاتصال بالمترجم السيادي." : "Failed to reach Sovereign Translator."
-      });
-    } finally {
-      setIsTranslating(false);
-    }
+    toast({
+      title: isRtl ? "الترجمة السيادية (قريباً)" : "Sovereign Translate (Soon)",
+      description: isRtl ? "هذه الميزة ستتوفر في التحديث القادم لكسر الحواجز اللغوية." : "Coming in the next update.",
+    });
   };
 
   const handleReport = async (e: React.MouseEvent) => {
@@ -190,7 +170,10 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{author?.handle || author?.email?.split('@')[0]}</span>
+                <div className="flex items-center gap-2">
+                   <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{author?.handle || author?.email?.split('@')[0]}</span>
+                   {privacy === 'followers' && <Lock className="h-2.5 w-2.5 text-zinc-700" />}
+                </div>
               </div>
             </Link>
             <DropdownMenu>
@@ -214,36 +197,71 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
       <CardContent className="p-0">
         <div className="px-5 pb-3">
-          <p className="text-[15px] leading-relaxed transition-all duration-500">
-            {translatedText || content}
+          <p className="text-[15px] leading-relaxed mb-3">
+            {content}
           </p>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className={cn(
-              "h-8 px-3 rounded-xl font-black text-[9px] uppercase tracking-widest gap-2.5 mt-3 transition-all",
-              translatedText ? "bg-primary/10 text-primary" : "bg-zinc-900/50 text-zinc-400 hover:text-primary"
-            )}
-            onClick={handleTranslate}
-            disabled={isTranslating}
+            className="h-8 px-3 bg-zinc-900/50 text-zinc-400 hover:text-primary rounded-xl font-black text-[9px] uppercase tracking-widest gap-2.5 transition-all"
+            onClick={handleTranslateClick}
           >
-            {isTranslating ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Languages className="h-3.5 w-3.5" />
-            )}
-            {translatedText 
-              ? (isRtl ? "عرض الأصل" : "Show Original") 
-              : (isRtl ? "الترجمة السيادية" : "Sovereign Translate")}
+            <Languages className="h-3.5 w-3.5" />
+            {isRtl ? "الترجمة السيادية (قريباً)" : "Sovereign Translate (Soon)"}
           </Button>
         </div>
 
         {image && (
           <div className="px-5 mb-4">
-            <div className="relative rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-950/40 shadow-inner group">
+            <div className="relative rounded-[2.5rem] overflow-hidden border border-zinc-900 bg-zinc-950 shadow-2xl group">
               <img src={image} alt="Media" className={cn("w-full h-auto max-h-[600px] object-cover transition-transform duration-700 group-hover:scale-105", mediaSettings?.filter || "filter-none")} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+              
+              {/* Render Stickers and Text Overlay from MediaSettings */}
+              {mediaSettings && (
+                <div className="absolute inset-0 pointer-events-none select-none">
+                  {mediaSettings.textOverlay && (
+                    <div 
+                      className={cn(
+                        "absolute z-10 transition-transform", 
+                        mediaSettings.textEffect
+                      )}
+                      style={{ 
+                        left: `${mediaSettings.textX}%`, 
+                        top: `${mediaSettings.textY}%`, 
+                        transform: 'translate(-50%, -50%)' 
+                      }}
+                    >
+                      <span className={cn(
+                        "text-xl md:text-2xl font-black px-4 py-2 rounded-xl text-center block drop-shadow-2xl",
+                        mediaSettings.textColor || "text-white",
+                        mediaSettings.textBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
+                      )}>
+                        {mediaSettings.textOverlay}
+                      </span>
+                    </div>
+                  )}
+
+                  {mediaSettings.stickers?.map((s: any) => (
+                    <div 
+                      key={s.id}
+                      className="absolute z-10"
+                      style={{ 
+                        left: `${s.x}%`, 
+                        top: `${s.y}%`, 
+                        transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` 
+                      }}
+                    >
+                      <img 
+                        src={s.imageUrl} 
+                        alt="Sticker" 
+                        className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-2xl" 
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
             </div>
           </div>
         )}
@@ -294,6 +312,10 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 {isBanned ? (
                   <div className="p-4 text-center text-[11px] text-red-500 font-black uppercase bg-red-500/10 rounded-2xl border border-red-500/20 tracking-[0.2em]">
                     RESTRICTED STATUS: MESSAGING DISABLED
+                  </div>
+                ) : !allowComments ? (
+                  <div className="p-4 text-center text-[11px] text-zinc-500 font-black uppercase bg-zinc-900/50 rounded-2xl border border-zinc-800 tracking-[0.2em]">
+                    COMMENTS DISABLED BY AUTHOR
                   </div>
                 ) : (
                   <div className="flex gap-3 items-center bg-zinc-900/80 p-1.5 rounded-full pl-6 border border-zinc-800 shadow-2xl">

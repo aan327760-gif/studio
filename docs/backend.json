@@ -46,7 +46,9 @@
         "likesCount": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "likedBy": { "type": "array", "items": { "type": "string" } },
-        "mediaSettings": { "type": "object" }
+        "mediaSettings": { "type": "object", "description": "Includes filters, stickers, and text overlays" },
+        "privacy": { "type": "string", "enum": ["public", "followers"] },
+        "allowComments": { "type": "boolean" }
       }
     },
     "Comment": {
