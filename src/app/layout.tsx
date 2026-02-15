@@ -6,20 +6,21 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { UploadProvider } from "@/context/UploadContext";
 import { GlobalUploadBar } from "@/components/layout/GlobalUploadBar";
+import { NotificationHandler } from "@/components/NotificationHandler";
 
 export const metadata: Metadata = {
-  title: "Unbound - Break Free, Connect Deeply",
-  description: "The modern social platform for everyone, with a special touch for global communities.",
+  title: "Unbound - Sovereign OS",
+  description: "Independent sovereign digital space.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Unbound",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1E6FC9",
+  themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -32,20 +33,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ar">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased bg-background">
+      <body className="font-body antialiased bg-black selection:bg-primary/30 overflow-x-hidden">
         <FirebaseClientProvider>
           <LanguageProvider>
             <UploadProvider>
               <GlobalUploadBar />
+              <NotificationHandler /> {/* محرك التنبيهات الخارجية */}
               {children}
               <Toaster />
             </UploadProvider>
