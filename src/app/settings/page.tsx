@@ -15,7 +15,8 @@ import {
   ShieldAlert,
   Star,
   Globe,
-  Palette
+  Palette,
+  FileWarning
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -138,15 +139,18 @@ export default function SettingsPage() {
 
           <section>
             <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4 px-2">
-              {isRtl ? "الأمان والخصوصية" : "Security & Privacy"}
+              {isRtl ? "القوانين والخصوصية" : "Laws & Privacy"}
             </h2>
             <div className="bg-zinc-950 border border-zinc-900 rounded-[2rem] overflow-hidden">
-              <div className="flex items-center justify-between p-5 hover:bg-white/[0.02] cursor-pointer transition-colors" onClick={handleUnderDev}>
+              <div className="flex items-center justify-between p-5 hover:bg-white/[0.02] cursor-pointer transition-colors" onClick={() => router.push('/guidelines')}>
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-2xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
-                    <Lock className="h-5 w-5 text-zinc-400" />
+                    <ShieldCheck className="h-5 w-5 text-zinc-400" />
                   </div>
-                  <span className="text-sm font-bold">{isRtl ? "خصوصية الحساب" : "Account Privacy"}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold">{isRtl ? "إرشادات المجتمع" : "Community Guidelines"}</span>
+                    <span className="text-[8px] text-primary font-black uppercase tracking-widest">{isRtl ? "ميثاق المواطنة" : "Sovereign Charter"}</span>
+                  </div>
                 </div>
                 <ChevronRight className={cn("h-4 w-4 text-zinc-800", isRtl ? "rotate-180" : "")} />
               </div>
@@ -156,7 +160,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between p-5 hover:bg-white/[0.02] cursor-pointer transition-colors" onClick={handleUnderDev}>
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-2xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
-                    <ShieldCheck className="h-5 w-5 text-zinc-400" />
+                    <Lock className="h-5 w-5 text-zinc-400" />
                   </div>
                   <span className="text-sm font-bold">{isRtl ? "المصادقة الثنائية" : "Two-Factor Auth"}</span>
                 </div>
