@@ -19,7 +19,8 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
-  Star
+  Star,
+  Download
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -150,6 +151,43 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     setNewComment("");
   };
 
+  const handleDownloadVideo = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user || !image || mediaType !== 'video') return;
+
+    const isVerified = currentUserProfile?.isVerified || currentUserProfile?.role === 'admin' || user?.email === "adelbenmaza3@gmail.com";
+
+    if (!isVerified) {
+      toast({
+        title: isRtl ? "امتياز سيادي محدود" : "Sovereign Privilege",
+        description: isRtl 
+          ? "عذراً، ميزة تحميل الفيديوهات متاحة حصرياً للمواطنين الموثقين والقنوات الإعلامية." 
+          : "Sorry, video downloading is exclusively available to verified citizens and media channels."
+      });
+      return;
+    }
+
+    try {
+      toast({ title: isRtl ? "جاري بدء التحميل..." : "Starting download..." });
+      const response = await fetch(image);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `unbound-video-${id}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: isRtl ? "فشل التحميل" : "Download Failed",
+        description: isRtl ? "حدث خطأ أثناء محاولة حفظ الفيديو." : "An error occurred while trying to save the video."
+      });
+    }
+  };
+
   const toggleMedia = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (mediaType === 'video' && videoRef.current) {
@@ -187,6 +225,11 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-700 hover:text-white rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl shadow-2xl p-2">
+                {mediaType === 'video' && (
+                  <DropdownMenuItem onClick={handleDownloadVideo} className="rounded-xl m-1 h-11 font-black text-xs uppercase">
+                    <Download className="h-4 w-4 mr-2" /> {isRtl ? "تحميل الفيديو" : "Download Video"}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={(e) => { 
                   e.stopPropagation(); 
                   const reportData = { targetId: id, targetType: "post", reason: "Policy Violation", reportedBy: user?.uid, status: "pending", createdAt: serverTimestamp() };
@@ -304,7 +347,6 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
   const [replyText, setReplyText] = useState("");
   const [showReplies, setShowReplies] = useState(false);
 
-  // تحسين: لا يتم تحميل الردود إلا عند الحاجة
   const repliesQuery = useMemoFirebase(() => {
     if (!showReplies) return null;
     return query(collection(db, "posts", postId, "comments", comment.id, "replies"), orderBy("createdAt", "asc"));
