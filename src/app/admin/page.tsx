@@ -29,7 +29,6 @@ import {
   Activity,
   Megaphone,
   BrainCircuit,
-  Github,
   Rocket
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -92,7 +91,7 @@ export default function AdminDashboard() {
         batch.set(notifRef, {
           userId: member.id,
           type: "system",
-          fromUserName: "SOVEREIGN COMMAND",
+          fromUserName: "القيادة السيادية",
           message: broadcastMessage,
           read: false,
           createdAt: serverTimestamp()
@@ -296,10 +295,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="deploy" className="space-y-6">
              <Card className="bg-zinc-950 border-zinc-900 border-2 border-primary/10 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-5"><Github className="h-24 w-24" /></div>
+                <div className="absolute top-0 right-0 p-6 opacity-5"><Rocket className="h-24 w-24" /></div>
                 <div className="flex items-center gap-3 mb-6">
                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-                     <Github className="h-5 w-5 text-white" />
+                     <Rocket className="h-5 w-5 text-white" />
                    </div>
                    <h3 className="font-black text-sm uppercase tracking-widest">ي</h3>
                 </div>
