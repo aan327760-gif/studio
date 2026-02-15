@@ -191,12 +191,16 @@ export default function EditProfilePage() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-zinc-500 text-xs font-bold uppercase tracking-wider">{isRtl ? "السيرة الذاتية" : "Bio"}</Label>
+            <div className="flex justify-between items-center">
+              <Label className="text-zinc-500 text-xs font-bold uppercase tracking-wider">{isRtl ? "السيرة الذاتية" : "Bio"}</Label>
+              <span className={cn("text-[10px] font-black", formData.bio.length >= 150 ? "text-red-500" : "text-zinc-600")}>{formData.bio.length}/150</span>
+            </div>
             <Textarea 
               value={formData.bio}
               onChange={(e) => setFormData({...formData, bio: e.target.value})}
-              placeholder={isRtl ? "أخبرنا عن نفسك..." : "Tell us about yourself..."}
+              placeholder={isRtl ? "أخبرنا عن نفسك (150 حرف)..." : "Tell us about yourself (150 chars)..."}
               className="bg-zinc-900 border-zinc-800 rounded-xl focus-visible:ring-primary min-h-[120px] resize-none p-4"
+              maxLength={150}
             />
           </div>
         </div>

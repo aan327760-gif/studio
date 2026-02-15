@@ -135,6 +135,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
 
   const handleAddComment = () => {
     if (isBanned || !newComment.trim() || !user || !id || !allowComments) return;
+    if (newComment.length > 100) return;
     
     const commentData = {
       authorId: user.uid,
@@ -316,7 +317,14 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
                 <div className="flex gap-3 items-center">
                   <Avatar className="h-10 w-10"><AvatarImage src={currentUserProfile?.photoURL || user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
                   <div className="flex-1 flex items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800">
-                    <Input placeholder={isRtl ? "إضافة تعليق..." : "Add a comment..."} className="bg-transparent border-none h-10 text-sm focus-visible:ring-0" value={newComment} onChange={(e) => setNewComment(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
+                    <Input 
+                      placeholder={isRtl ? "إضافة تعليق (100 حرف)..." : "Add a comment (100 chars)..."} 
+                      className="bg-transparent border-none h-10 text-sm focus-visible:ring-0" 
+                      value={newComment} 
+                      onChange={(e) => setNewComment(e.target.value)} 
+                      maxLength={100}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} 
+                    />
                     <Button size="icon" className="rounded-full h-10 w-10 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
                   </div>
                 </div>
@@ -363,7 +371,13 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
           </div>
           {isReplying && (
             <div className="mt-4 flex gap-3 items-center bg-zinc-900 p-1.5 rounded-full pl-4 pr-1.5 border border-zinc-800">
-              <Input placeholder={isRtl ? "الرد..." : "Reply..."} className="bg-transparent border-none h-8 text-xs focus-visible:ring-0" value={replyText} onChange={(e) => setReplyText(e.target.value)} />
+              <Input 
+                placeholder={isRtl ? "الرد (100 حرف)..." : "Reply (100 chars)..."} 
+                className="bg-transparent border-none h-8 text-xs focus-visible:ring-0" 
+                value={replyText} 
+                onChange={(e) => setReplyText(e.target.value)} 
+                maxLength={100}
+              />
               <Button size="icon" className="rounded-full h-8 w-8 bg-primary" onClick={() => {
                 if (!replyText.trim()) return;
                 addDoc(collection(db, "posts", postId, "comments", comment.id, "replies"), { authorId: user.uid, authorName: user.displayName, authorAvatar: user.photoURL, authorHandle: user.email.split('@')[0], text: replyText, createdAt: serverTimestamp() });
