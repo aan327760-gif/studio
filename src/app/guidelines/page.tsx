@@ -7,23 +7,13 @@ import {
   ArrowLeft, 
   ShieldCheck, 
   Scale, 
-  Gavel, 
   AlertOctagon, 
-  EyeOff, 
-  UserX, 
   FileText, 
-  Globe,
-  Lock,
-  MessageSquare,
-  Star,
   CheckCircle2,
   PenTool,
-  ShieldAlert,
   Users
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
 
 export default function CommunityGuidelinesPage() {
   const { isRtl } = useLanguage();
@@ -87,7 +77,7 @@ export default function CommunityGuidelinesPage() {
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900">
             <ArrowLeft className={isRtl ? "rotate-180" : ""} />
           </Button>
-          <h1 className="text-xl font-black tracking-tight">{isRtl ? "إرشادات المجتمع" : "Community Guidelines"}</h1>
+          <h1 className="text-xl font-black tracking-tight">{isRtl ? "ميثاق المجتمع" : "Charter"}</h1>
         </div>
       </header>
 

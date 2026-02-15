@@ -11,7 +11,6 @@ import {
   Scale, 
   User, 
   Landmark, 
-  ChevronRight, 
   Target, 
   Cpu, 
   BookOpen 
@@ -79,7 +78,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white max-w-2xl mx-auto border-x border-zinc-900 pb-20 selection:bg-primary/30">
+    <div className="min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-900 pb-20 selection:bg-primary/30">
       <header className="p-6 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900 transition-all">
@@ -92,8 +91,7 @@ export default function AboutPage() {
         </div>
       </header>
 
-      <main className="p-8 md:p-12 space-y-20">
-        {/* Hero Section */}
+      <main className="p-8 space-y-20">
         <section className="space-y-10 text-center relative overflow-hidden py-10">
            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -z-10" />
            <div className="w-24 h-24 rounded-[2.5rem] bg-primary flex items-center justify-center mx-auto rotate-6 shadow-2xl shadow-primary/40 relative group transition-transform hover:rotate-0">
@@ -115,7 +113,6 @@ export default function AboutPage() {
            </div>
         </section>
 
-        {/* Core Values */}
         <section className="space-y-8">
            <div className="flex items-center gap-3">
               <div className="h-1 bg-primary w-8 rounded-full" />
@@ -136,8 +133,7 @@ export default function AboutPage() {
            </div>
         </section>
 
-        {/* Legal and Identity */}
-        <section className="space-y-8 bg-zinc-950/50 rounded-[3rem] p-8 md:p-12 border border-zinc-900 relative">
+        <section className="space-y-8 bg-zinc-950/50 rounded-[3rem] p-8 border border-zinc-900 relative">
            <div className="absolute top-8 right-8 text-primary/10">
               <BookOpen className="h-32 w-32" />
            </div>
@@ -167,38 +163,7 @@ export default function AboutPage() {
            </div>
         </section>
 
-        {/* Digital Citizenship Footer */}
         <section className="py-10 text-center border-t border-zinc-900 space-y-10">
-           <div className="space-y-4">
-              <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.5em]">{isRtl ? "المواطنة الرقمية العالمية" : "Global Digital Citizenship"}</p>
-              <p className="text-sm text-zinc-500 font-bold leading-relaxed max-w-sm mx-auto">
-                 {isRtl 
-                   ? "تم التطوير بجهود مواطنة جزائرية خالصة لخدمة المجتمع العربي والعالمي، مع الالتزام بأرقى معايير الأمان والخصوصية." 
-                   : "Developed through pure Algerian citizenship efforts to serve the Arab and global community, committed to the highest standards of safety and privacy."}
-              </p>
-           </div>
-           
-           <div className="flex justify-center gap-10">
-              <div className="flex flex-col items-center gap-2 group cursor-pointer">
-                 <div className="h-12 w-12 rounded-full border border-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                    <Globe className="h-5 w-5 text-zinc-500 group-hover:text-primary" />
-                 </div>
-                 <span className="text-[8px] font-black uppercase text-zinc-600">Global</span>
-              </div>
-              <div className="flex flex-col items-center gap-2 group cursor-pointer">
-                 <div className="h-12 w-12 rounded-full border border-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                    <Shield className="h-5 w-5 text-zinc-500 group-hover:text-primary" />
-                 </div>
-                 <span className="text-[8px] font-black uppercase text-zinc-600">Secure</span>
-              </div>
-              <div className="flex flex-col items-center gap-2 group cursor-pointer">
-                 <div className="h-12 w-12 rounded-full border border-zinc-800 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                    <Zap className="h-5 w-5 text-zinc-500 group-hover:text-primary" />
-                 </div>
-                 <span className="text-[8px] font-black uppercase text-zinc-600">Sovereign</span>
-              </div>
-           </div>
-
            <div className="pt-10">
               <p className="text-[8px] font-black text-zinc-800 uppercase tracking-[0.6em] mb-4">
                  ESTABLISHED 2024 • SOVEREIGN INDEPENDENT PROJECT

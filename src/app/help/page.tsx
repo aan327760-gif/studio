@@ -7,25 +7,16 @@ import {
   ArrowLeft, 
   CircleHelp, 
   ShieldCheck, 
-  UserCheck, 
-  MessageSquare, 
   Flame, 
   Zap, 
-  Star, 
-  Video, 
-  Mic, 
-  ShieldAlert,
-  Globe,
-  Lock,
-  Bookmark,
-  Hash,
   PenTool,
   CheckCircle2,
-  Users
+  Users,
+  Lock,
+  Scale
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { cn } from "@/lib/utils";
 
 export default function HelpCenterPage() {
   const { isRtl } = useLanguage();
@@ -52,38 +43,26 @@ export default function HelpCenterPage() {
       ]
     },
     {
-      title: isRtl ? "امتيازات المواطن الموثق (الروزيتا)" : "Verified Citizen Privileges",
+      title: isRtl ? "سياسة الخصوصية والأمان" : "Privacy & Security Policy",
       faqs: [
         {
-          question: isRtl ? "ما هي مميزات الحصول على علامة التوثيق؟" : "What are the benefits of Verification?",
+          question: isRtl ? "كيف يتم تأمين محادثاتي؟" : "How are my chats secured?",
           answer: isRtl 
-            ? "المواطن الموثق يتمتع بامتيازات نُخبوية تشمل: القدرة على تحميل الفيديوهات، تأسيس وقيادة مجتمعات 'اللمة'، أولوية الظهور بفضل ذكاء التأثير، والولوج الحصري للساحة الصوتية." 
-            : "Verified Citizens enjoy elite privileges including: Video downloading, establishing and leading 'Lamma' communities, priority visibility via Impact Intelligence, and exclusive access to the Acoustic Arena.",
-          icon: CheckCircle2
+            ? "كافة الرسائل الخاصة ومجتمعات اللمة مشفرة تقنياً. نظامنا يعتمد بروتوكول 'الصداقة السيادية'؛ حيث لا يمكن مراسلة أي مواطن إلا إذا كانت المتابعة متبادلة (Mutual Follow) لضمان بيئة آمنة." 
+            : "All private messages and Lamma communities are technically encrypted. We use the 'Sovereign Friendship' protocol; messaging is restricted to mutual followers.",
+          icon: Lock
         },
         {
-          question: isRtl ? "من يمكنه إنشاء مجموعات في اللمة؟" : "Who can create Lamma groups?",
+          question: isRtl ? "أين تُخزن بياناتي وتحت أي قانون؟" : "Where is my data stored & under which law?",
           answer: isRtl 
-            ? "إن تأسيس مجتمع جديد في 'اللمة' هو مسؤولية سيادية متاحة حصرياً للمواطنين الموثقين والمسؤولين، لضمان قيادة واعية وراقية لهذه المساحات." 
-            : "Establishing a new 'Lamma' community is a sovereign responsibility available exclusively to verified citizens and admins, ensuring conscious leadership for these spaces.",
-          icon: Users
+            ? "تخضع المنصة وكافة عمليات معالجة البيانات لولاية القضاء في الجمهورية الجزائرية الديمقراطية الشعبية، متماشية مع المعايير الأخلاقية العربية." 
+            : "The platform and data processing are subject to the jurisdiction of the People's Democratic Republic of Algeria.",
+          icon: Scale
         }
       ]
     },
     {
-      title: isRtl ? "الخوارزمية والترتيب" : "Algorithm & Ranking",
-      faqs: [
-        {
-          question: isRtl ? "كيف يتم ترتيب المنشورات في 'اكتشف'؟" : "How are posts ranked in 'Discover'?",
-          answer: isRtl 
-            ? "تعتمد خوارزميتنا السيادية على 'ذكاء التأثير'؛ حيث يتم تحليل جودة التفاعل والاهتمام الحقيقي بالمحتوى (مثل الحفظ والتعليق)، مع إعطاء وزن خاص للمواطنين الموثقين لضمان مصداقية الصفحة الرئيسية." 
-            : "Our sovereign algorithm relies on 'Impact Intelligence'; analyzing engagement quality and real interest (like saving and commenting), while giving special weight to verified citizens to ensure credibility.",
-          icon: Zap
-        }
-      ]
-    },
-    {
-      title: isRtl ? "التفاعل والمحتوى" : "Interaction & Content",
+      title: isRtl ? "القواعد الصارمة (بروتوكول الإيجاز)" : "Strict Rules (Concise Protocol)",
       faqs: [
         {
           question: isRtl ? "لماذا يوجد حد للأحرف في التعليقات؟" : "Why is there a character limit?",
@@ -142,14 +121,6 @@ export default function HelpCenterPage() {
             </Accordion>
           </section>
         ))}
-
-        <section className="p-8 bg-zinc-950 border border-zinc-900 rounded-[3rem] text-center space-y-6 relative overflow-hidden group">
-           <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-           <p className="text-xs text-zinc-500 font-bold relative z-10">{isRtl ? "لم تجد إجابة لسؤالك؟" : "Didn't find your answer?"}</p>
-           <Button className="w-full rounded-2xl bg-white text-black font-black h-14 hover:bg-zinc-200 shadow-xl relative z-10 active:scale-95 transition-transform">
-              {isRtl ? "تواصل مع فريق الدعم" : "Contact Support Team"}
-           </Button>
-        </section>
 
         <p className="text-center text-[8px] font-black text-zinc-800 uppercase tracking-[0.5em] pt-4">
            UNBOUND SUPPORT CORE • BUILD 1.0.4
