@@ -1,7 +1,33 @@
 
 "use client";
 
-import { Heart, MessageCircle, MoreHorizontal, Send, Trash2, Flag, Languages, Loader2, Star, Radio, Sparkles, Globe, Lock, ShieldAlert, Play, Pause, Volume2 } from "lucide-react";
+import { 
+  Heart, 
+  MessageCircle, 
+  MoreHorizontal, 
+  Send, 
+  Trash2, 
+  Flag, 
+  Languages, 
+  Loader2, 
+  Star, 
+  Radio, 
+  Sparkles, 
+  Globe, 
+  Lock, 
+  ShieldAlert, 
+  Play, 
+  Pause, 
+  Volume2,
+  X,
+  Info,
+  ThumbsUp,
+  ThumbsDown,
+  MoreVertical,
+  MessageSquare,
+  ChevronDown,
+  ChevronRight
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -24,7 +50,7 @@ import {
 } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
@@ -104,7 +130,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     } else {
       updateDoc(postRef, { likedBy: arrayUnion(user.uid) });
       
-      // إرسال تنبيه للمؤلف (إذا لم يكن هو الفاعل)
       if (author?.id !== user.uid) {
         addDoc(collection(db, "notifications"), {
           userId: author?.id || author?.uid,
@@ -133,7 +158,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       createdAt: serverTimestamp()
     });
 
-    // إرسال تنبيه للمؤلف
     if (author?.id !== user.uid) {
       addDoc(collection(db, "notifications"), {
         userId: author?.id || author?.uid,
@@ -371,32 +395,73 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 <span className="text-xs font-black text-zinc-600">{comments.length}</span>
               </div>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[80vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 outline-none overflow-hidden flex flex-col shadow-2xl">
-              <SheetHeader className="p-8 border-b border-zinc-900 shrink-0">
-                <div className="w-14 h-1.5 bg-zinc-900 rounded-full mx-auto mb-6" />
-                <SheetTitle className="text-white font-black text-xl text-center tracking-tighter uppercase">{isRtl ? "غرفة النقاش" : "Sovereign Discussion"}</SheetTitle>
+            <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 outline-none overflow-hidden flex flex-col shadow-2xl">
+              <SheetHeader className="p-4 border-b border-zinc-900 shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <SheetClose asChild>
+                      <Button variant="ghost" size="icon" className="text-zinc-400 rounded-full h-10 w-10"><X className="h-5 w-5" /></Button>
+                    </SheetClose>
+                    <Button variant="ghost" size="icon" className="text-zinc-400 rounded-full h-10 w-10"><Info className="h-5 w-5" /></Button>
+                  </div>
+                  <SheetTitle className="text-white font-black text-lg text-center tracking-tighter uppercase">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
+                </div>
+                <div className="flex gap-2 mt-4 px-2">
+                  <Button variant="secondary" size="sm" className="bg-white/10 hover:bg-white/20 rounded-xl h-9 px-4 font-bold text-xs">
+                    {isRtl ? "الأهم" : "Top"}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-zinc-500 rounded-xl h-9 px-4 font-bold text-xs">
+                    {isRtl ? "أحدث التعليقات" : "Newest"}
+                  </Button>
+                </div>
               </SheetHeader>
-              <ScrollArea className="flex-1 px-8 py-6">
-                <div className="space-y-8 pb-10">
+
+              <ScrollArea className="flex-1">
+                <div className="p-4 space-y-8 pb-32">
                   {comments.length > 0 ? comments.map((comment: any) => (
-                    <div key={comment.id} className="flex gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                      <Avatar className="h-10 w-10 border border-zinc-900"><AvatarImage src={comment.authorAvatar} /></Avatar>
-                      <div className="flex-1 bg-zinc-900/40 p-5 rounded-2xl border border-white/5 shadow-xl">
-                        <div className="flex justify-between items-center mb-2">
-                          <p className="text-[10px] font-black text-primary uppercase tracking-widest">@{comment.authorHandle}</p>
+                    <div key={comment.id} className="flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 relative group">
+                      <Avatar className="h-9 w-9 ring-1 ring-zinc-800 shrink-0">
+                        <AvatarImage src={comment.authorAvatar} />
+                        <AvatarFallback className="bg-zinc-900">{comment.authorName?.[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-black text-zinc-300 uppercase tracking-tighter">@{comment.authorHandle}</span>
+                            <span className="text-[10px] text-zinc-500 font-bold">
+                              • {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' }) : ""}
+                            </span>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity"><MoreVertical className="h-4 w-4" /></Button>
                         </div>
-                        <p className="text-[14px] text-zinc-200 leading-relaxed font-medium">{comment.text}</p>
+                        <p className="text-[14px] text-zinc-100 leading-relaxed font-medium">{comment.text}</p>
+                        <div className="flex items-center gap-6 pt-3">
+                          <div className="flex items-center gap-1.5 text-zinc-500 group/btn cursor-pointer">
+                            <ThumbsUp className="h-4 w-4 group-hover/btn:text-white" />
+                            <span className="text-[10px] font-black">33</span>
+                          </div>
+                          <ThumbsDown className="h-4 w-4 text-zinc-500 hover:text-white cursor-pointer" />
+                          <div className="flex items-center gap-1.5 text-zinc-500 hover:text-white cursor-pointer">
+                             <MessageSquare className="h-4 w-4" />
+                             <span className="text-[10px] font-black">{isRtl ? "رد" : "Reply"}</span>
+                          </div>
+                        </div>
+                        <button className="flex items-center gap-2 mt-3 text-primary text-[11px] font-black uppercase tracking-widest hover:underline">
+                           <ChevronDown className="h-3 w-3" />
+                           {isRtl ? "10 ردود" : "10 replies"}
+                        </button>
                       </div>
                     </div>
                   )) : (
                     <div className="py-24 text-center opacity-10 flex flex-col items-center gap-6">
                       <MessageCircle className="h-16 w-16" />
-                      <p className="text-sm font-black uppercase tracking-widest">{isRtl ? "ابدأ النقاش الآن" : "Zero arguments found"}</p>
+                      <p className="text-sm font-black uppercase tracking-widest">{isRtl ? "كن أول المعلقين" : "No comments yet"}</p>
                     </div>
                   )}
                 </div>
               </ScrollArea>
-              <div className="p-6 pb-10 border-t border-zinc-900 bg-black/50 backdrop-blur-xl shrink-0">
+
+              <div className="absolute bottom-0 left-0 right-0 p-4 pb-8 border-t border-zinc-900 bg-black/90 backdrop-blur-xl shrink-0">
                 {isBanned ? (
                   <div className="p-4 text-center text-[11px] text-red-500 font-black uppercase bg-red-500/10 rounded-2xl border border-red-500/20 tracking-[0.2em]">
                     RESTRICTED STATUS: MESSAGING DISABLED
@@ -406,17 +471,28 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     COMMENTS DISABLED BY AUTHOR
                   </div>
                 ) : (
-                  <div className="flex gap-3 items-center bg-zinc-900/80 p-1.5 rounded-full pl-6 border border-zinc-800 shadow-2xl">
-                    <Input 
-                      placeholder={isRtl ? "أضف مساهمتك..." : "Contribute to discussion..."} 
-                      className="bg-transparent border-none h-12 text-sm focus-visible:ring-0 shadow-none p-0" 
-                      value={newComment} 
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                    />
-                    <Button size="icon" className="rounded-full h-12 w-12 bg-primary hover:bg-primary/90 shrink-0 shadow-lg active:scale-90 transition-transform" onClick={handleAddComment} disabled={!newComment.trim()}>
-                      <Send className="h-5 w-5" />
-                    </Button>
+                  <div className="flex gap-3 items-center">
+                    <Avatar className="h-10 w-10 ring-1 ring-zinc-800">
+                      <AvatarImage src={currentUserProfile?.photoURL || user?.photoURL} />
+                      <AvatarFallback className="bg-zinc-900">U</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 flex gap-3 items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800 shadow-inner">
+                      <Input 
+                        placeholder={isRtl ? "إضافة تعليق..." : "Add a comment..."} 
+                        className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" 
+                        value={newComment} 
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                      />
+                      <Button 
+                        size="icon" 
+                        className="rounded-full h-10 w-10 bg-primary hover:bg-primary/90 shrink-0 shadow-lg active:scale-90 transition-transform" 
+                        onClick={handleAddComment} 
+                        disabled={!newComment.trim()}
+                      >
+                        <Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
