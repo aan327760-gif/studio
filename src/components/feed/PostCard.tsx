@@ -18,7 +18,9 @@ import {
   Info,
   ChevronRight,
   Star,
-  AlertTriangle
+  AlertTriangle,
+  Languages,
+  BookOpen
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -66,6 +68,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { translateContent } from "@/ai/flows/translation-flow";
+import { summarizeInsight } from "@/ai/flows/summarizer-flow";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -91,7 +95,7 @@ export const PostCard = memo(({
   commentsCount = 0,
   time, allowComments = true 
 }: PostCardProps) => {
-  const { isRtl } = useLanguage();
+  const { isRtl, language } = useLanguage();
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
@@ -106,13 +110,11 @@ export const PostCard = memo(({
   const [isExpanded, setIsExpanded] = useState(false);
   const [sortType, setSortType] = useState<'top' | 'latest'>('top');
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [displayContent, setDisplayContent] = useState(content);
 
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
-
-  const truncationLimit = 200;
-  const isLongContent = content?.length > truncationLimit;
-  const displayContent = isExpanded ? content : content?.slice(0, truncationLimit) + (isLongContent ? "..." : "");
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -138,18 +140,30 @@ export const PostCard = memo(({
     }
   };
 
+  const handleAiAction = async (type: 'translate' | 'summarize') => {
+    setIsAiProcessing(true);
+    try {
+      if (type === 'translate') {
+        const result = await translateContent({ text: content, targetLang: isRtl ? "Arabic" : "English" });
+        setDisplayContent(result);
+        toast({ title: isRtl ? "تمت الترجمة السيادية" : "Sovereign Translation Done" });
+      } else {
+        const result = await summarizeInsight(content);
+        setDisplayContent(result);
+        toast({ title: isRtl ? "تم الإيجاز الذكي" : "Smart Summary Done" });
+      }
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI Error" });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id) return;
     updateDoc(doc(db, "posts", id), isSaved ? { savedBy: arrayRemove(user.uid), savesCount: increment(-1) } : { savedBy: arrayUnion(user.uid), savesCount: increment(1) });
     toast({ title: isSaved ? (isRtl ? "تمت الإزالة" : "Unsaved") : (isRtl ? "تم الحفظ في الأرشيف" : "Saved to Archive") });
-  };
-
-  const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const shareUrl = `${window.location.origin}/post/${id}`;
-    navigator.clipboard.writeText(shareUrl);
-    toast({ title: isRtl ? "تم نسخ الرابط السيادي" : "Sovereign link copied" });
   };
 
   const handleReport = async (reason: string) => {
@@ -221,6 +235,12 @@ export const PostCard = memo(({
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white rounded-2xl p-2 shadow-2xl">
+                <DropdownMenuItem className="rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAiAction('translate'); }}>
+                   <Languages className="h-4 w-4 mr-2" /> {isRtl ? "ترجمة ذكية" : "AI Translate"}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAiAction('summarize'); }}>
+                   <BookOpen className="h-4 w-4 mr-2" /> {isRtl ? "إيجاز ذكي" : "AI Summarize"}
+                </DropdownMenuItem>
                 <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsReportDialogOpen(true); }}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
                 {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف سيادي" : "Root Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
@@ -231,14 +251,10 @@ export const PostCard = memo(({
 
       <CardContent className="p-0">
         <div className="px-5 pb-3">
-          {content && (
+          {displayContent && (
             <div className="space-y-3">
-              <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{isLongContent ? displayContent : content}</p>
-              {isLongContent && (
-                <button onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} className="text-primary font-black text-[11px] uppercase tracking-widest">
-                  {isExpanded ? (isRtl ? "عرض أقل" : "Show Less") : (isRtl ? "إقرأ المزيد" : "Read More")}
-                </button>
-              )}
+              <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{displayContent}</p>
+              {isAiProcessing && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
             </div>
           )}
         </div>
@@ -322,7 +338,7 @@ export const PostCard = memo(({
               </SheetContent>
             </Sheet>
 
-            <div className="flex items-center gap-2 group cursor-pointer" onClick={handleShare}><Share2 className="h-5 w-5 text-zinc-700" /></div>
+            <div className="flex items-center gap-2 group cursor-pointer" onClick={(e) => { e.stopPropagation(); const shareUrl = `${window.location.origin}/post/${id}`; navigator.clipboard.writeText(shareUrl); toast({ title: isRtl ? "نسخ الرابط" : "Link Copied" }); }}><Share2 className="h-5 w-5 text-zinc-700" /></div>
           </div>
 
           <div className="flex items-center gap-2 group cursor-pointer" onClick={handleSave}>
@@ -341,8 +357,7 @@ export const PostCard = memo(({
               { id: 'hate', label: isRtl ? "خطاب كراهية" : "Hate Speech" },
               { id: 'violence', label: isRtl ? "تحريض على العنف" : "Violence" },
               { id: 'porn', label: isRtl ? "محتوى غير لائق" : "Inappropriate" },
-              { id: 'fake', label: isRtl ? "أخبار زائفة" : "Fake News" },
-              { id: 'harassment', label: isRtl ? "تحرش أو مضايقة" : "Harassment" }
+              { id: 'fake', label: isRtl ? "أخبار زائفة" : "Fake News" }
             ].map((reason) => (
               <Button key={reason.id} variant="ghost" className="w-full justify-start h-12 rounded-xl bg-zinc-900 border border-zinc-800 font-bold text-sm hover:bg-primary/10 transition-all" onClick={() => handleReport(reason.label)}>
                 {reason.label}

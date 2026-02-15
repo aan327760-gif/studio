@@ -76,10 +76,6 @@ function CreatePostContent() {
     }
   };
 
-  const removeImage = (index: number) => {
-    setLocalImages(prev => prev.filter((_, i) => i !== index));
-  };
-
   const handleAiEnhance = async (tone: 'sovereign' | 'poetic' | 'professional') => {
     if (!content.trim()) return;
     setIsAiLoading(true);
@@ -192,7 +188,7 @@ function CreatePostContent() {
                         variant="destructive" 
                         size="icon" 
                         className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 hover:bg-red-600 border-none shadow-xl"
-                        onClick={() => removeImage(i)}
+                        onClick={() => setLocalImages(prev => prev.filter((_, idx) => idx !== i))}
                       >
                         <X className="h-4 w-4" />
                       </Button>

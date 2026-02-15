@@ -32,7 +32,8 @@ import {
   CheckCircle,
   Trash2,
   Activity,
-  Zap
+  Zap,
+  BrainCircuit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -46,8 +47,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { syncToGitHub } from "@/lib/github-actions";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { 
+  ChartContainer, 
+  ChartTooltip, 
+  ChartTooltipContent 
+} from "@/components/ui/chart";
+import { Bar, BarChart, XAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { analyzeReportAI } from "@/ai/flows/content-moderation-assistant";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -60,10 +66,10 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
-
   const [repoUrl, setRepoUrl] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
@@ -79,11 +85,10 @@ export default function AdminDashboard() {
   const reportsQuery = useMemoFirebase(() => isSuper ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isSuper]);
   const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
 
-  // بيانات هيكلية للرسم البياني (نبض المنصة)
   const chartData = useMemo(() => [
-    { name: isRtl ? "المواطنين" : "Citizens", value: allUsers.length, color: "#1E6FC9" },
-    { name: isRtl ? "التهديدات" : "Threats", value: reports.length, color: "#ef4444" },
-    { name: isRtl ? "الموثقين" : "Verified", value: allUsers.filter((u:any) => u.isVerified).length, color: "#10b981" }
+    { name: isRtl ? "مواطنين" : "Citizens", value: allUsers.length },
+    { name: isRtl ? "بلاغات" : "Reports", value: reports.length },
+    { name: isRtl ? "موثقين" : "Verified", value: allUsers.filter((u:any) => u.isVerified).length }
   ], [allUsers, reports, isRtl]);
 
   const handleBroadcast = async () => {
@@ -112,6 +117,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAiAnalyze = async (report: any) => {
+    setAnalyzingId(report.id);
+    try {
+      const result = await analyzeReportAI({ postContent: report.postContent, reason: report.reason });
+      toast({ 
+        title: isRtl ? "تحليل الذكاء الاصطناعي" : "AI Analysis",
+        description: result.recommendation
+      });
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI Analysis Failed" });
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
+
   const handleActionOnReport = async (reportId: string, action: 'ignore' | 'delete' | 'ban', postId?: string, authorId?: string) => {
     try {
       if (action === 'delete' && postId) {
@@ -126,6 +146,16 @@ export default function AdminDashboard() {
     } catch (e) {
       toast({ variant: "destructive", title: "Action Failed" });
     }
+  };
+
+  const handleToggleVerify = async (userId: string, current: boolean) => {
+    await updateDoc(doc(db, "users", userId), { isVerified: !current });
+    toast({ title: isRtl ? "تم تحديث التوثيق" : "Verification Updated" });
+  };
+
+  const handleTogglePro = async (userId: string, current: boolean) => {
+    await updateDoc(doc(db, "users", userId), { isPro: !current });
+    toast({ title: isRtl ? "تم تحديث رتبة الإعلام" : "Media Status Updated" });
   };
 
   const handleGitHubSync = async () => {
@@ -143,22 +173,8 @@ export default function AdminDashboard() {
     setIsSyncing(false);
   };
 
-  const handleToggleVerify = async (userId: string, current: boolean) => {
-    await updateDoc(doc(db, "users", userId), { isVerified: !current });
-    toast({ title: isRtl ? "تم تحديث التوثيق" : "Verification Updated" });
-  };
-
-  const handleTogglePro = async (userId: string, current: boolean) => {
-    await updateDoc(doc(db, "users", userId), { isPro: !current });
-    toast({ title: isRtl ? "تم تحديث رتبة الإعلام" : "Media Status Updated" });
-  };
-
   if (userLoading) {
-    return (
-      <div className="h-screen bg-black flex items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
 
   if (!isSuper) return null;
@@ -184,7 +200,7 @@ export default function AdminDashboard() {
         <section className="space-y-4">
            <div className="flex items-center gap-2 px-2">
               <Activity className="h-4 w-4 text-primary" />
-              <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{isRtl ? "نبض المنصة اللحظي" : "Sovereign Vital Signs"}</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{isRtl ? "نبض المنصة" : "Sovereign Pulse"}</h2>
            </div>
            <Card className="bg-zinc-950 border-zinc-900 p-6 rounded-[2rem] h-[200px]">
               <ChartContainer config={{ value: { label: "Count", color: "#1E6FC9" } }}>
@@ -198,19 +214,6 @@ export default function AdminDashboard() {
               </ChartContainer>
            </Card>
         </section>
-
-        <div className="grid grid-cols-2 gap-3">
-           <Card className="bg-zinc-950 border-zinc-900 p-4 flex flex-col items-center gap-2 rounded-[2rem]">
-              <Users className="h-5 w-5 text-blue-500" />
-              <span className="text-[9px] font-black text-zinc-500 uppercase">{isRtl ? "المواطنين" : "Citizens"}</span>
-              <span className="text-xl font-black">{allUsers.length}</span>
-           </Card>
-           <Card className="bg-zinc-950 border-zinc-900 p-4 flex flex-col items-center gap-2 rounded-[2rem]">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              <span className="text-[9px] font-black text-zinc-500 uppercase">{isRtl ? "التهديدات" : "Threats"}</span>
-              <span className="text-xl font-black">{reports.length}</span>
-           </Card>
-        </div>
 
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6">
@@ -275,7 +278,9 @@ export default function AdminDashboard() {
                    <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
                       <div className="flex items-center justify-between">
                          <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
-                         <span className="text-[8px] text-zinc-600 font-bold">{r.createdAt?.toDate ? r.createdAt.toDate().toLocaleTimeString() : ""}</span>
+                         <Button variant="ghost" size="sm" className="h-7 rounded-lg bg-primary/10 text-primary text-[8px] font-black gap-1" onClick={() => handleAiAnalyze(r)} disabled={analyzingId === r.id}>
+                            {analyzingId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BrainCircuit className="h-3 w-3" />} AI ANALYSIS
+                         </Button>
                       </div>
                       <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800">
                          <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3 italic">"{r.postContent}"</p>
@@ -332,7 +337,7 @@ export default function AdminDashboard() {
                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
                      <Github className="h-5 w-5 text-white" />
                    </div>
-                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "المزامنة والنشر السيادي" : "Deploy"}</h3>
+                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "النشر السيادي" : "Deploy"}</h3>
                 </div>
                 <div className="space-y-5">
                    <Input placeholder="GitHub Repo URL" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
