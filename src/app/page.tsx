@@ -12,11 +12,6 @@ import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebas
 import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import { useMemo } from "react";
 
-/**
- * الخوارزمية السيادية - Sovereign Algorithm v2.2
- * الترتيب بناءً على: سلطة الهوية + جودة التفاعل (حفظ > تعليق > إعجاب) + عامل الزمن.
- * المواطن غير الموثق يمكنه التصدر إذا كان محتواه "نوعياً" ويتم حفظه أو مناقشته بكثافة.
- */
 export default function Home() {
   const { isRtl } = useLanguage();
   const db = useFirestore();
@@ -34,24 +29,14 @@ export default function Home() {
       const getScore = (post: any) => {
         let score = 0;
         const author = post.author || {};
-        
-        // 1. سلطة الهوية (Authority)
-        // الموثقين يحصلون على دفعة للأمام، لكنها دفعة يمكن للمحتوى القوي تجاوزها.
         if (author.isPro) score += 1000;
         if (author.isVerified || author.role === 'admin') score += 500;
-        
-        // 2. قوة التفاعل (Engagement Weight)
-        // الحفظ (Save) هو الأقوى لأنه يعني أن المحتوى مرجعي.
         score += (post.likesCount || 0) * 10;
         score += (post.commentsCount || 0) * 15; 
         score += (post.savesCount || 0) * 20;    
-        
-        // 3. عامل الزمن (Time Decay)
-        // تنخفض قيمة المنشور بمرور الوقت لضمان حيوية الصفحة الرئيسية.
         const postTime = post.createdAt?.seconds ? post.createdAt.seconds * 1000 : Date.now();
         const hoursPassed = (Date.now() - postTime) / (1000 * 60 * 60);
-        score -= hoursPassed * 25; // زيادة طفيفة في سرعة الانخفاض لضمان التجدد
-        
+        score -= hoursPassed * 25;
         return score;
       };
       return getScore(b) - getScore(a);
@@ -86,10 +71,7 @@ export default function Home() {
   const followingPostsQuery = useMemoFirebase(() => {
     const ids = JSON.parse(followingIdsString);
     if (!currentUser || ids.length === 0) return null;
-    return query(
-      collection(db, "posts"), 
-      where("authorId", "in", ids.slice(0, 10))
-    );
+    return query(collection(db, "posts"), where("authorId", "in", ids.slice(0, 10)));
   }, [db, currentUser, followingIdsString]);
   
   const { data: rawFollowingPosts = [], loading: followingLoading } = useCollection<any>(followingPostsQuery);
@@ -135,116 +117,56 @@ export default function Home() {
 
       <Tabs defaultValue="discover" className="w-full">
         <TabsList className="w-full bg-black h-12 rounded-none p-0 border-b border-zinc-900 sticky top-[64px] z-40 backdrop-blur-md">
-          <TabsTrigger 
-            value="discover" 
-            className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:text-white text-zinc-500 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary transition-all"
-          >
-            {isRtl ? "اكتشف" : "Discover"}
-          </TabsTrigger>
-          <TabsTrigger 
-            value="following" 
-            className="flex-1 h-full rounded-none data-[state=active]:bg-transparent data-[state=active]:text-white text-zinc-500 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary transition-all"
-          >
-            {isRtl ? "متابعة" : "Following"}
-          </TabsTrigger>
+          <TabsTrigger value="discover" className="flex-1 h-full rounded-none text-zinc-500 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary transition-all">{isRtl ? "اكتشف" : "Discover"}</TabsTrigger>
+          <TabsTrigger value="following" className="flex-1 h-full rounded-none text-zinc-500 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary transition-all">{isRtl ? "متابعة" : "Following"}</TabsTrigger>
         </TabsList>
 
         <main className="pb-32">
-          <TabsContent value="discover" className="m-0 focus-visible:ring-0">
+          <TabsContent value="discover" className="m-0">
             {discoverLoading ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-4">
-                <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
-                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.3em] animate-pulse">Running Algorithm</p>
-              </div>
-            ) : discoverPosts.length > 0 ? (
-              <div className="flex flex-col">
-                {discoverPosts.map((post: any) => (
-                  <PostCard 
-                    key={post.id} 
-                    id={post.id}
-                    author={post.author}
-                    content={post.content}
-                    image={post.mediaUrl}
-                    mediaUrls={post.mediaUrls}
-                    mediaType={post.mediaType}
-                    likes={post.likesCount || 0}
-                    saves={post.savesCount || 0}
-                    time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="py-24 px-10 text-center flex flex-col items-center gap-6">
-                <div className="h-20 w-20 rounded-3xl bg-zinc-900 flex items-center justify-center border border-white/5">
-                  <Sparkles className="h-10 w-10 text-zinc-700" />
-                </div>
-                <div className="space-y-2">
-                  <p className="font-black text-xl">{isRtl ? "هدوء تام هنا..." : "Silence is deep..."}</p>
-                  <p className="text-zinc-500 text-sm leading-relaxed">{isRtl ? "كن أول من يكسر الصمت ويشارك فكرة أو صورة." : "Be the one to break the silence. Share a thought or a snap."}</p>
-                </div>
-                <Link href="/create-post">
-                  <Button className="rounded-full px-12 py-7 bg-white text-black font-black text-lg shadow-2xl active:scale-95 transition-transform">
-                    {isRtl ? "ابدأ الآن" : "Start Now"}
-                  </Button>
-                </Link>
-              </div>
-            )}
+              <div className="flex flex-col items-center justify-center py-24 gap-4"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" /></div>
+            ) : discoverPosts.map((post: any) => (
+              <PostCard 
+                key={post.id} 
+                id={post.id} 
+                author={post.author} 
+                content={post.content} 
+                image={post.mediaUrl} 
+                mediaUrls={post.mediaUrls} 
+                mediaType={post.mediaType} 
+                likes={post.likesCount || 0} 
+                saves={post.savesCount || 0} 
+                likedBy={post.likedBy} 
+                savedBy={post.savedBy}
+                commentsCount={post.commentsCount}
+                time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
+              />
+            ))}
           </TabsContent>
           
-          <TabsContent value="following" className="m-0 focus-visible:ring-0">
-            {!currentUser ? (
-              <div className="py-32 px-10 text-center flex flex-col items-center gap-6">
-                <div className="h-16 w-16 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5">
-                  <UserPlus className="h-8 w-8 text-zinc-700" />
-                </div>
-                <p className="text-zinc-500 text-sm font-bold">{isRtl ? "سجل الدخول لرؤية ما يشاركه من تتابعهم." : "Sign in to see updates from the ones you follow."}</p>
-                <Link href="/auth">
-                  <Button className="rounded-full bg-white text-black font-black px-10 h-14 shadow-xl">
-                    {isRtl ? "تسجيل الدخول" : "Sign In"}
-                  </Button>
-                </Link>
-              </div>
-            ) : followingLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
-              </div>
-            ) : followingPosts && followingPosts.length > 0 ? (
-              <div className="flex flex-col">
-                {followingPosts.map((post: any) => (
-                  <PostCard 
-                    key={post.id} 
-                    id={post.id}
-                    author={post.author}
-                    content={post.content}
-                    image={post.mediaUrl}
-                    mediaUrls={post.mediaUrls}
-                    mediaType={post.mediaType}
-                    likes={post.likesCount || 0}
-                    saves={post.savesCount || 0}
-                    time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="py-24 px-10 text-center flex flex-col items-center gap-6">
-                <div className="h-20 w-20 rounded-3xl bg-zinc-900 flex items-center justify-center border border-white/5">
-                  <UserPlus className="h-10 w-10 text-zinc-700" />
-                </div>
-                <div className="space-y-2">
-                  <p className="font-black text-xl">{isRtl ? "لا متابعات بعد" : "No connections yet"}</p>
-                  <p className="text-zinc-500 text-sm font-bold">{isRtl ? "ابدأ بمتابعة أشخاص لتظهر منشوراتهم هنا." : "Follow people to populate your feed."}</p>
-                </div>
-                <Link href="/explore">
-                  <Button variant="outline" className="rounded-full border-zinc-800 font-black h-12 px-10 hover:bg-white hover:text-black">
-                    {isRtl ? "اكتشف أشخاصاً" : "Discover People"}
-                  </Button>
-                </Link>
-              </div>
-            )}
+          <TabsContent value="following" className="m-0">
+            {followingLoading ? (
+              <div className="flex flex-col items-center justify-center py-20"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" /></div>
+            ) : followingPosts.map((post: any) => (
+              <PostCard 
+                key={post.id} 
+                id={post.id} 
+                author={post.author} 
+                content={post.content} 
+                image={post.mediaUrl} 
+                mediaUrls={post.mediaUrls} 
+                mediaType={post.mediaType} 
+                likes={post.likesCount || 0} 
+                saves={post.savesCount || 0} 
+                likedBy={post.likedBy} 
+                savedBy={post.savedBy}
+                commentsCount={post.commentsCount}
+                time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
+              />
+            ))}
           </TabsContent>
         </main>
       </Tabs>
-
       <AppSidebar />
     </div>
   );

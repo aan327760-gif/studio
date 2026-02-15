@@ -23,35 +23,6 @@ import {
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
-/**
- * دالة ضغط الصور سيادياً لتقليل الحجم قبل الرفع.
- */
-const compressImage = async (url: string): Promise<string> => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = url;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 1200;
-      let width = img.width;
-      let height = img.height;
-
-      if (width > MAX_WIDTH) {
-        height = (MAX_WIDTH / width) * height;
-        width = MAX_WIDTH;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.7)); // جودة 70% توازن ممتاز
-    };
-    img.onerror = () => resolve(url);
-  });
-};
-
 function CreatePostContent() {
   const { isRtl } = useLanguage();
   const router = useRouter();
@@ -120,13 +91,10 @@ function CreatePostContent() {
       uid: user?.uid
     };
 
-    // معالجة الصور بالضغط قبل إرسالها للـ Context لتقليل استهلاك الذاكرة
-    const compressedImages = await Promise.all(localImages.map(url => compressImage(url)));
-
-    // إرسال المهمة للـ Background Context
+    // إرسال المهمة للـ Background Context فوراً دون انتظار الضغط
     startUpload({
       content,
-      localImages: compressedImages,
+      localImages, // سيتم الضغط في الخلفية داخل الـ Context
       videoUrl: videoUrlFromParams,
       userId: user?.uid,
       authorInfo,
@@ -137,11 +105,10 @@ function CreatePostContent() {
 
     toast({ 
       title: isRtl ? "جاري النشر في الخلفية" : "Publishing in background",
-      description: isRtl ? "سنقوم بتنبيهك فور اكتمال السيادة." : "Browsing is safe now."
     });
     
-    // العودة الفورية المطلقة دون انتظار أي رندرة إضافية
-    router.replace("/");
+    // العودة الفورية للرئيسية دون أي تأخير بصري
+    router.push("/");
   };
 
   return (

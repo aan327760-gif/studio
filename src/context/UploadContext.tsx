@@ -16,7 +16,36 @@ interface UploadContextType {
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
 /**
- * محرك الرفع في الخلفية - نسخة محسنة للأداء
+ * دالة ضغط الصور سيادياً لتقليل الحجم قبل الرفع.
+ */
+const compressImage = async (url: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 1200;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > MAX_WIDTH) {
+        height = (MAX_WIDTH / width) * height;
+        width = MAX_WIDTH;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => resolve(url);
+  });
+};
+
+/**
+ * محرك الرفع في الخلفية - نسخة محسنة للأداء وسرعة التنقل
  */
 export function UploadProvider({ children }: { children: React.ReactNode }) {
   const [isUploading, setIsUploading] = useState(false);
@@ -33,12 +62,22 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
       let finalMediaUrls: string[] = [];
       let mediaType: "image" | "video" | "audio" | "album" | null = null;
 
-      // 1. معالجة الصور في الخلفية
-      if (localImages.length > 0) {
+      // 1. ضغط ومعالجة الصور في الخلفية
+      if (localImages && localImages.length > 0) {
         mediaType = localImages.length > 1 ? 'album' : 'image';
-        const uploadPromises = localImages.map(async (base64: string, idx: number) => {
+        
+        // الضغط المتتابع لعدم إرهاق المعالج
+        const compressed = [];
+        for (const rawUrl of localImages) {
+          const compressedUrl = await compressImage(rawUrl);
+          compressed.push(compressedUrl);
+          setProgress(prev => Math.min(30, prev + (25 / localImages.length)));
+        }
+
+        // الرفع لـ Cloudinary
+        const uploadPromises = compressed.map(async (base64: string) => {
           const url = await uploadToCloudinary(base64, 'image');
-          setProgress(prev => Math.min(85, prev + (80 / localImages.length)));
+          setProgress(prev => Math.min(85, prev + (55 / localImages.length)));
           return url;
         });
         finalMediaUrls = await Promise.all(uploadPromises);
@@ -49,7 +88,6 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
         mediaType = 'video';
         setProgress(20);
         
-        // جلب الفيديو وتحويله لبيانات قابلة للرفع دون تجميد الواجهة
         const response = await fetch(videoUrl);
         const blob = await response.blob();
         const base64 = await new Promise<string>((resolve) => {
@@ -90,7 +128,7 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => {
         setIsUploading(false);
         setProgress(0);
-      }, 1500);
+      }, 1000);
     }
   };
 
