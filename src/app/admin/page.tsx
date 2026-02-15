@@ -281,7 +281,7 @@ export default function AdminDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                   <defs>
-                    <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="colorUv" x1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#1E6FC9" stopOpacity={0.3}/>
                       <stop offset="95%" stopColor="#1E6FC9" stopOpacity={0}/>
                     </linearGradient>
@@ -392,7 +392,7 @@ export default function AdminDashboard() {
                   u.email?.toLowerCase().includes(searchQuery.toLowerCase())
                 ).map((member: any) => {
                const isBanned = member.isBannedUntil && member.isBannedUntil.toDate() > new Date();
-               // التأكد من توثيق حساب المدير العام في القائمة
+               // التأكد من توثيق حساب المدير العام في القائمة بشكل احترافي
                const isMemberVerified = member.isVerified || member.email === SUPER_ADMIN_EMAIL;
                
                return (
@@ -405,7 +405,11 @@ export default function AdminDashboard() {
                       <div>
                          <div className="flex items-center gap-1.5">
                             <p className="text-sm font-black">{member.displayName}</p>
-                            {isMemberVerified && <CheckCircle2 className="h-3.5 w-3.5 text-[#1DA1F2] fill-[#1DA1F2]" />}
+                            {isMemberVerified && (
+                              <div className="flex items-center justify-center bg-[#1DA1F2] rounded-full p-0.5 shadow-sm">
+                                <CheckCircle2 className="h-2.5 w-2.5 text-white fill-white" strokeWidth={4} />
+                              </div>
+                            )}
                             {member.role === "admin" && member.email !== SUPER_ADMIN_EMAIL && <ShieldCheck className="h-3.5 w-3.5 text-primary fill-primary" />}
                             {isBanned && <Clock className="h-3.5 w-3.5 text-orange-500 animate-pulse" />}
                          </div>

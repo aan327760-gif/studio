@@ -154,6 +154,8 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     }
   };
 
+  const isAuthorVerified = author.isVerified || author.email === "adelbenmaza3@gmail.com";
+
   return (
     <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/50 cursor-pointer active:bg-zinc-950/50 transition-colors" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-4 pb-2 flex flex-row items-center space-y-0 gap-3">
@@ -169,7 +171,11 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
               <div className="flex flex-col">
                 <div className="flex items-center gap-1">
                   <h3 className="font-bold text-sm truncate">{author.name}</h3>
-                  {author.isVerified && <CheckCircle2 className="h-3 w-3 text-[#1DA1F2] fill-[#1DA1F2]" />}
+                  {isAuthorVerified && (
+                    <div className="flex items-center justify-center bg-[#1DA1F2] rounded-full p-0.5 ml-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5 text-white fill-white" strokeWidth={4} />
+                    </div>
+                  )}
                 </div>
                 <span className="text-[10px] text-zinc-500">@{author.handle}</span>
               </div>

@@ -87,7 +87,7 @@ export default function UserProfilePage() {
   const isProfileAdmin = profile?.role === "admin" || profile?.email === SUPER_ADMIN_EMAIL;
   const isVisitorAdmin = currentUserProfile?.role === "admin" || currentUser?.email === SUPER_ADMIN_EMAIL;
   
-  // التأكد من ظهور علامة التوثيق للمدير العام دائماً
+  // التأكد من ظهور علامة التوثيق للمدير العام دائماً بشكل احترافي
   const showCheckmark = profile?.isVerified || profile?.email === SUPER_ADMIN_EMAIL;
 
   return (
@@ -123,7 +123,11 @@ export default function UserProfilePage() {
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <h2 className="text-2xl font-black tracking-tight">{profile?.displayName}</h2>
-              {showCheckmark && <CheckCircle2 className="h-5 w-5 text-[#1DA1F2] fill-[#1DA1F2]" />}
+              {showCheckmark && (
+                <div className="flex items-center justify-center bg-[#1DA1F2] rounded-full p-1 shadow-sm">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-white fill-white" strokeWidth={4} />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <p className="text-zinc-500 text-sm font-medium">@{profile?.email?.split('@')[0] || "user"}</p>

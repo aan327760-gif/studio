@@ -129,33 +129,40 @@ export default function ExplorePage() {
                 <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
               ) : userResults.length > 0 ? (
                 <div className="space-y-4">
-                  {userResults.filter(u => u.uid !== currentUser?.uid).map((user: any) => (
-                    <div key={user.uid} className="flex items-center justify-between group p-3 bg-zinc-950 rounded-2xl border border-transparent hover:border-zinc-800 transition-all">
-                      <Link href={`/profile/${user.uid}`} className="flex gap-3 flex-1">
-                        <Avatar className="h-10 w-10 ring-1 ring-zinc-800 ring-offset-1 ring-offset-black">
-                          <AvatarImage src={user.photoURL} />
-                          <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="flex items-center gap-1">
-                            <p className="text-sm font-bold group-hover:text-primary transition-colors">{user.displayName}</p>
-                            {user.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-[#1DA1F2] fill-[#1DA1F2]" />}
+                  {userResults.filter(u => u.uid !== currentUser?.uid).map((user: any) => {
+                    const isUserVerified = user.isVerified || user.email === "adelbenmaza3@gmail.com";
+                    return (
+                      <div key={user.uid} className="flex items-center justify-between group p-3 bg-zinc-950 rounded-2xl border border-transparent hover:border-zinc-800 transition-all">
+                        <Link href={`/profile/${user.uid}`} className="flex gap-3 flex-1">
+                          <Avatar className="h-10 w-10 ring-1 ring-zinc-800 ring-offset-1 ring-offset-black">
+                            <AvatarImage src={user.photoURL} />
+                            <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="flex items-center gap-1">
+                              <p className="text-sm font-bold group-hover:text-primary transition-colors">{user.displayName}</p>
+                              {isUserVerified && (
+                                <div className="flex items-center justify-center bg-[#1DA1F2] rounded-full p-0.5 shadow-sm">
+                                  <CheckCircle2 className="h-2.5 w-2.5 text-white fill-white" strokeWidth={4} />
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-zinc-500">@{user.email?.split('@')[0]}</p>
                           </div>
-                          <p className="text-[10px] text-zinc-500">@{user.email?.split('@')[0]}</p>
-                        </div>
-                      </Link>
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleFollow(user.uid)}
-                        className={cn(
-                          "rounded-full font-bold px-5 h-8 text-[11px] transition-all",
-                          isFollowing(user.uid) ? "bg-zinc-800 text-white" : "bg-white text-black"
-                        )}
-                      >
-                        {isFollowing(user.uid) ? (isRtl ? "يتابع" : "Following") : (isRtl ? "متابعة" : "Follow")}
-                      </Button>
-                    </div>
-                  ))}
+                        </Link>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleFollow(user.uid)}
+                          className={cn(
+                            "rounded-full font-bold px-5 h-8 text-[11px] transition-all",
+                            isFollowing(user.uid) ? "bg-zinc-800 text-white" : "bg-white text-black"
+                          )}
+                        >
+                          {isFollowing(user.uid) ? (isRtl ? "يتابع" : "Following") : (isRtl ? "متابعة" : "Follow")}
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-20 opacity-30 flex flex-col items-center">
