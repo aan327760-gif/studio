@@ -21,19 +21,16 @@ import {
   Loader2,
   Search,
   Ban,
-  Users,
-  AlertTriangle,
-  Megaphone,
-  Star,
   ShieldAlert,
   ShieldCheck,
-  Github,
-  Rocket,
+  Star,
   CheckCircle,
   Trash2,
   Activity,
-  Zap,
-  BrainCircuit
+  Megaphone,
+  BrainCircuit,
+  Github,
+  Rocket
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -46,13 +43,12 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { VerificationBadge } from "@/components/ui/verification-badge";
-import { syncToGitHub } from "@/lib/github-actions";
 import { 
   ChartContainer, 
   ChartTooltip, 
   ChartTooltipContent 
 } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { Bar, BarChart, XAxis, ResponsiveContainer } from "recharts";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -65,9 +61,6 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
-  const [repoUrl, setRepoUrl] = useState("");
-  const [githubToken, setGithubToken] = useState("");
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
@@ -115,10 +108,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAiPlaceholder = () => {
-    toast({ title: isRtl ? "الذكاء الاصطناعي قريباً" : "AI Coming Soon" });
-  };
-
   const handleActionOnReport = async (reportId: string, action: 'ignore' | 'delete' | 'ban', postId?: string, authorId?: string) => {
     try {
       if (action === 'delete' && postId) {
@@ -143,21 +132,6 @@ export default function AdminDashboard() {
   const handleTogglePro = async (userId: string, current: boolean) => {
     await updateDoc(doc(db, "users", userId), { isPro: !current });
     toast({ title: isRtl ? "تم تحديث رتبة الإعلام" : "Media Status Updated" });
-  };
-
-  const handleGitHubSync = async () => {
-    if (!repoUrl.includes("github.com") || !githubToken) {
-      toast({ variant: "destructive", title: isRtl ? "بيانات ناقصة" : "Missing Info" });
-      return;
-    }
-    setIsSyncing(true);
-    const result = await syncToGitHub(repoUrl, githubToken);
-    if (result.success) {
-      toast({ title: isRtl ? "تمت المزامنة بنجاح" : "Sync Successful" });
-    } else {
-      toast({ variant: "destructive", title: "Sync Failed", description: result.error });
-    }
-    setIsSyncing(false);
   };
 
   if (userLoading) {
@@ -194,7 +168,7 @@ export default function AdminDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
                     <XAxis dataKey="name" stroke="#3f3f46" fontSize={10} fontWeight="bold" tickLine={false} axisLine={false} />
-                    <Tooltip content={<ChartTooltipContent />} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar dataKey="value" radius={[10, 10, 0, 0]} fill="var(--color-value)" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -207,7 +181,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "الهويات" : "Identity"}</TabsTrigger>
             <TabsTrigger value="threats" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "التهديدات" : "Threats"}</TabsTrigger>
             <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "البث" : "Broadcast"}</TabsTrigger>
-            <TabsTrigger value="deploy" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "النشر" : "Deploy"}</TabsTrigger>
+            <TabsTrigger value="deploy" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "ي" : "Deploy"}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -265,7 +239,7 @@ export default function AdminDashboard() {
                    <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
                       <div className="flex items-center justify-between">
                          <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
-                         <Button variant="ghost" size="sm" className="h-7 rounded-lg bg-primary/10 text-primary text-[8px] font-black gap-1" onClick={handleAiPlaceholder}>
+                         <Button variant="ghost" size="sm" className="h-7 rounded-lg bg-primary/10 text-primary text-[8px] font-black gap-1">
                             <BrainCircuit className="h-3 w-3" /> ذكاء اصطناعي (قريباً)
                          </Button>
                       </div>
@@ -324,13 +298,12 @@ export default function AdminDashboard() {
                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
                      <Github className="h-5 w-5 text-white" />
                    </div>
-                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "ي" : "Deploy"}</h3>
+                   <h3 className="font-black text-sm uppercase tracking-widest">ي</h3>
                 </div>
                 <div className="space-y-5">
-                   <Input placeholder="GitHub Repo URL" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
-                   <Input type="password" placeholder="PAT Token" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} />
-                   <Button className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg gap-3" disabled={isSyncing || !repoUrl || !githubToken} onClick={handleGitHubSync}>
-                     {isSyncing ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Rocket className="h-5 w-5" /> {isRtl ? "رفع الكود" : "Push Code"}</>}
+                   <Input placeholder="GitHub Repo URL" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" readOnly value="Locked for Phase 2" />
+                   <Button className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg gap-3" disabled>
+                     <Rocket className="h-5 w-5" /> ي
                    </Button>
                 </div>
              </Card>
