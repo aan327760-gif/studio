@@ -53,7 +53,6 @@ import {
   ChartTooltipContent 
 } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { analyzeReportAI } from "@/ai/flows/content-moderation-assistant";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -69,7 +68,6 @@ export default function AdminDashboard() {
   const [repoUrl, setRepoUrl] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
-  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
@@ -117,19 +115,8 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAiAnalyze = async (report: any) => {
-    setAnalyzingId(report.id);
-    try {
-      const result = await analyzeReportAI({ postContent: report.postContent, reason: report.reason });
-      toast({ 
-        title: isRtl ? "تحليل الذكاء الاصطناعي" : "AI Analysis",
-        description: result.recommendation
-      });
-    } catch (e) {
-      toast({ variant: "destructive", title: "AI Analysis Failed" });
-    } finally {
-      setAnalyzingId(null);
-    }
+  const handleAiPlaceholder = () => {
+    toast({ title: isRtl ? "الذكاء الاصطناعي قريباً" : "AI Coming Soon" });
   };
 
   const handleActionOnReport = async (reportId: string, action: 'ignore' | 'delete' | 'ban', postId?: string, authorId?: string) => {
@@ -278,8 +265,8 @@ export default function AdminDashboard() {
                    <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
                       <div className="flex items-center justify-between">
                          <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
-                         <Button variant="ghost" size="sm" className="h-7 rounded-lg bg-primary/10 text-primary text-[8px] font-black gap-1" onClick={() => handleAiAnalyze(r)} disabled={analyzingId === r.id}>
-                            {analyzingId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BrainCircuit className="h-3 w-3" />} AI ANALYSIS
+                         <Button variant="ghost" size="sm" className="h-7 rounded-lg bg-primary/10 text-primary text-[8px] font-black gap-1" onClick={handleAiPlaceholder}>
+                            <BrainCircuit className="h-3 w-3" /> ذكاء اصطناعي (قريباً)
                          </Button>
                       </div>
                       <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800">
@@ -337,7 +324,7 @@ export default function AdminDashboard() {
                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
                      <Github className="h-5 w-5 text-white" />
                    </div>
-                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "النشر السيادي" : "Deploy"}</h3>
+                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "ي" : "Deploy"}</h3>
                 </div>
                 <div className="space-y-5">
                    <Input placeholder="GitHub Repo URL" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />

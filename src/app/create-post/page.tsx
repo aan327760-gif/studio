@@ -13,7 +13,6 @@ import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { useUpload } from "@/context/UploadContext";
-import { enhancePostText } from "@/ai/flows/creative-assistant";
 import { 
   Select,
   SelectContent,
@@ -47,7 +46,6 @@ function CreatePostContent() {
   const [allowComments, setAllowComments] = useState(true);
   const [localImages, setLocalImages] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   
   const videoUrlFromParams = searchParams.get("video");
@@ -76,19 +74,8 @@ function CreatePostContent() {
     }
   };
 
-  const handleAiEnhance = async (tone: 'sovereign' | 'poetic' | 'professional') => {
-    if (!content.trim()) return;
-    setIsAiLoading(true);
-    try {
-      const result = await enhancePostText({ text: content, tone });
-      setContent(result.enhancedText);
-      toast({ title: isRtl ? "تمت الصياغة بذكاء سيادي" : "Enhanced with Sovereign AI" });
-      setIsAiDialogOpen(false);
-    } catch (e) {
-      toast({ variant: "destructive", title: "AI Error" });
-    } finally {
-      setIsAiLoading(false);
-    }
+  const handleAiPlaceholder = () => {
+    toast({ title: isRtl ? "مساعد ذكي (قريباً)" : "AI Assistant (Soon)" });
   };
 
   const handleSubmit = () => {
@@ -257,29 +244,19 @@ function CreatePostContent() {
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase flex items-center justify-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              {isRtl ? "المساعد الإبداعي السيادي" : "Sovereign Creative Assistant"}
+              {isRtl ? "مساعد ذكي (قريباً)" : "AI Assistant (Soon)"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-6">
-            <p className="text-[10px] text-zinc-500 font-bold uppercase text-center mb-4">
-              {isRtl ? "اختر الأسلوب الذي يناسب فكرتك" : "Choose the tone for your insight"}
-            </p>
-            {[
-              { id: 'sovereign', label: isRtl ? "أسلوب سيادي قوي" : "Sovereign & Strong", icon: Wand2 },
-              { id: 'poetic', label: isRtl ? "أسلوب بليغ وشاعري" : "Poetic & Elegant", icon: Wand2 },
-              { id: 'professional', label: isRtl ? "أسلوب مهني دقيق" : "Professional & Clear", icon: Wand2 }
-            ].map((tone) => (
-              <Button 
-                key={tone.id} 
-                variant="ghost" 
-                disabled={isAiLoading}
-                className="w-full justify-start h-14 rounded-xl bg-zinc-900 border border-zinc-800 font-bold text-sm hover:bg-primary/10 transition-all gap-3" 
-                onClick={() => handleAiEnhance(tone.id as any)}
-              >
-                {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <tone.icon className="h-4 w-4 text-primary" />}
-                {tone.label}
-              </Button>
-            ))}
+          <div className="py-10 text-center space-y-4">
+             <div className="h-16 w-16 bg-primary/10 rounded-2xl mx-auto flex items-center justify-center border border-primary/20">
+                <Wand2 className="h-8 w-8 text-primary" />
+             </div>
+             <p className="text-sm font-black uppercase tracking-widest text-zinc-500">
+                {isRtl ? "يتم العمل على محرك الإبداع" : "Working on AI core"}
+             </p>
+             <Button className="w-full rounded-xl bg-white text-black font-black" onClick={() => setIsAiDialogOpen(false)}>
+                {isRtl ? "فهمت" : "Got it"}
+             </Button>
           </div>
         </DialogContent>
       </Dialog>
