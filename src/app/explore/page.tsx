@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Input } from "@/components/ui/input";
-import { Search, Users, Loader2, Flame, ChevronRight, TrendingUp, Hash } from "lucide-react";
+import { Search, Users, Loader2, Flame, ChevronRight, TrendingUp, Hash, Zap } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
@@ -17,11 +17,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 
 const TRENDING_TOPICS = [
-  { tag: "Algeria", posts: "125K", category: "News" },
-  { tag: "Unbound2026", posts: "89K", category: "Tech" },
-  { tag: "DigitalSovereignty", posts: "54K", category: "Governance" },
-  { tag: "LammaChat", posts: "42K", category: "Social" },
-  { tag: "FreeWorld", posts: "30K", category: "Rights" },
+  { tag: "Algeria", posts: "125K", category: "News", trend: "up" },
+  { tag: "UnboundOS", posts: "89K", category: "Tech", trend: "up" },
+  { tag: "DigitalSovereignty", posts: "54K", category: "Governance", trend: "stable" },
+  { tag: "LammaChat", posts: "42K", category: "Social", trend: "up" },
+  { tag: "FreeMind", posts: "30K", category: "Philosophy", trend: "stable" },
 ];
 
 export default function ExplorePage() {
@@ -189,10 +189,11 @@ export default function ExplorePage() {
           </Tabs>
         ) : (
           <div className="space-y-8 p-4">
-            <section>
-              <h2 className="text-lg font-black mb-6 flex items-center gap-2">
+            <section className="bg-zinc-950/50 rounded-[2.5rem] p-6 border border-zinc-900 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-4"><Zap className="h-4 w-4 text-primary animate-pulse" /></div>
+               <h2 className="text-lg font-black mb-6 flex items-center gap-2">
                 <Flame className="h-6 w-6 text-orange-500 fill-orange-500" />
-                {isRtl ? "رائج الآن" : "Trending Now"}
+                {isRtl ? "النبض السيادي الآن" : "Trending Now"}
               </h2>
               <div className="space-y-7">
                 {TRENDING_TOPICS.map((topic, i) => (
@@ -203,7 +204,10 @@ export default function ExplorePage() {
                          <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">{topic.category}</p>
                       </div>
                       <p className="font-black text-[16px] group-hover:text-primary transition-colors tracking-tight">#{topic.tag}</p>
-                      <p className="text-[10px] text-zinc-600 font-bold uppercase">{topic.posts} {isRtl ? "منشور" : "Insights"}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] text-zinc-600 font-bold uppercase">{topic.posts} {isRtl ? "منشور" : "Insights"}</p>
+                        {topic.trend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
+                      </div>
                     </div>
                     <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-800 rounded-full group-hover:bg-primary/10 group-hover:text-primary transition-all">
                        <ChevronRight className={cn("h-5 w-5", isRtl ? "rotate-180" : "")} />

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { 
@@ -30,7 +30,9 @@ import {
   Github,
   Rocket,
   CheckCircle,
-  Trash2
+  Trash2,
+  Activity,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -44,6 +46,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { syncToGitHub } from "@/lib/github-actions";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -74,6 +78,13 @@ export default function AdminDashboard() {
   
   const reportsQuery = useMemoFirebase(() => isSuper ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isSuper]);
   const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
+
+  // بيانات هيكلية للرسم البياني (نبض المنصة)
+  const chartData = useMemo(() => [
+    { name: isRtl ? "المواطنين" : "Citizens", value: allUsers.length, color: "#1E6FC9" },
+    { name: isRtl ? "التهديدات" : "Threats", value: reports.length, color: "#ef4444" },
+    { name: isRtl ? "الموثقين" : "Verified", value: allUsers.filter((u:any) => u.isVerified).length, color: "#10b981" }
+  ], [allUsers, reports, isRtl]);
 
   const handleBroadcast = async () => {
     if (!broadcastMessage.trim() || !isSuper) return;
@@ -170,13 +181,31 @@ export default function AdminDashboard() {
       </header>
 
       <main className="p-4 space-y-8">
+        <section className="space-y-4">
+           <div className="flex items-center gap-2 px-2">
+              <Activity className="h-4 w-4 text-primary" />
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{isRtl ? "نبض المنصة اللحظي" : "Sovereign Vital Signs"}</h2>
+           </div>
+           <Card className="bg-zinc-950 border-zinc-900 p-6 rounded-[2rem] h-[200px]">
+              <ChartContainer config={{ value: { label: "Count", color: "#1E6FC9" } }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <XAxis dataKey="name" stroke="#3f3f46" fontSize={10} fontWeight="bold" tickLine={false} axisLine={false} />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="value" radius={[10, 10, 0, 0]} fill="var(--color-value)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+           </Card>
+        </section>
+
         <div className="grid grid-cols-2 gap-3">
-           <Card className="bg-zinc-950 border-zinc-900 p-4 flex flex-col items-center gap-2">
+           <Card className="bg-zinc-950 border-zinc-900 p-4 flex flex-col items-center gap-2 rounded-[2rem]">
               <Users className="h-5 w-5 text-blue-500" />
               <span className="text-[9px] font-black text-zinc-500 uppercase">{isRtl ? "المواطنين" : "Citizens"}</span>
               <span className="text-xl font-black">{allUsers.length}</span>
            </Card>
-           <Card className="bg-zinc-950 border-zinc-900 p-4 flex flex-col items-center gap-2">
+           <Card className="bg-zinc-950 border-zinc-900 p-4 flex flex-col items-center gap-2 rounded-[2rem]">
               <AlertTriangle className="h-5 w-5 text-red-500" />
               <span className="text-[9px] font-black text-zinc-500 uppercase">{isRtl ? "التهديدات" : "Threats"}</span>
               <span className="text-xl font-black">{reports.length}</span>

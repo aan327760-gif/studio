@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { X, Plus, ImageIcon, Loader2, Sparkles } from "lucide-react";
+import { X, Plus, ImageIcon, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,7 @@ import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { useUpload } from "@/context/UploadContext";
+import { enhancePostText } from "@/ai/flows/creative-assistant";
 import { 
   Select,
   SelectContent,
@@ -20,6 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -40,6 +47,8 @@ function CreatePostContent() {
   const [allowComments, setAllowComments] = useState(true);
   const [localImages, setLocalImages] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   
   const videoUrlFromParams = searchParams.get("video");
   const source = searchParams.get("source");
@@ -71,6 +80,21 @@ function CreatePostContent() {
     setLocalImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleAiEnhance = async (tone: 'sovereign' | 'poetic' | 'professional') => {
+    if (!content.trim()) return;
+    setIsAiLoading(true);
+    try {
+      const result = await enhancePostText({ text: content, tone });
+      setContent(result.enhancedText);
+      toast({ title: isRtl ? "تمت الصياغة بذكاء سيادي" : "Enhanced with Sovereign AI" });
+      setIsAiDialogOpen(false);
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI Error" });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   const handleSubmit = () => {
     if (isBanned) {
       toast({ variant: "destructive", title: isRtl ? "أنت محظور" : "Account Restricted" });
@@ -91,7 +115,6 @@ function CreatePostContent() {
       uid: user?.uid
     };
 
-    // البدء الفوري والمغادرة السيادية
     startUpload({
       content,
       localImages,
@@ -108,7 +131,6 @@ function CreatePostContent() {
       description: isRtl ? "يمكنك إكمال التصفح بحرية الآن." : "Continue browsing freely.",
     });
     
-    // انتقال مطلق وبدون عودة (Replace) لضمان الخفة
     router.replace("/");
   };
 
@@ -141,12 +163,24 @@ function CreatePostContent() {
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <Textarea 
-              placeholder={isRtl ? "شارك فكرة حرة..." : "Share a free thought..."} 
-              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[120px] mb-4 placeholder:text-zinc-700" 
-              value={content} 
-              onChange={(e) => setContent(e.target.value)} 
-            />
+            <div className="relative">
+              <Textarea 
+                placeholder={isRtl ? "شارك فكرة حرة..." : "Share a free thought..."} 
+                className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[150px] mb-4 placeholder:text-zinc-700" 
+                value={content} 
+                onChange={(e) => setContent(e.target.value)} 
+              />
+              {content.trim() && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setIsAiDialogOpen(true)}
+                  className="absolute bottom-4 right-0 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
+                >
+                  <Wand2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
 
             {localImages.length > 0 && (
               <div className="w-full overflow-hidden mb-6">
@@ -221,6 +255,38 @@ function CreatePostContent() {
           </div>
         </div>
       </main>
+
+      <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-6 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-center font-black uppercase flex items-center justify-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              {isRtl ? "المساعد الإبداعي السيادي" : "Sovereign Creative Assistant"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-6">
+            <p className="text-[10px] text-zinc-500 font-bold uppercase text-center mb-4">
+              {isRtl ? "اختر الأسلوب الذي يناسب فكرتك" : "Choose the tone for your insight"}
+            </p>
+            {[
+              { id: 'sovereign', label: isRtl ? "أسلوب سيادي قوي" : "Sovereign & Strong", icon: Wand2 },
+              { id: 'poetic', label: isRtl ? "أسلوب بليغ وشاعري" : "Poetic & Elegant", icon: Wand2 },
+              { id: 'professional', label: isRtl ? "أسلوب مهني دقيق" : "Professional & Clear", icon: Wand2 }
+            ].map((tone) => (
+              <Button 
+                key={tone.id} 
+                variant="ghost" 
+                disabled={isAiLoading}
+                className="w-full justify-start h-14 rounded-xl bg-zinc-900 border border-zinc-800 font-bold text-sm hover:bg-primary/10 transition-all gap-3" 
+                onClick={() => handleAiEnhance(tone.id as any)}
+              >
+                {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <tone.icon className="h-4 w-4 text-primary" />}
+                {tone.label}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
