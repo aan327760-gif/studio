@@ -94,6 +94,11 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
   const [isPlaying, setIsPlaying] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const truncationLimit = 240;
+  const isLongContent = content?.length > truncationLimit;
+  const displayContent = isExpanded ? content : content?.slice(0, truncationLimit) + "...";
 
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
@@ -207,7 +212,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h3 className="font-black text-[15px] truncate tracking-tight">{author?.name || author?.displayName}</h3>
                 {(author?.isVerified || author?.email === "adelbenmaza3@gmail.com" || author?.role === 'admin') && <VerificationBadge className="h-4 w-4" />}
-                {author?.isPro && <div className="flex items-center gap-0.5 bg-yellow-500/10 px-1.5 py-0.5 rounded-full border border-yellow-500/20"><Star className="h-3 w-3 fill-yellow-500 text-yellow-500" /><span className="text-[7px] font-black text-yellow-500 uppercase tracking-widest">{isRtl ? "إعلام" : "Media"}</span></div>}
+                {author?.isPro && <div className="flex items-center gap-0.5 bg-yellow-500/10 px-1.5 py-0.5 rounded-full border border-yellow-500/20"><Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" /><span className="text-[7px] font-black text-yellow-500 uppercase tracking-widest">{isRtl ? "إعلام" : "Media"}</span></div>}
               </div>
               <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{author?.handle || author?.email?.split('@')[0]}</span>
             </div>
@@ -225,7 +230,21 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
 
       <CardContent className="p-0">
         <div className="px-5 pb-3">
-          {content && <p className="text-[15px] leading-relaxed whitespace-pre-wrap mb-3">{content}</p>}
+          {content && (
+            <div className="space-y-1.5">
+              <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                {isLongContent ? displayContent : content}
+              </p>
+              {isLongContent && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                  className="text-primary font-black text-[11px] uppercase tracking-widest hover:underline"
+                >
+                  {isExpanded ? (isRtl ? "عرض أقل" : "Show Less") : (isRtl ? "إقرأ المزيد" : "Read More")}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {carouselImages.length > 0 && (
