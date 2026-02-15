@@ -8,7 +8,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Sheet,
   SheetContent,
@@ -30,9 +30,9 @@ export function AppSidebar() {
   const { isRtl } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = user ? useUser() : { user: null }; // Safe check
-  const actualUser = useUser().user;
+  const { user } = useUser();
   const db = useFirestore();
+  
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isAudioOpen, setIsAudioOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -44,9 +44,9 @@ export function AppSidebar() {
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const unreadNotifsQuery = useMemoFirebase(() => {
-    if (!actualUser) return null;
-    return query(collection(db, "notifications"), where("userId", "==", actualUser.uid), where("read", "==", false));
-  }, [db, actualUser]);
+    if (!user) return null;
+    return query(collection(db, "notifications"), where("userId", "==", user.uid), where("read", "==", false));
+  }, [db, user]);
   const { data: unreadNotifs = [] } = useCollection<any>(unreadNotifsQuery);
 
   const navItems = [
@@ -54,7 +54,7 @@ export function AppSidebar() {
     { icon: MessageSquare, href: "/messages", label: "Messages" },
     { icon: Plus, href: "#", label: "Add", special: true },
     { icon: Bell, href: "/notifications", label: "Notifications", hasBadge: unreadNotifs.length > 0 },
-    { icon: User, href: actualUser ? "/profile" : "/auth", label: "Profile", isAvatar: true },
+    { icon: User, href: user ? "/profile" : "/auth", label: "Profile", isAvatar: true },
   ];
 
   const startRecording = async () => {
@@ -178,8 +178,8 @@ export function AppSidebar() {
             <div className="flex flex-col items-center justify-center relative h-full active:scale-90 transition-transform">
               {item.isAvatar ? (
                 <Avatar className={cn("h-7 w-7 transition-all", isActive ? "ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-60")}>
-                  <AvatarImage src={actualUser?.photoURL || ""} />
-                  <AvatarFallback>{actualUser?.displayName?.[0] || "U"}</AvatarFallback>
+                  <AvatarImage src={user?.photoURL || ""} />
+                  <AvatarFallback>{user?.displayName?.[0] || "U"}</AvatarFallback>
                 </Avatar>
               ) : (
                 <div className="relative">

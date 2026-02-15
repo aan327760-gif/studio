@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { X, Plus, ImageIcon, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { X, Plus, ImageIcon, Loader2, Sparkles } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,13 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { enhancePostText } from "@/ai/flows/creative-assistant";
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -47,8 +39,6 @@ function CreatePostContent() {
   const [allowComments, setAllowComments] = useState(true);
   const [localImages, setLocalImages] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
-  const [isAiEnhancing, setIsAiEnhancing] = useState(false);
   
   const videoUrlFromParams = searchParams.get("video");
   const source = searchParams.get("source");
@@ -73,21 +63,6 @@ function CreatePostContent() {
     if (files) {
       const newImages = Array.from(files).map(file => URL.createObjectURL(file));
       setLocalImages(prev => [...prev, ...newImages].slice(0, 4));
-    }
-  };
-
-  const handleAiEnhance = async (tone: 'sovereign' | 'poetic' | 'professional' | 'casual') => {
-    if (!content.trim()) return;
-    setIsAiEnhancing(true);
-    try {
-      const result = await enhancePostText({ text: content, tone });
-      setContent(result.enhancedText);
-      toast({ title: isRtl ? "تم التحسين" : "Enhanced" });
-      setIsAiDialogOpen(false);
-    } catch (e) {
-      toast({ variant: "destructive", title: "AI Error" });
-    } finally {
-      setIsAiEnhancing(false);
     }
   };
 
@@ -166,16 +141,6 @@ function CreatePostContent() {
                 value={content} 
                 onChange={(e) => setContent(e.target.value)} 
               />
-              {content.trim() && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setIsAiDialogOpen(true)}
-                  className="absolute bottom-4 right-0 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
-                >
-                  <Wand2 className="h-4 w-4" />
-                </Button>
-              )}
             </div>
 
             {localImages.length > 0 && (
@@ -251,44 +216,6 @@ function CreatePostContent() {
           </div>
         </div>
       </main>
-
-      <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-6 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-center font-black uppercase flex items-center justify-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              المساعد الإبداعي
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-6 space-y-4">
-             <p className="text-[10px] font-black uppercase text-zinc-500 text-center">اختر أسلوب إعادة الصياغة</p>
-             <div className="grid grid-cols-2 gap-3">
-                {[
-                  { id: 'sovereign', label: isRtl ? 'سيادي' : 'Sovereign' },
-                  { id: 'poetic', label: isRtl ? 'شاعري' : 'Poetic' },
-                  { id: 'professional', label: isRtl ? 'احترافي' : 'Professional' },
-                  { id: 'casual', label: isRtl ? 'عفوي' : 'Casual' }
-                ].map((tone) => (
-                  <Button 
-                    key={tone.id} 
-                    variant="outline" 
-                    className="h-14 rounded-2xl border-zinc-800 hover:bg-primary/10 hover:border-primary/30 font-black text-xs uppercase"
-                    onClick={() => handleAiEnhance(tone.id as any)}
-                    disabled={isAiEnhancing}
-                  >
-                    {tone.label}
-                  </Button>
-                ))}
-             </div>
-             {isAiEnhancing && (
-               <div className="flex flex-col items-center justify-center py-4 gap-2">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  <span className="text-[8px] font-black uppercase tracking-widest text-primary animate-pulse">Sovereign Brain Working...</span>
-               </div>
-             )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

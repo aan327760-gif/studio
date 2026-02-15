@@ -23,16 +23,9 @@ import {
   Ban,
   ShieldAlert,
   ShieldCheck,
-  Star,
   CheckCircle,
-  Trash2,
   Activity,
-  Megaphone,
-  BrainCircuit,
-  Rocket,
-  Github,
-  Key,
-  Terminal
+  Megaphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -51,8 +44,6 @@ import {
   ChartTooltipContent 
 } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, ResponsiveContainer } from "recharts";
-import { analyzeReportAI } from "@/ai/flows/content-moderation-assistant";
-import { syncToGitHub } from "@/lib/github-actions";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -65,10 +56,6 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
-  const [repoUrl, setRepoUrl] = useState("");
-  const [githubToken, setGithubToken] = useState("");
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<Record<string, any>>({});
 
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
@@ -113,35 +100,6 @@ export default function AdminDashboard() {
       toast({ variant: "destructive", title: "Broadcast Failed" });
     } finally {
       setIsBroadcasting(false);
-    }
-  };
-
-  const handleAiAnalyze = async (report: any) => {
-    try {
-      const result = await analyzeReportAI({ postContent: report.postContent, reason: report.reason });
-      setAiAnalysis(prev => ({ ...prev, [report.id]: result }));
-    } catch (e) {
-      toast({ title: "AI Analysis (Soon)" });
-    }
-  };
-
-  const handleDeploy = async () => {
-    if (!repoUrl || !githubToken) {
-      toast({ variant: "destructive", title: isRtl ? "البيانات ناقصة" : "Missing Info" });
-      return;
-    }
-    setIsDeploying(true);
-    try {
-      const result = await syncToGitHub(repoUrl, githubToken);
-      if (result.success) {
-        toast({ title: isRtl ? "تمت المزامنة بنجاح" : "Sync Success" });
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Sync Failed", description: e.message });
-    } finally {
-      setIsDeploying(false);
     }
   };
 
@@ -213,7 +171,6 @@ export default function AdminDashboard() {
             <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Identity</TabsTrigger>
             <TabsTrigger value="threats" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Threats</TabsTrigger>
             <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Broadcast</TabsTrigger>
-            <TabsTrigger value="deploy" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Deploy (ي)</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -268,9 +225,6 @@ export default function AdminDashboard() {
                    <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
                       <div className="flex items-center justify-between">
                          <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
-                         <Button variant="ghost" size="sm" className="h-7 rounded-lg bg-primary/10 text-primary text-[8px] font-black gap-1" onClick={() => handleAiAnalyze(r)}>
-                            <BrainCircuit className="h-3 w-3" /> ذكاء اصطناعي (قريباً)
-                         </Button>
                       </div>
                       <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800">
                          <p className="text-xs text-zinc-400 italic">"{r.postContent}"</p>
@@ -311,52 +265,6 @@ export default function AdminDashboard() {
                 >
                   {isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "تنفيذ البث" : "Execute")}
                 </Button>
-             </Card>
-          </TabsContent>
-
-          <TabsContent value="deploy" className="space-y-6">
-             <Card className="bg-zinc-950 border-zinc-900 border-2 border-primary/10 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-5"><Rocket className="h-24 w-24" /></div>
-                <div className="flex items-center gap-3 mb-6">
-                   <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-                     <Github className="h-5 w-5 text-white" />
-                   </div>
-                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "مزامنة GitHub (ي)" : "Deploy"}</h3>
-                </div>
-                <div className="space-y-5">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase ml-1">Repo URL</label>
-                      <div className="relative">
-                        <Terminal className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
-                        <Input 
-                          placeholder="https://github.com/user/repo.git" 
-                          className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs pl-10" 
-                          value={repoUrl}
-                          onChange={(e) => setRepoUrl(e.target.value)}
-                        />
-                      </div>
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 uppercase ml-1">Access Token</label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
-                        <Input 
-                          type="password"
-                          placeholder="ghp_xxxxxxxxxxxx" 
-                          className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs pl-10" 
-                          value={githubToken}
-                          onChange={(e) => setGithubToken(e.target.value)}
-                        />
-                      </div>
-                   </div>
-                   <Button 
-                    className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg gap-3 shadow-xl active:scale-95 transition-all" 
-                    onClick={handleDeploy}
-                    disabled={isDeploying}
-                   >
-                     {isDeploying ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Rocket className="h-5 w-5" /> {isRtl ? "مزامنة الآن (ي)" : "Sync Now"}</>}
-                   </Button>
-                </div>
              </Card>
           </TabsContent>
         </Tabs>
