@@ -9,13 +9,13 @@
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
-        "bannerURL": { "type": "string", "description": "Profile cover image URL" },
+        "bannerURL": { "type": "string" },
         "bio": { "type": "string" },
         "phoneNumber": { "type": "string" },
         "location": { "type": "string" },
         "joinedAt": { "type": "string", "format": "date-time" },
-        "isPro": { "type": "boolean", "description": "Media Channel status (Gold Star)" },
-        "isVerified": { "type": "boolean", "description": "Verification status (Blue Rosette)" },
+        "isPro": { "type": "boolean" },
+        "isVerified": { "type": "boolean" },
         "language": { "type": "string", "enum": ["en", "ar"] },
         "followersCount": { "type": "number" },
         "followingCount": { "type": "number" },
@@ -63,6 +63,8 @@
       "properties": {
         "authorId": { "type": "string" },
         "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "authorHandle": { "type": "string" },
         "text": { "type": "string" },
         "likesCount": { "type": "number" },
         "likedBy": { "type": "array", "items": { "type": "string" } },
@@ -88,6 +90,7 @@
     "/posts/{postId}": { "schema": "Post", "description": "Sovereign insights" },
     "/posts/{postId}/comments/{commentId}": { "schema": "Comment", "description": "Post discussions" },
     "/posts/{postId}/comments/{commentId}/replies/{replyId}": { "schema": "Reply", "description": "Comment threads" },
-    "/direct_conversations/{chatId}": { "schema": "DirectConversation", "description": "Private encrypted chats" }
+    "/direct_conversations/{chatId}": { "schema": "DirectConversation", "description": "Private chats" },
+    "/direct_conversations/{chatId}/messages/{msgId}": { "schema": "object", "description": "Messages" }
   }
 }

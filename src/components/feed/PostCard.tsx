@@ -9,7 +9,6 @@ import {
   Trash2, 
   Flag, 
   Languages, 
-  Loader2, 
   Star, 
   Play, 
   Pause, 
@@ -74,7 +73,7 @@ interface PostCardProps {
   allowComments?: boolean;
 }
 
-export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, time, mediaSettings, privacy, allowComments = true }: PostCardProps) {
+export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, time, mediaSettings, allowComments = true }: PostCardProps) {
   const { isRtl } = useLanguage();
   const { user } = useUser();
   const db = useFirestore();
@@ -92,11 +91,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [newComment, setNewComment] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  // لضبط الردود
-  const [replyingToId, setReplyingToId] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState("");
-  const [showRepliesFor, setShowRepliesFor] = useState<string[]>([]);
 
   const CONTENT_LIMIT = 280;
   const shouldTruncate = content.length > CONTENT_LIMIT;
@@ -128,12 +122,11 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     e.stopPropagation();
     if (!user || !id || isBanned) return;
     const postRef = doc(db, "posts", id);
-    
     const updateData = isLiked 
       ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) }
       : { likedBy: arrayUnion(user.uid), likesCount: increment(1) };
 
-    updateDoc(postRef, updateData).catch(async (serverError) => {
+    updateDoc(postRef, updateData).catch(async (err) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: postRef.path, operation: 'update', requestResourceData: updateData }));
     });
 
@@ -170,45 +163,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     setNewComment("");
   };
 
-  const handleCommentLike = (commentId: string, currentLikedBy: string[] = []) => {
-    if (!user || !id || isBanned) return;
-    const commentRef = doc(db, "posts", id, "comments", commentId);
-    
-    const isCurrentlyLiked = Array.isArray(currentLikedBy) && currentLikedBy.includes(user.uid);
-
-    const updateData = isCurrentlyLiked
-      ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) }
-      : { likedBy: arrayUnion(user.uid), likesCount: increment(1) };
-
-    updateDoc(commentRef, updateData).catch(async (err) => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: commentRef.path, operation: 'update', requestResourceData: updateData }));
-    });
-  };
-
-  const handleAddReply = (commentId: string) => {
-    if (isBanned || !replyText.trim() || !user || !id) return;
-
-    const replyData = {
-      authorId: user.uid,
-      authorName: currentUserProfile?.displayName || user.displayName || "User",
-      authorAvatar: currentUserProfile?.photoURL || user.photoURL || "",
-      authorHandle: user.email?.split('@')[0] || "user",
-      text: replyText,
-      createdAt: serverTimestamp(),
-      likesCount: 0,
-      likedBy: []
-    };
-
-    addDoc(collection(db, "posts", id, "comments", commentId, "replies"), replyData);
-    setReplyText("");
-    setReplyingToId(null);
-    if (!showRepliesFor.includes(commentId)) setShowRepliesFor([...showRepliesFor, commentId]);
-  };
-
-  const toggleReplies = (commentId: string) => {
-    setShowRepliesFor(prev => prev.includes(commentId) ? prev.filter(i => i !== commentId) : [...prev, commentId]);
-  };
-
   const toggleMedia = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (mediaType === 'video' && videoRef.current) {
@@ -220,19 +174,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       else audioRef.current.play();
       setIsPlaying(!isPlaying);
     }
-  };
-
-  const handleReport = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user || !id) return;
-    addDoc(collection(db, "reports"), { targetId: id, targetType: "post", reason: "Policy Violation", reportedBy: user.uid, status: "pending", createdAt: serverTimestamp() });
-    toast({ title: isRtl ? "تم البلاغ" : "Reported" });
-  };
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!isAdmin || !id) return;
-    if (confirm("Delete?")) deleteDoc(doc(db, "posts", id));
   };
 
   return (
@@ -258,9 +199,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-700 hover:text-white rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl shadow-2xl p-2 min-w-[140px]">
-                <DropdownMenuItem onClick={handleReport} className="flex gap-3 text-orange-500 focus:bg-orange-500/10 focus:text-orange-500 rounded-xl m-1 h-11 font-black text-xs uppercase tracking-widest"><Flag className="h-4 w-4" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
-                {isAdmin && <DropdownMenuItem onClick={handleDelete} className="flex gap-3 text-red-500 focus:bg-red-500/10 focus:text-red-500 rounded-xl m-1 h-11 font-black text-xs uppercase tracking-widest"><Trash2 className="h-4 w-4" /> {isRtl ? "حذف" : "Delete"}</DropdownMenuItem>}
+              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl shadow-2xl p-2">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); addDoc(collection(db, "reports"), { targetId: id, targetType: "post", reason: "Policy Violation", reportedBy: user?.uid, status: "pending", createdAt: serverTimestamp() }); toast({ title: "Reported" }); }} className="text-orange-500 rounded-xl m-1 h-11 font-black text-xs uppercase"><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
+                {isAdmin && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); if (confirm("Delete?")) deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl m-1 h-11 font-black text-xs uppercase"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف" : "Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -272,10 +213,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
           {content && (
             <div className="space-y-2 mb-3">
               <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{displayContent}</p>
-              {shouldTruncate && <button onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} className="text-primary text-[10px] font-black uppercase tracking-[0.2em] hover:opacity-80">{isExpanded ? (isRtl ? "عرض أقل" : "Show less") : (isRtl ? "أقرأ المزيد" : "Read more")}</button>}
+              {shouldTruncate && <button onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">{isExpanded ? (isRtl ? "عرض أقل" : "Show less") : (isRtl ? "أقرأ المزيد" : "Read more")}</button>}
             </div>
           )}
-          <Button variant="ghost" size="sm" className="h-8 px-3 bg-zinc-900/50 text-zinc-400 hover:text-primary rounded-xl font-black text-[9px] uppercase tracking-widest gap-2.5 transition-all" onClick={(e) => e.stopPropagation()}><Languages className="h-3.5 w-3.5" /> {isRtl ? "الترجمة السيادية" : "Sovereign Translate"}</Button>
         </div>
 
         {image && (
@@ -290,43 +230,39 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 <div className="p-6 bg-zinc-900/50 flex flex-col gap-4">
                   <audio ref={audioRef} src={image} className="hidden" onEnded={() => setIsPlaying(false)} />
                   <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-primary text-white hover:bg-primary/90 shadow-lg" onClick={toggleMedia}>{isPlaying ? <Pause className="h-6 w-6 fill-white" /> : <Play className="h-6 w-6 fill-white" />}</Button>
-                    <div className="flex-1 space-y-1"><p className="text-[10px] font-black uppercase tracking-widest text-primary">{isRtl ? "بصمة صوتية" : "Voice Note"}</p><div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden"><div className={cn("h-full bg-primary transition-all duration-300", isPlaying ? "w-full" : "w-0")} /></div></div>
+                    <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-primary text-white" onClick={toggleMedia}>{isPlaying ? <Pause className="h-6 w-6 fill-white" /> : <Play className="h-6 w-6 fill-white" />}</Button>
+                    <div className="flex-1 space-y-1"><div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden"><div className={cn("h-full bg-primary transition-all duration-300", isPlaying ? "w-full" : "w-0")} /></div></div>
                     <Volume2 className="h-5 w-5 text-zinc-600" />
                   </div>
                 </div>
               ) : (
-                <div className="relative"><img src={image} alt="Media" className={cn("w-full h-auto max-h-[600px] object-cover transition-transform duration-700 group-hover:scale-105", mediaSettings?.filter || "filter-none")} /><div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" /></div>
+                <img src={image} alt="Media" className={cn("w-full h-auto max-h-[600px] object-cover", mediaSettings?.filter || "filter-none")} />
               )}
             </div>
           </div>
         )}
 
         <div className="px-5 py-4 flex items-center gap-8 border-t border-zinc-900/20" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2 group cursor-pointer active:scale-90 transition-transform" onClick={handleLike}>
-            <div className={cn("p-2 rounded-full transition-all", isLiked ? "bg-red-500/10" : "group-hover:bg-red-500/5")}><Heart className={cn("h-5 w-5", isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-600 group-hover:text-red-500/60")} /></div>
+          <div className="flex items-center gap-2 group cursor-pointer active:scale-90" onClick={handleLike}>
+            <div className={cn("p-2 rounded-full", isLiked ? "bg-red-500/10" : "group-hover:bg-red-500/5")}><Heart className={cn("h-5 w-5", isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-600")} /></div>
             <span className={cn("text-xs font-black", isLiked ? "text-red-500" : "text-zinc-600")}>{likesCount}</span>
           </div>
           
           <Sheet>
             <SheetTrigger asChild>
-              <div className="flex items-center gap-2 group cursor-pointer active:scale-90 transition-transform">
-                <div className="p-2 rounded-full group-hover:bg-primary/5 transition-all"><MessageCircle className="h-5 w-5 text-zinc-600 group-hover:text-primary/60" /></div>
+              <div className="flex items-center gap-2 group cursor-pointer active:scale-90">
+                <div className="p-2 rounded-full group-hover:bg-primary/5"><MessageCircle className="h-5 w-5 text-zinc-600" /></div>
                 <span className="text-xs font-black text-zinc-600">{comments.length}</span>
               </div>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 outline-none overflow-hidden flex flex-col shadow-2xl">
-              <SheetHeader className="p-4 border-b border-zinc-900 shrink-0">
+            <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 flex flex-col">
+              <SheetHeader className="p-4 border-b border-zinc-900">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-400 rounded-full h-10 w-10"><X className="h-5 w-5" /></Button></SheetClose>
-                    <Button variant="ghost" size="icon" className="text-zinc-400 rounded-full h-10 w-10"><Info className="h-5 w-5" /></Button>
+                    <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-400 rounded-full"><X className="h-5 w-5" /></Button></SheetClose>
                   </div>
-                  <SheetTitle className="text-white font-black text-lg text-center tracking-tighter uppercase">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
-                </div>
-                <div className="flex gap-2 mt-4 px-2">
-                  <Button variant="secondary" size="sm" className="bg-white/10 hover:bg-white/20 rounded-xl h-9 px-4 font-bold text-xs">{isRtl ? "الأهم" : "Top"}</Button>
-                  <Button variant="ghost" size="sm" className="text-zinc-500 rounded-xl h-9 px-4 font-bold text-xs">{isRtl ? "الأحدث" : "Newest"}</Button>
+                  <SheetTitle className="text-white font-black text-lg tracking-tighter uppercase">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
+                  <Button variant="ghost" size="icon" className="text-zinc-400 rounded-full"><Info className="h-5 w-5" /></Button>
                 </div>
               </SheetHeader>
 
@@ -339,31 +275,23 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                       postId={id} 
                       isRtl={isRtl} 
                       user={user} 
-                      onLike={() => handleCommentLike(comment.id, comment.likedBy)}
-                      onReplyClick={() => setReplyingToId(comment.id)}
-                      isReplying={replyingToId === comment.id}
-                      replyText={replyText}
-                      setReplyText={setReplyText}
-                      onAddReply={() => handleAddReply(comment.id)}
-                      onCancelReply={() => setReplyingToId(null)}
-                      showReplies={showRepliesFor.includes(comment.id)}
-                      onToggleReplies={() => toggleReplies(comment.id)}
+                      isBanned={isBanned}
                     />
                   ))}
                 </div>
               </ScrollArea>
 
-              <div className="absolute bottom-0 left-0 right-0 p-4 pb-8 border-t border-zinc-900 bg-black/90 backdrop-blur-xl shrink-0">
+              <div className="p-4 pb-8 border-t border-zinc-900 bg-black/90 backdrop-blur-xl">
                 {isBanned ? (
-                  <div className="p-4 text-center text-[11px] text-red-500 font-black uppercase bg-red-500/10 rounded-2xl border border-red-500/20">RESTRICTED: MESSAGING DISABLED</div>
+                  <div className="p-4 text-center text-red-500 font-black uppercase bg-red-500/10 rounded-2xl">RESTRICTED: MESSAGING DISABLED</div>
                 ) : !allowComments ? (
-                  <div className="p-4 text-center text-[11px] text-zinc-500 font-black uppercase bg-zinc-900/50 rounded-2xl border border-zinc-800">COMMENTS DISABLED</div>
+                  <div className="p-4 text-center text-zinc-500 font-black uppercase bg-zinc-900/50 rounded-2xl">COMMENTS DISABLED</div>
                 ) : (
                   <div className="flex gap-3 items-center">
-                    <Avatar className="h-10 w-10 ring-1 ring-zinc-800"><AvatarImage src={currentUserProfile?.photoURL || user?.photoURL} /><AvatarFallback className="bg-zinc-900">U</AvatarFallback></Avatar>
-                    <div className="flex-1 flex gap-3 items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800 shadow-inner">
-                      <Input placeholder={isRtl ? "إضافة تعليق..." : "Add a comment..."} className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" value={newComment} onChange={(e) => setNewComment(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
-                      <Button size="icon" className="rounded-full h-10 w-10 bg-primary hover:bg-primary/90 shrink-0 shadow-lg" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
+                    <Avatar className="h-10 w-10"><AvatarImage src={currentUserProfile?.photoURL || user?.photoURL} /><AvatarFallback className="bg-zinc-900">U</AvatarFallback></Avatar>
+                    <div className="flex-1 flex items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800">
+                      <Input placeholder={isRtl ? "إضافة تعليق..." : "Add a comment..."} className="bg-transparent border-none h-10 text-sm focus-visible:ring-0" value={newComment} onChange={(e) => setNewComment(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
+                      <Button size="icon" className="rounded-full h-10 w-10 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
                     </div>
                   </div>
                 )}
@@ -376,84 +304,93 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   );
 }
 
-function CommentItem({ comment, postId, isRtl, user, onLike, onReplyClick, isReplying, replyText, setReplyText, onAddReply, onCancelReply, showReplies, onToggleReplies }: any) {
+function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
   const db = useFirestore();
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [showReplies, setShowReplies] = useState(false);
+
   const repliesQuery = useMemoFirebase(() => query(collection(db, "posts", postId, "comments", comment.id, "replies"), orderBy("createdAt", "asc")), [db, postId, comment.id]);
   const { data: replies = [] } = useCollection<any>(repliesQuery);
   const isCommentLiked = user && Array.isArray(comment.likedBy) && comment.likedBy.includes(user.uid);
 
+  const handleLike = () => {
+    if (!user || isBanned) return;
+    const commentRef = doc(db, "posts", postId, "comments", comment.id);
+    const updateData = isCommentLiked 
+      ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) }
+      : { likedBy: arrayUnion(user.uid), likesCount: increment(1) };
+    updateDoc(commentRef, updateData).catch(async (e) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: commentRef.path, operation: 'update', requestResourceData: updateData }));
+    });
+  };
+
+  const handleAddReply = () => {
+    if (isBanned || !replyText.trim() || !user) return;
+    addDoc(collection(db, "posts", postId, "comments", comment.id, "replies"), {
+      authorId: user.uid,
+      authorName: user.displayName || "User",
+      authorAvatar: user.photoURL || "",
+      authorHandle: user.email?.split('@')[0] || "user",
+      text: replyText,
+      createdAt: serverTimestamp(),
+      likesCount: 0,
+      likedBy: []
+    });
+    setReplyText("");
+    setIsReplying(false);
+    setShowReplies(true);
+  };
+
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="flex flex-col gap-4 animate-in fade-in duration-300">
       <div className="flex gap-4 group">
-        <Avatar className="h-9 w-9 ring-1 ring-zinc-800 shrink-0">
-          <AvatarImage src={comment.authorAvatar} />
-          <AvatarFallback className="bg-zinc-900">{comment.authorName?.[0]}</AvatarFallback>
-        </Avatar>
+        <Avatar className="h-9 w-9 shrink-0"><AvatarImage src={comment.authorAvatar} /><AvatarFallback className="bg-zinc-900">{comment.authorName?.[0]}</AvatarFallback></Avatar>
         <div className="flex-1 space-y-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-black text-zinc-300 uppercase tracking-tighter">@{comment.authorHandle}</span>
+              <span className="text-xs font-black text-zinc-300 uppercase">@{comment.authorHandle}</span>
               <span className="text-[10px] text-zinc-500 font-bold">• {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' }) : ""}</span>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity"><MoreVertical className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-700 opacity-0 group-hover:opacity-100"><MoreVertical className="h-4 w-4" /></Button>
           </div>
           <p className="text-[14px] text-zinc-100 leading-relaxed font-medium">{comment.text}</p>
           <div className="flex items-center gap-6 pt-3">
-            <div className="flex items-center gap-1.5 text-zinc-500 group/btn cursor-pointer" onClick={onLike}>
-              <ThumbsUp className={cn("h-4 w-4 transition-all", isCommentLiked ? "text-primary fill-primary scale-110" : "group-hover/btn:text-white")} />
+            <div className="flex items-center gap-1.5 text-zinc-500 cursor-pointer" onClick={handleLike}>
+              <ThumbsUp className={cn("h-4 w-4 transition-all", isCommentLiked ? "text-primary fill-primary" : "")} />
               <span className={cn("text-[10px] font-black", isCommentLiked ? "text-primary" : "")}>{comment.likesCount || 0}</span>
             </div>
-            <ThumbsDown className="h-4 w-4 text-zinc-500 hover:text-white cursor-pointer" />
-            <div className="flex items-center gap-1.5 text-zinc-500 hover:text-white cursor-pointer" onClick={onReplyClick}>
+            <ThumbsDown className="h-4 w-4 text-zinc-500" />
+            <div className="flex items-center gap-1.5 text-zinc-500 cursor-pointer" onClick={() => setIsReplying(!isReplying)}>
               <MessageSquare className="h-4 w-4" />
               <span className="text-[10px] font-black">{isRtl ? "رد" : "Reply"}</span>
             </div>
           </div>
 
           {isReplying && (
-            <div className="mt-4 flex gap-3 items-center bg-zinc-900 p-1.5 rounded-full pl-4 pr-1.5 border border-zinc-800 animate-in zoom-in-95">
-              <Input 
-                placeholder={isRtl ? "الرد على المحادثة..." : "Replying..."} 
-                className="bg-transparent border-none h-8 text-xs focus-visible:ring-0 shadow-none p-0" 
-                value={replyText} 
-                onChange={(e) => setReplyText(e.target.value)} 
-                autoFocus
-              />
-              <Button variant="ghost" size="sm" className="text-zinc-500 h-8 font-black text-[10px] uppercase" onClick={onCancelReply}>{isRtl ? "إلغاء" : "X"}</Button>
-              <Button size="icon" className="rounded-full h-8 w-8 bg-primary" onClick={onAddReply} disabled={!replyText.trim()}><Send className="h-3 w-3" /></Button>
+            <div className="mt-4 flex gap-3 items-center bg-zinc-900 p-1.5 rounded-full pl-4 pr-1.5 border border-zinc-800">
+              <Input placeholder={isRtl ? "الرد..." : "Reply..."} className="bg-transparent border-none h-8 text-xs focus-visible:ring-0 shadow-none" value={replyText} onChange={(e) => setReplyText(e.target.value)} autoFocus />
+              <Button variant="ghost" size="sm" className="text-zinc-500 h-8 font-black text-[10px] uppercase" onClick={() => setIsReplying(false)}>{isRtl ? "إلغاء" : "X"}</Button>
+              <Button size="icon" className="rounded-full h-8 w-8 bg-primary" onClick={handleAddReply} disabled={!replyText.trim()}><Send className="h-3 w-3" /></Button>
             </div>
           )}
 
           {replies.length > 0 && (
-            <button className="mt-3 flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest hover:opacity-80 transition-all" onClick={onToggleReplies}>
+            <button className="mt-3 flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest" onClick={() => setShowReplies(!showReplies)}>
               {showReplies ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               {replies.length} {isRtl ? "رد" : "Replies"}
             </button>
           )}
 
-          {showReplies && replies.length > 0 && (
-            <div className="mt-4 space-y-6 border-l border-zinc-900 pl-4 ml-1">
-              {replies.map((reply: any) => (
-                <div key={reply.id} className="flex gap-3">
-                  <Avatar className="h-7 w-7 ring-1 ring-zinc-800 shrink-0">
-                    <AvatarImage src={reply.authorAvatar} />
-                    <AvatarFallback className="bg-zinc-900">{reply.authorName?.[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[11px] font-black text-zinc-400 uppercase tracking-tighter">@{reply.authorHandle}</span>
-                      <span className="text-[9px] text-zinc-600 font-bold">• {reply.createdAt?.toDate ? reply.createdAt.toDate().toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' }) : ""}</span>
-                    </div>
-                    <p className="text-[13px] text-zinc-200 leading-relaxed font-medium">{reply.text}</p>
-                    <div className="flex items-center gap-4 pt-2">
-                       <ThumbsUp className="h-3 w-3 text-zinc-600" />
-                       <ThumbsDown className="h-3 w-3 text-zinc-600" />
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {showReplies && replies.map((reply: any) => (
+            <div key={reply.id} className="mt-4 flex gap-3 border-l border-zinc-900 pl-4">
+              <Avatar className="h-7 w-7"><AvatarImage src={reply.authorAvatar} /><AvatarFallback className="bg-zinc-900">U</AvatarFallback></Avatar>
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2"><span className="text-[11px] font-black text-zinc-400 uppercase">@{reply.authorHandle}</span></div>
+                <p className="text-[13px] text-zinc-200 leading-relaxed">{reply.text}</p>
+              </div>
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>
