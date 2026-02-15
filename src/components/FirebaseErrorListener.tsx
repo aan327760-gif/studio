@@ -48,7 +48,7 @@ export function FirebaseErrorListener() {
 
               <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
                 <Info className="h-3 w-3 text-primary" />
-                <p className="text-[9px] text-primary-foreground font-medium">بمجرد تحول الحالة من (Bâtiment) إلى (Actif)، ستعمل صفحتك فوراً.</p>
+                <p className="text-[9px] text-primary-foreground font-medium">بمجرد تحول الحالة من (En cours de création) إلى (Actif)، ستعمل صفحتك فوراً.</p>
               </div>
             </div>
           ),
