@@ -33,13 +33,13 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
             operation: 'list',
           });
           errorEmitter.emit('permission-error', permissionError);
-        } else if (err.message.includes('index')) {
-          // خطأ الفهرس المفقود
+        } else if (err.message.toLowerCase().includes('index')) {
+          // خطأ الفهرس المفقود - نرسل الخطأ الأصلي لأنه يحتوي على تعليمات مفيدة في الـ Console
           errorEmitter.emit('permission-error', {
+            message: err.message,
             context: {
               path: (query as any)._query?.path?.segments?.join('/') || 'unknown',
               operation: 'list',
-              message: "يتطلب هذا العرض إنشاء فهرس (Index). الرابط متاح في سجل المتصفح (Console).",
             }
           });
         } else {

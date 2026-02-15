@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { ExternalLink } from 'lucide-react';
 
 export function FirebaseErrorListener() {
   const { toast } = useToast();
@@ -10,16 +12,34 @@ export function FirebaseErrorListener() {
   useEffect(() => {
     const handlePermissionError = (error: any) => {
       const context = error.context || {};
+      const errorMessage = error.message || context.message || "";
       
-      // تمييز رسالة خطأ الفهرس
-      const isIndexError = context.message?.includes('index') || error.message?.includes('index');
+      // التحقق من خطأ الفهرس (Index Error)
+      const isIndexError = errorMessage.toLowerCase().includes('index') || 
+                          errorMessage.includes('فهرس');
       
+      if (isIndexError) {
+        toast({
+          duration: 10000,
+          title: 'إعداد قاعدة البيانات مطلوب',
+          description: (
+            <div className="space-y-2 mt-1">
+              <p className="text-xs leading-relaxed">
+                هذه الصفحة تتطلب إنشاء "فهرس" في Firestore. الرابط المباشر موجود الآن في سجل المتصفح (Console).
+              </p>
+              <p className="text-[10px] font-bold opacity-70 italic">
+                افتح Console (F12) واضغط على الرابط الذي يظهر هناك.
+              </p>
+            </div>
+          ),
+        });
+        return;
+      }
+
       toast({
-        variant: isIndexError ? 'default' : 'destructive',
-        title: isIndexError ? 'إعداد مطلوب (Index)' : 'خطأ في الصلاحيات',
-        description: isIndexError 
-          ? "يرجى إنشاء الفهرس عبر الرابط الموجود في سجل المتصفح (Console) لتعمل هذه الصفحة."
-          : (context.message || "ليس لديك صلاحية للقيام بهذا الإجراء."),
+        variant: 'destructive',
+        title: 'خطأ في الصلاحيات',
+        description: context.message || "ليس لديك صلاحية للقيام بهذا الإجراء.",
       });
     };
 
