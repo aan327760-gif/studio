@@ -54,6 +54,7 @@ function CreatePostContent() {
 
     setIsSubmitting(true);
     try {
+      // 1. فحص المحتوى
       const moderationResult = await moderateContent({ text: content || "Media Post" });
       
       if (!moderationResult.isAppropriate) {
@@ -66,23 +67,36 @@ function CreatePostContent() {
         return;
       }
 
+      // 2. الرفع إلى Cloudinary
       let finalMediaUrl = null;
       let mediaType: "image" | "video" | "audio" | null = null;
 
-      if (imageUrl) {
-        const base64 = await urlToBlob(imageUrl);
-        finalMediaUrl = await uploadToCloudinary(base64, 'image');
-        mediaType = 'image';
-      } else if (videoUrl) {
-        const base64 = await urlToBlob(videoUrl);
-        finalMediaUrl = await uploadToCloudinary(base64, 'video');
-        mediaType = 'video';
-      } else if (audioUrl) {
-        const base64 = await urlToBlob(audioUrl);
-        finalMediaUrl = await uploadToCloudinary(base64, 'raw');
-        mediaType = 'audio';
+      try {
+        if (imageUrl) {
+          const base64 = await urlToBlob(imageUrl);
+          finalMediaUrl = await uploadToCloudinary(base64, 'image');
+          mediaType = 'image';
+        } else if (videoUrl) {
+          const base64 = await urlToBlob(videoUrl);
+          finalMediaUrl = await uploadToCloudinary(base64, 'video');
+          mediaType = 'video';
+        } else if (audioUrl) {
+          const base64 = await urlToBlob(audioUrl);
+          finalMediaUrl = await uploadToCloudinary(base64, 'raw');
+          mediaType = 'audio';
+        }
+      } catch (uploadError: any) {
+        // التعامل مع خطأ الإعدادات بشكل لبق
+        toast({
+          variant: "destructive",
+          title: isRtl ? "خطأ في الرفع" : "Upload Error",
+          description: uploadError.message,
+        });
+        setIsSubmitting(false);
+        return;
       }
 
+      // 3. الحفظ في Firestore
       await addDoc(collection(db, "posts"), {
         content,
         mediaUrl: finalMediaUrl,
@@ -118,7 +132,7 @@ function CreatePostContent() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Upload failed.",
+        description: error.message || "Failed to create post.",
       });
     } finally {
       setIsSubmitting(false);

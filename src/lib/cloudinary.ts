@@ -12,19 +12,25 @@ cloudinary.config({
 
 /**
  * يرفع الملف إلى Cloudinary مع فحص مسبق للإعدادات.
+ * في حال غياب الإعدادات، يعيد خطأً مفهوماً بدلاً من انهيار التطبيق.
  */
 export async function uploadToCloudinary(fileData: string, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<string> {
   const cloudinaryUrl = process.env.CLOUDINARY_URL;
 
-  // فحص ما إذا كان الرابط لا يزال يحتوي على القيم الافتراضية
-  if (!cloudinaryUrl || cloudinaryUrl.includes('<your_') || cloudinaryUrl.includes('your_cloud_name')) {
-    const errorMsg = 'إعدادات Cloudinary غير مكتملة. يرجى وضع المفاتيح الحقيقية (API Key & Secret) في ملف .env';
-    console.error('Configuration Error:', errorMsg);
+  // فحص ما إذا كان الرابط يحتوي على القيم الافتراضية أو مفقود
+  const isNotConfigured = !cloudinaryUrl || 
+                          cloudinaryUrl.includes('<your_') || 
+                          cloudinaryUrl.includes('<api_') ||
+                          cloudinaryUrl.includes('your_cloud_name');
+
+  if (isNotConfigured) {
+    const errorMsg = 'إعدادات Cloudinary غير مكتملة. يرجى نسخ الرابط الحقيقي من (Cloudinary Dashboard) ووضعه في ملف .env';
+    console.warn('Configuration Warning:', errorMsg);
     throw new Error(errorMsg);
   }
 
   try {
-    if (!fileData) throw new Error('No data provided');
+    if (!fileData) throw new Error('لا توجد بيانات للرفع');
 
     const result = await cloudinary.uploader.upload(fileData, {
       resource_type: resourceType,
@@ -33,7 +39,8 @@ export async function uploadToCloudinary(fileData: string, resourceType: 'image'
     
     return result.secure_url;
   } catch (error: any) {
-    console.error('Cloudinary Error:', error);
-    throw new Error(error.message || 'فشل رفع الملف. تأكد من صحة مفاتيح Cloudinary في ملف .env');
+    console.error('Cloudinary Execution Error:', error);
+    // تقديم رسالة خطأ واضحة للمستخدم في الواجهة
+    throw new Error(error.message || 'حدث خطأ أثناء الرفع. تأكد من اتصال الإنترنت وصحة مفاتيح Cloudinary.');
   }
 }
