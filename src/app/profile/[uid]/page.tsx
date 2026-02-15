@@ -147,7 +147,12 @@ export default function UserProfilePage() {
           </Button>
           <div className="flex gap-2">
             {isOwnProfile && isProfileAdmin && (
-              <Button variant="ghost" size="icon" className="rounded-full bg-primary/20 backdrop-blur-md text-primary border border-primary/20" onClick={() => router.push('/admin')}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full bg-primary/20 backdrop-blur-md text-primary border border-primary/20 animate-pulse" 
+                onClick={() => router.push('/admin')}
+              >
                 <ShieldCheck className="h-5 w-5" />
               </Button>
             )}
