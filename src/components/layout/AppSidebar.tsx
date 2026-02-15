@@ -22,7 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
@@ -202,8 +201,8 @@ export function AppSidebar() {
             </DialogTitle>
             <DialogDescription className="text-zinc-400 text-center font-medium leading-relaxed text-[15px]">
               {isRtl 
-                ? "قريباً: إن هذه المساحة ليست مجرد أداة لتسجيل الأصوات، بل هي صرح إبستيمي (معرفي) صُمم ليكون منبراً للنخبة الفكرية، الأكاديميين، والمبدعين. نهدف من خلال 'الساحة الصوتية' إلى توفير بيئة رصينة تحتضن المحاضرات العلمية التخصصية، السجالات السياسية العميقة، والأعمال الموسيقية ذات الرسالة الهادفة. هنا، تصبح الكلمة المنطوقة وثيقة سيادية مسجلة، تعكس الرقي الحضاري لمجتمع 'بلا قيود'."
-                : "Coming Soon: This space is not merely a recording tool, but an epistemic bastion designed as a forum for intellectual elites, academics, and creators. Through the 'Acoustic Arena', we aim to provide a formal environment for specialized scientific lectures, profound political discourse, and purposeful musical works. Here, the spoken word becomes a registered sovereign document, reflecting the societal depth of Unbound OS."}
+                ? "إن هذه المساحة ليست مجرد أداة لتسجيل الأصوات، بل هي صرح إبستيمي (معرفي) صُمم ليكون منبراً للنخبة الفكرية، الأكاديميين، والمبدعين. نهدف من خلال 'الساحة الصوتية' إلى توفير بيئة رصينة تحتضن المحاضرات العلمية التخصصية، السجالات السياسية العميقة، والأعمال الموسيقية ذات الرسالة الهادفة. هنا، تصبح الكلمة المنطوقة وثيقة سيادية مسجلة، تعكس الرقي الحضاري لمجتمع 'بلا قيود'."
+                : "This space is not merely a recording tool, but an epistemic bastion designed as a forum for intellectual elites, academics, and creators. Through the 'Acoustic Arena', we aim to provide a formal environment for specialized scientific lectures, profound political discourse, and purposeful musical works. Here, the spoken word becomes a registered sovereign document, reflecting the societal depth of Unbound OS."}
             </DialogDescription>
           </DialogHeader>
           <div className="mt-8 flex flex-col items-center gap-4">
@@ -212,10 +211,10 @@ export function AppSidebar() {
                 Unbound Academic Core • v1.0.4
              </p>
              <Button 
-               className="w-full bg-white text-black hover:bg-zinc-200 font-black rounded-2xl h-12 mt-4" 
+               className="w-full bg-white text-black hover:bg-zinc-200 font-black rounded-2xl h-14 mt-4 shadow-xl active:scale-95 transition-transform" 
                onClick={() => setIsProclamationOpen(false)}
              >
-               {isRtl ? "إقرار بالموافقة" : "Acknowledge"}
+               {isRtl ? "إقرار بالموافقة" : "Acknowledge & Close"}
              </Button>
           </div>
         </DialogContent>
