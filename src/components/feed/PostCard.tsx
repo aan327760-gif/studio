@@ -438,7 +438,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                         <div className="flex items-center gap-6 pt-3">
                           <div className="flex items-center gap-1.5 text-zinc-500 group/btn cursor-pointer">
                             <ThumbsUp className="h-4 w-4 group-hover/btn:text-white" />
-                            <span className="text-[10px] font-black">33</span>
                           </div>
                           <ThumbsDown className="h-4 w-4 text-zinc-500 hover:text-white cursor-pointer" />
                           <div className="flex items-center gap-1.5 text-zinc-500 hover:text-white cursor-pointer">
@@ -446,10 +445,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                              <span className="text-[10px] font-black">{isRtl ? "رد" : "Reply"}</span>
                           </div>
                         </div>
-                        <button className="flex items-center gap-2 mt-3 text-primary text-[11px] font-black uppercase tracking-widest hover:underline">
-                           <ChevronDown className="h-3 w-3" />
-                           {isRtl ? "10 ردود" : "10 replies"}
-                        </button>
                       </div>
                     </div>
                   )) : (
