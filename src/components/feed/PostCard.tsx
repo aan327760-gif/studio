@@ -277,6 +277,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
 
         {carouselImages.length > 0 && (
           <div className="mb-4">
+            {/* تصميم Edge-to-Edge: الحاوية بلا هوامش ولا زوايا منحنية */}
             <div className="relative overflow-hidden bg-black group w-full border-y border-zinc-900/20">
               {mediaType === 'video' ? (
                 <div className="relative w-full flex items-center justify-center bg-black">
@@ -314,6 +315,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
           </div>
         )}
 
+        {/* تذييل المنشور: الحفاظ على هوامش الأيقونات داخل منظور المستخدم */}
         <div className="px-5 py-4 flex items-center justify-between border-t border-zinc-900/20" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 group cursor-pointer active:scale-90" onClick={handleLike}>

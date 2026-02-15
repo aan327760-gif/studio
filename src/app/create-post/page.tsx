@@ -87,7 +87,7 @@ function CreatePostContent() {
       role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
     };
 
-    // إطلاق الرفع في الخلفية عبر الـ Context
+    // إطلاق الرفع في الخلفية عبر الـ Context دون انتظار (Non-blocking)
     startUpload({
       content,
       localImages: [...localImages],
@@ -100,12 +100,12 @@ function CreatePostContent() {
     });
 
     toast({ 
-      title: isRtl ? "جاري الرفع في الخلفية..." : "Uploading in background...",
+      title: isRtl ? "جاري النشر في الخلفية" : "Publishing in background",
       description: isRtl ? "يمكنك التصفح الآن، سنخبرك عند الاكتمال." : "You can browse now, we'll notify you when done."
     });
     
-    // العودة الفورية للصفحة الرئيسية
-    router.push("/");
+    // العودة الفورية والقطعية للصفحة الرئيسية
+    router.replace("/");
   };
 
   return (
