@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Heart, MessageCircle, MoreHorizontal, Send, Trash2, Flag, Languages, Loader2, Star, Radio } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Send, Trash2, Flag, Languages, Loader2, Star, Radio, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -36,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { VerificationBadge } from "@/components/ui/verification-badge";
-import { Badge } from "@/components/ui/badge";
+import { translateContent } from "@/ai/flows/translation-flow";
 
 interface PostCardProps {
   id: string;
@@ -63,6 +63,10 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
+  
+  // AI Translation State
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
@@ -108,12 +112,29 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     setNewComment("");
   };
 
-  const handleTranslate = (e: React.MouseEvent) => {
+  const handleTranslate = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    toast({
-      title: isRtl ? "الترجمة السيادية" : "Sovereign Translation",
-      description: isRtl ? "هذه الميزة الذكية قيد التطوير وستتوفر قريباً." : "This AI feature is under development and will be available soon.",
-    });
+    if (translatedText) {
+      setTranslatedText(null); // Toggle back
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const result = await translateContent({
+        text: content,
+        targetLang: language === 'ar' ? 'Arabic' : 'English'
+      });
+      setTranslatedText(result);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: isRtl ? "خطأ في المترجم" : "Translation Error",
+        description: isRtl ? "فشل الاتصال بالمترجم السيادي." : "Failed to reach Sovereign Translator."
+      });
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const handleReport = async (e: React.MouseEvent) => {
@@ -193,18 +214,28 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
       <CardContent className="p-0">
         <div className="px-5 pb-3">
-          <p className="text-[15px] leading-relaxed">
-            {content}
+          <p className="text-[15px] leading-relaxed transition-all duration-500">
+            {translatedText || content}
           </p>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-8 px-3 rounded-xl bg-zinc-900/50 text-zinc-400 hover:text-primary font-black text-[9px] uppercase tracking-widest gap-2.5 mt-3 transition-all"
+            className={cn(
+              "h-8 px-3 rounded-xl font-black text-[9px] uppercase tracking-widest gap-2.5 mt-3 transition-all",
+              translatedText ? "bg-primary/10 text-primary" : "bg-zinc-900/50 text-zinc-400 hover:text-primary"
+            )}
             onClick={handleTranslate}
+            disabled={isTranslating}
           >
-            <Languages className="h-3.5 w-3.5" />
-            {isRtl ? "الترجمة السيادية (قريباً)" : "Sovereign Translate (Soon)"}
+            {isTranslating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Languages className="h-3.5 w-3.5" />
+            )}
+            {translatedText 
+              ? (isRtl ? "عرض الأصل" : "Show Original") 
+              : (isRtl ? "الترجمة السيادية" : "Sovereign Translate")}
           </Button>
         </div>
 
