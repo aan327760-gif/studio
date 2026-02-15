@@ -2,112 +2,52 @@
 {
   "placeholderImages": [
     {
-      "id": "sticker-unbound-sovereign",
-      "description": "Sovereign Unbound Seal",
-      "imageUrl": "https://picsum.photos/seed/unbound1/200/200",
+      "id": "sticker-unbound-seal",
+      "description": "خاتم السيادة - Unbound Sovereign Seal (PNG)",
+      "imageUrl": "https://picsum.photos/seed/unbound_seal/400/400",
       "imageHint": "sovereign seal"
     },
     {
-      "id": "sticker-unbound-free",
-      "description": "Digital Freedom - Break Chains",
-      "imageUrl": "https://picsum.photos/seed/unbound2/200/200",
-      "imageHint": "broken chain"
+      "id": "sticker-unbound-freedom",
+      "description": "رمز الحرية - Freedom Icon (PNG)",
+      "imageUrl": "https://picsum.photos/seed/unbound_freedom/400/400",
+      "imageHint": "freedom icon"
     },
     {
       "id": "sticker-unbound-privacy",
-      "description": "Privacy Guard Shield",
-      "imageUrl": "https://picsum.photos/seed/unbound3/200/200",
-      "imageHint": "encryption shield"
-    },
-    {
-      "id": "sticker-unbound-future",
-      "description": "Future of Sovereign Tech",
-      "imageUrl": "https://picsum.photos/seed/unbound4/200/200",
-      "imageHint": "abstract microchip"
+      "description": "درع الخصوصية - Privacy Guard (PNG)",
+      "imageUrl": "https://picsum.photos/seed/unbound_privacy/400/400",
+      "imageHint": "privacy shield"
     },
     {
       "id": "sticker-unbound-unity",
-      "description": "Sovereign Community Unity",
-      "imageUrl": "https://picsum.photos/seed/unbound5/200/200",
-      "imageHint": "connecting hands"
+      "description": "رابطة الوحدة - Unity Bond (PNG)",
+      "imageUrl": "https://picsum.photos/seed/unbound_unity/400/400",
+      "imageHint": "unity bond"
     },
     {
-      "id": "sticker-dz-flag",
-      "description": "Algeria National Flag",
-      "imageUrl": "https://picsum.photos/seed/algeria1/200/200",
-      "imageHint": "algerian flag"
+      "id": "sticker-dz-maqam",
+      "description": "مقام الشهيد - Maqam Echahid Algeria (PNG)",
+      "imageUrl": "https://picsum.photos/seed/dz_maqam/400/400",
+      "imageHint": "algeria monument"
     },
     {
-      "id": "sticker-dz-monument",
-      "description": "Martyrs Memorial - Maqam Echahid",
-      "imageUrl": "https://picsum.photos/seed/algeria2/200/200",
-      "imageHint": "martyrs monument"
+      "id": "sticker-ps-quds",
+      "description": "قبة الصخرة - Dome of the Rock Palestine (PNG)",
+      "imageUrl": "https://picsum.photos/seed/ps_quds/400/400",
+      "imageHint": "palestine landmark"
     },
     {
-      "id": "sticker-dz-culture",
-      "description": "Algerian Heritage Pattern",
-      "imageUrl": "https://picsum.photos/seed/algeria3/200/200",
-      "imageHint": "algerian pattern"
+      "id": "sticker-eg-pyramids",
+      "description": "أهرامات الجيزة - Pyramids of Giza Egypt (PNG)",
+      "imageUrl": "https://picsum.photos/seed/eg_pyramids/400/400",
+      "imageHint": "egypt pyramids"
     },
     {
-      "id": "sticker-sloth",
-      "description": "Cute sloth sticker",
-      "imageUrl": "https://picsum.photos/seed/sloth1/200/200",
-      "imageHint": "cute sloth"
-    },
-    {
-      "id": "sticker-heart-pink",
-      "description": "Pink glossy heart",
-      "imageUrl": "https://picsum.photos/seed/heart2/200/200",
-      "imageHint": "pink heart"
-    },
-    {
-      "id": "sticker-cat-balloon",
-      "description": "Cat with balloon",
-      "imageUrl": "https://picsum.photos/seed/catball/200/200",
-      "imageHint": "cat balloon"
-    },
-    {
-      "id": "sticker-bear-pumpkin",
-      "description": "Bear in pumpkin",
-      "imageUrl": "https://picsum.photos/seed/bearpump/200/200",
-      "imageHint": "bear pumpkin"
-    },
-    {
-      "id": "sticker-coffee",
-      "description": "Coffee cup sticker",
-      "imageUrl": "https://picsum.photos/seed/coffee/200/200",
-      "imageHint": "coffee cup"
-    },
-    {
-      "id": "sticker-fire-heart",
-      "description": "Heart on fire",
-      "imageUrl": "https://picsum.photos/seed/fireheart/200/200",
-      "imageHint": "fire heart"
-    },
-    {
-      "id": "sticker-dog-cute",
-      "description": "Cute puppy sticker",
-      "imageUrl": "https://picsum.photos/seed/puppy/200/200",
-      "imageHint": "cute puppy"
-    },
-    {
-      "id": "sticker-sparkles",
-      "description": "Magic sparkles",
-      "imageUrl": "https://picsum.photos/seed/sparkles/200/200",
-      "imageHint": "magic sparkles"
-    },
-    {
-      "id": "sticker-quote-weight",
-      "description": "Typography sticker: your words have weight",
-      "imageUrl": "https://picsum.photos/seed/quote1/200/200",
-      "imageHint": "typography quote"
-    },
-    {
-      "id": "sticker-camera-retro",
-      "description": "Retro camera sticker",
-      "imageUrl": "https://picsum.photos/seed/retrocam/200/200",
-      "imageHint": "retro camera"
+      "id": "sticker-tn-kairouan",
+      "description": "جامع القيروان - Kairouan Tunisia (PNG)",
+      "imageUrl": "https://picsum.photos/seed/tn_mosque/400/400",
+      "imageHint": "tunisia landmark"
     }
   ]
 }
