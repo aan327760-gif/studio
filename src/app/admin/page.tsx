@@ -29,7 +29,10 @@ import {
   Activity,
   Megaphone,
   BrainCircuit,
-  Rocket
+  Rocket,
+  Github,
+  Key,
+  Terminal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -48,6 +51,8 @@ import {
   ChartTooltipContent 
 } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, ResponsiveContainer } from "recharts";
+import { analyzeReportAI } from "@/ai/flows/content-moderation-assistant";
+import { syncToGitHub } from "@/lib/github-actions";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -60,6 +65,10 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [repoUrl, setRepoUrl] = useState("");
+  const [githubToken, setGithubToken] = useState("");
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<Record<string, any>>({});
 
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
@@ -107,6 +116,35 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAiAnalyze = async (report: any) => {
+    try {
+      const result = await analyzeReportAI({ postContent: report.postContent, reason: report.reason });
+      setAiAnalysis(prev => ({ ...prev, [report.id]: result }));
+    } catch (e) {
+      toast({ title: "AI Analysis (Soon)" });
+    }
+  };
+
+  const handleDeploy = async () => {
+    if (!repoUrl || !githubToken) {
+      toast({ variant: "destructive", title: isRtl ? "البيانات ناقصة" : "Missing Info" });
+      return;
+    }
+    setIsDeploying(true);
+    try {
+      const result = await syncToGitHub(repoUrl, githubToken);
+      if (result.success) {
+        toast({ title: isRtl ? "تمت المزامنة بنجاح" : "Sync Success" });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Sync Failed", description: e.message });
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
   const handleActionOnReport = async (reportId: string, action: 'ignore' | 'delete' | 'ban', postId?: string, authorId?: string) => {
     if (!isSuper) return;
     try {
@@ -122,18 +160,6 @@ export default function AdminDashboard() {
     } catch (e) {
       toast({ variant: "destructive", title: "Action Failed" });
     }
-  };
-
-  const handleToggleVerify = async (userId: string, current: boolean) => {
-    if (!isSuper) return;
-    await updateDoc(doc(db, "users", userId), { isVerified: !current });
-    toast({ title: isRtl ? "تم تحديث التوثيق" : "Verification Updated" });
-  };
-
-  const handleTogglePro = async (userId: string, current: boolean) => {
-    if (!isSuper) return;
-    await updateDoc(doc(db, "users", userId), { isPro: !current });
-    toast({ title: isRtl ? "تم تحديث رتبة الإعلام" : "Media Status Updated" });
   };
 
   if (userLoading) {
@@ -167,7 +193,7 @@ export default function AdminDashboard() {
         <section className="space-y-4">
            <div className="flex items-center gap-2 px-2">
               <Activity className="h-4 w-4 text-primary" />
-              <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{isRtl ? "نبض المنصة" : "Sovereign Pulse"}</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{isRtl ? "نبض المنصة" : "Pulse"}</h2>
            </div>
            <Card className="bg-zinc-950 border-zinc-900 p-6 rounded-[2rem] h-[200px]">
               <ChartContainer config={{ value: { label: "Count", color: "#1E6FC9" } }}>
@@ -184,23 +210,23 @@ export default function AdminDashboard() {
 
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6">
-            <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "الهويات" : "Identity"}</TabsTrigger>
-            <TabsTrigger value="threats" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "التهديدات" : "Threats"}</TabsTrigger>
-            <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "البث" : "Broadcast"}</TabsTrigger>
-            <TabsTrigger value="deploy" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "ي" : "Deploy"}</TabsTrigger>
+            <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Identity</TabsTrigger>
+            <TabsTrigger value="threats" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Threats</TabsTrigger>
+            <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Broadcast</TabsTrigger>
+            <TabsTrigger value="deploy" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Deploy (ي)</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
              <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
-                <Input placeholder={isRtl ? "ابحث عن مواطن..." : "Search citizen..."} className="bg-zinc-950 border-zinc-900 rounded-2xl pl-11 h-12 text-xs font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <Input placeholder={isRtl ? "ابحث عن مواطن..." : "Search..."} className="bg-zinc-950 border-zinc-900 rounded-2xl pl-11 h-12 text-xs font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
              </div>
              <div className="space-y-3">
                {usersLoading ? (
                  <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div>
                ) : (
                  allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
-                   <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem] hover:border-zinc-800 transition-all">
+                   <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem]">
                       <div className="flex items-center gap-4">
                         <Avatar className="h-12 w-12 border border-zinc-800">
                            <AvatarImage src={member.photoURL} />
@@ -215,11 +241,8 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                         <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", member.isVerified ? "bg-blue-500/10 text-blue-500" : "bg-zinc-900 text-zinc-700")} onClick={() => handleToggleVerify(member.id, member.isVerified)}>
+                         <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", member.isVerified ? "bg-blue-500/10 text-blue-500" : "bg-zinc-900 text-zinc-700")} onClick={() => updateDoc(doc(db, "users", member.id), { isVerified: !member.isVerified })}>
                            <ShieldCheck className="h-4 w-4" />
-                         </Button>
-                         <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", member.isPro ? "bg-yellow-500/10 text-yellow-500" : "bg-zinc-900 text-zinc-700")} onClick={() => handleTogglePro(member.id, member.isPro)}>
-                           <Star className="h-4 w-4" />
                          </Button>
                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-zinc-900 text-zinc-700 hover:text-red-500" onClick={() => {
                             const banUntil = new Date();
@@ -245,31 +268,25 @@ export default function AdminDashboard() {
                    <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
                       <div className="flex items-center justify-between">
                          <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
-                         <Button variant="ghost" size="sm" className="h-7 rounded-lg bg-primary/10 text-primary text-[8px] font-black gap-1">
+                         <Button variant="ghost" size="sm" className="h-7 rounded-lg bg-primary/10 text-primary text-[8px] font-black gap-1" onClick={() => handleAiAnalyze(r)}>
                             <BrainCircuit className="h-3 w-3" /> ذكاء اصطناعي (قريباً)
                          </Button>
                       </div>
                       <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800">
-                         <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3 italic">"{r.postContent}"</p>
+                         <p className="text-xs text-zinc-400 italic">"{r.postContent}"</p>
                          <p className="text-[9px] text-zinc-600 mt-2 font-bold">— {r.authorName}</p>
                       </div>
                       <div className="flex gap-2">
-                         <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-green-500/10 text-green-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ignore')}>
-                           <CheckCircle className="h-3 w-3 mr-1" /> {isRtl ? "تجاهل" : "Ignore"}
-                         </Button>
-                         <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-red-500/10 text-red-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'delete', r.postId)}>
-                           <Trash2 className="h-3 w-3 mr-1" /> {isRtl ? "حذف" : "Delete"}
-                         </Button>
-                         <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-zinc-900 text-white font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ban', undefined, r.authorId)}>
-                           <Ban className="h-3 w-3 mr-1" /> {isRtl ? "حظر" : "Ban"}
-                         </Button>
+                         <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-green-500/10 text-green-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ignore')}>Ignore</Button>
+                         <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-red-500/10 text-red-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'delete', r.postId)}>Delete</Button>
+                         <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-zinc-900 text-white font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ban', undefined, r.authorId)}>Ban</Button>
                       </div>
                    </Card>
                  ))
                ) : (
                  <div className="py-20 text-center opacity-20 flex flex-col items-center gap-4">
                    <CheckCircle className="h-12 w-12" />
-                   <p className="text-sm font-black uppercase">{isRtl ? "لا توجد تهديدات" : "Zero Threats"}</p>
+                   <p className="text-sm font-black uppercase">Zero Threats</p>
                  </div>
                )
              )}
@@ -302,14 +319,42 @@ export default function AdminDashboard() {
                 <div className="absolute top-0 right-0 p-6 opacity-5"><Rocket className="h-24 w-24" /></div>
                 <div className="flex items-center gap-3 mb-6">
                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-                     <Rocket className="h-5 w-5 text-white" />
+                     <Github className="h-5 w-5 text-white" />
                    </div>
-                   <h3 className="font-black text-sm uppercase tracking-widest">ي</h3>
+                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "مزامنة GitHub (ي)" : "Deploy"}</h3>
                 </div>
                 <div className="space-y-5">
-                   <Input placeholder="GitHub Repo URL" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" readOnly value="Locked for Phase 2" />
-                   <Button className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg gap-3" disabled>
-                     <Rocket className="h-5 w-5" /> ي
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase ml-1">Repo URL</label>
+                      <div className="relative">
+                        <Terminal className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
+                        <Input 
+                          placeholder="https://github.com/user/repo.git" 
+                          className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs pl-10" 
+                          value={repoUrl}
+                          onChange={(e) => setRepoUrl(e.target.value)}
+                        />
+                      </div>
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-500 uppercase ml-1">Access Token</label>
+                      <div className="relative">
+                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
+                        <Input 
+                          type="password"
+                          placeholder="ghp_xxxxxxxxxxxx" 
+                          className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs pl-10" 
+                          value={githubToken}
+                          onChange={(e) => setGithubToken(e.target.value)}
+                        />
+                      </div>
+                   </div>
+                   <Button 
+                    className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg gap-3 shadow-xl active:scale-95 transition-all" 
+                    onClick={handleDeploy}
+                    disabled={isDeploying}
+                   >
+                     {isDeploying ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Rocket className="h-5 w-5" /> {isRtl ? "مزامنة الآن (ي)" : "Sync Now"}</>}
                    </Button>
                 </div>
              </Card>

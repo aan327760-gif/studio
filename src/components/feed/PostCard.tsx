@@ -15,12 +15,12 @@ import {
   CornerDownLeft,
   ThumbsUp,
   ThumbsDown,
-  Info,
   ChevronRight,
   Star,
   AlertTriangle,
   Languages,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -40,8 +40,7 @@ import {
   limit, 
   deleteDoc,
   increment,
-  query,
-  where
+  query
 } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -68,6 +67,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { summarizeInsight } from "@/ai/flows/summarizer-flow";
+import { translateContent } from "@/ai/flows/translation-flow";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -107,6 +108,8 @@ export const PostCard = memo(({
   const [currentSlide, setCurrentSlide] = useState(0);
   const [sortType, setSortType] = useState<'top' | 'latest'>('top');
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [aiResult, setAiResult] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
@@ -135,8 +138,33 @@ export const PostCard = memo(({
     }
   };
 
-  const handleAiAction = () => {
-    toast({ title: isRtl ? "قريباً" : "Soon" });
+  const handleSummarize = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsAiLoading(true);
+    try {
+      const summary = await summarizeInsight(content);
+      setAiResult(summary);
+      toast({ title: isRtl ? "تم الإيجاز بنجاح" : "Summarized successfully" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Summarization Error" });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleTranslate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsAiLoading(true);
+    try {
+      const target = language === 'ar' ? 'English' : 'Arabic';
+      const translated = await translateContent({ text: content, targetLang: target });
+      setAiResult(translated);
+      toast({ title: isRtl ? "تمت الترجمة" : "Translated" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Translation Error" });
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const handleSave = (e: React.MouseEvent) => {
@@ -229,11 +257,11 @@ export const PostCard = memo(({
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white rounded-2xl p-2 shadow-2xl">
-                <DropdownMenuItem className="rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAiAction(); }}>
-                   <Languages className="h-4 w-4 mr-2" /> ترجمة (قريباً)
+                <DropdownMenuItem className="rounded-xl font-black text-xs uppercase cursor-pointer" onClick={handleTranslate}>
+                   <Languages className="h-4 w-4 mr-2" /> ترجمة سيادية
                 </DropdownMenuItem>
-                <DropdownMenuItem className="rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); handleAiAction(); }}>
-                   <BookOpen className="h-4 w-4 mr-2" /> إيجاز (ي)
+                <DropdownMenuItem className="rounded-xl font-black text-xs uppercase cursor-pointer" onClick={handleSummarize}>
+                   <BookOpen className="h-4 w-4 mr-2" /> إيجاز سيادي
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsReportDialogOpen(true); }}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
                 {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف جذري" : "Root Delete"}</DropdownMenuItem>}
@@ -244,8 +272,21 @@ export const PostCard = memo(({
       </CardHeader>
 
       <CardContent className="p-0">
-        <div className="px-5 pb-3">
-          <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{content}</p>
+        <div className="px-5 pb-3 space-y-3">
+          <p className={cn("text-[15px] leading-relaxed whitespace-pre-wrap", aiResult && "opacity-40")}>{content}</p>
+          
+          {isAiLoading && <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase animate-pulse"><Sparkles className="h-3 w-3" /> Processing...</div>}
+          
+          {aiResult && (
+            <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl relative animate-in fade-in slide-in-from-top-2">
+               <button onClick={(e) => { e.stopPropagation(); setAiResult(null); }} className="absolute top-2 right-2 text-zinc-600 hover:text-white"><X className="h-3 w-3" /></button>
+               <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-3 w-3 text-primary" />
+                  <span className="text-[9px] font-black uppercase text-primary">Sovereign Insight</span>
+               </div>
+               <p className="text-sm font-medium leading-relaxed italic">"{aiResult}"</p>
+            </div>
+          )}
         </div>
 
         {carouselImages.length > 0 && (

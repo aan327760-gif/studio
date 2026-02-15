@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { enhancePostText } from "@/ai/flows/creative-assistant";
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -47,6 +48,7 @@ function CreatePostContent() {
   const [localImages, setLocalImages] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+  const [isAiEnhancing, setIsAiEnhancing] = useState(false);
   
   const videoUrlFromParams = searchParams.get("video");
   const source = searchParams.get("source");
@@ -74,8 +76,19 @@ function CreatePostContent() {
     }
   };
 
-  const handleAiPlaceholder = () => {
-    toast({ title: isRtl ? "مساعد ذكي (قريباً)" : "AI Assistant (Soon)" });
+  const handleAiEnhance = async (tone: 'sovereign' | 'poetic' | 'professional' | 'casual') => {
+    if (!content.trim()) return;
+    setIsAiEnhancing(true);
+    try {
+      const result = await enhancePostText({ text: content, tone });
+      setContent(result.enhancedText);
+      toast({ title: isRtl ? "تم التحسين" : "Enhanced" });
+      setIsAiDialogOpen(false);
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI Error" });
+    } finally {
+      setIsAiEnhancing(false);
+    }
   };
 
   const handleSubmit = () => {
@@ -244,19 +257,35 @@ function CreatePostContent() {
           <DialogHeader>
             <DialogTitle className="text-center font-black uppercase flex items-center justify-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              {isRtl ? "مساعد ذكي (قريباً)" : "AI Assistant (Soon)"}
+              المساعد الإبداعي
             </DialogTitle>
           </DialogHeader>
-          <div className="py-10 text-center space-y-4">
-             <div className="h-16 w-16 bg-primary/10 rounded-2xl mx-auto flex items-center justify-center border border-primary/20">
-                <Wand2 className="h-8 w-8 text-primary" />
+          <div className="py-6 space-y-4">
+             <p className="text-[10px] font-black uppercase text-zinc-500 text-center">اختر أسلوب إعادة الصياغة</p>
+             <div className="grid grid-cols-2 gap-3">
+                {[
+                  { id: 'sovereign', label: isRtl ? 'سيادي' : 'Sovereign' },
+                  { id: 'poetic', label: isRtl ? 'شاعري' : 'Poetic' },
+                  { id: 'professional', label: isRtl ? 'احترافي' : 'Professional' },
+                  { id: 'casual', label: isRtl ? 'عفوي' : 'Casual' }
+                ].map((tone) => (
+                  <Button 
+                    key={tone.id} 
+                    variant="outline" 
+                    className="h-14 rounded-2xl border-zinc-800 hover:bg-primary/10 hover:border-primary/30 font-black text-xs uppercase"
+                    onClick={() => handleAiEnhance(tone.id as any)}
+                    disabled={isAiEnhancing}
+                  >
+                    {tone.label}
+                  </Button>
+                ))}
              </div>
-             <p className="text-sm font-black uppercase tracking-widest text-zinc-500">
-                {isRtl ? "يتم العمل على محرك الإبداع" : "Working on AI core"}
-             </p>
-             <Button className="w-full rounded-xl bg-white text-black font-black" onClick={() => setIsAiDialogOpen(false)}>
-                {isRtl ? "فهمت" : "Got it"}
-             </Button>
+             {isAiEnhancing && (
+               <div className="flex flex-col items-center justify-center py-4 gap-2">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-primary animate-pulse">Sovereign Brain Working...</span>
+               </div>
+             )}
           </div>
         </DialogContent>
       </Dialog>

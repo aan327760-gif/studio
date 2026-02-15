@@ -1,14 +1,14 @@
 
 "use client";
 
-import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine } from "lucide-react";
+import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, StopCircle, Save } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -16,6 +16,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
@@ -24,17 +30,23 @@ export function AppSidebar() {
   const { isRtl } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useUser();
+  const { user } = user ? useUser() : { user: null }; // Safe check
+  const actualUser = useUser().user;
   const db = useFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isAudioOpen, setIsAudioOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
   
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const unreadNotifsQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(collection(db, "notifications"), where("userId", "==", user.uid), where("read", "==", false));
-  }, [db, user]);
+    if (!actualUser) return null;
+    return query(collection(db, "notifications"), where("userId", "==", actualUser.uid), where("read", "==", false));
+  }, [db, actualUser]);
   const { data: unreadNotifs = [] } = useCollection<any>(unreadNotifsQuery);
 
   const navItems = [
@@ -42,8 +54,47 @@ export function AppSidebar() {
     { icon: MessageSquare, href: "/messages", label: "Messages" },
     { icon: Plus, href: "#", label: "Add", special: true },
     { icon: Bell, href: "/notifications", label: "Notifications", hasBadge: unreadNotifs.length > 0 },
-    { icon: User, href: user ? "/profile" : "/auth", label: "Profile", isAvatar: true },
+    { icon: User, href: actualUser ? "/profile" : "/auth", label: "Profile", isAvatar: true },
   ];
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        setAudioUrl(URL.createObjectURL(blob));
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (e) {
+      toast({ variant: "destructive", title: "Mic Access Required" });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  const handleAudioSave = () => {
+    if (audioUrl) {
+      toast({ title: isRtl ? "تم الحفظ" : "Saved", description: isRtl ? "يمكنك الآن استخدامه في المنشورات." : "You can now use it in posts." });
+      setIsAudioOpen(false);
+      setAudioUrl(null);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -78,10 +129,7 @@ export function AppSidebar() {
       color: "bg-orange-500", 
       onClick: () => { 
         setIsSheetOpen(false); 
-        toast({ 
-          title: isRtl ? "قريباً" : "Coming Soon", 
-          description: isRtl ? "ميزة التسجيل الصوتي في المرحلة القادمة." : "Voice recording in next phase." 
-        }); 
+        setIsAudioOpen(true);
       } 
     },
     { icon: PenLine, label: isRtl ? "نشر" : "Post", color: "bg-primary", onClick: () => { setIsSheetOpen(false); router.push("/create-post"); } },
@@ -130,8 +178,8 @@ export function AppSidebar() {
             <div className="flex flex-col items-center justify-center relative h-full active:scale-90 transition-transform">
               {item.isAvatar ? (
                 <Avatar className={cn("h-7 w-7 transition-all", isActive ? "ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-60")}>
-                  <AvatarImage src={user?.photoURL || ""} />
-                  <AvatarFallback>{user?.displayName?.[0] || "U"}</AvatarFallback>
+                  <AvatarImage src={actualUser?.photoURL || ""} />
+                  <AvatarFallback>{actualUser?.displayName?.[0] || "U"}</AvatarFallback>
                 </Avatar>
               ) : (
                 <div className="relative">
@@ -144,6 +192,33 @@ export function AppSidebar() {
           </Link>
         );
       })}
+
+      <Dialog open={isAudioOpen} onOpenChange={setIsAudioOpen}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-8">
+          <DialogHeader><DialogTitle className="text-center font-black uppercase">{isRtl ? "تسجيل سيادي" : "Voice Note"}</DialogTitle></DialogHeader>
+          <div className="flex flex-col items-center py-10 gap-10">
+             <div className={cn("h-24 w-24 rounded-full flex items-center justify-center transition-all duration-500 relative", isRecording ? "bg-red-500 animate-pulse" : "bg-zinc-900")}>
+                {isRecording && <div className="absolute inset-0 rounded-full border-4 border-red-500/30 animate-ping" />}
+                <Mic className={cn("h-10 w-10", isRecording ? "text-white" : "text-primary")} />
+             </div>
+             
+             {audioUrl && <audio src={audioUrl} controls className="w-full" />}
+
+             <div className="flex gap-4 w-full">
+                {!isRecording && !audioUrl ? (
+                  <Button className="flex-1 h-14 rounded-2xl bg-white text-black font-black" onClick={startRecording}>{isRtl ? "بدء التسجيل" : "Start"}</Button>
+                ) : isRecording ? (
+                  <Button variant="destructive" className="flex-1 h-14 rounded-2xl font-black gap-2" onClick={stopRecording}><StopCircle className="h-5 w-5" /> {isRtl ? "إيقاف" : "Stop"}</Button>
+                ) : (
+                  <>
+                    <Button variant="outline" className="flex-1 h-14 rounded-2xl font-black" onClick={() => { setAudioUrl(null); chunksRef.current = []; }}>{isRtl ? "إعادة" : "Retry"}</Button>
+                    <Button className="flex-1 h-14 rounded-2xl bg-primary text-white font-black gap-2" onClick={handleAudioSave}><Save className="h-5 w-5" /> {isRtl ? "حفظ" : "Save"}</Button>
+                  </>
+                )}
+             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 }

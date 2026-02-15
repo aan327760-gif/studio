@@ -1,5 +1,6 @@
 
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,10 +9,15 @@ import { UploadProvider } from "@/context/UploadContext";
 import { GlobalUploadBar } from "@/components/layout/GlobalUploadBar";
 import { NotificationHandler } from "@/components/NotificationHandler";
 
+const inter = Inter({ subsets: ["latin"] });
+
 export const metadata: Metadata = {
   title: "Unbound - Sovereign OS",
   description: "Independent sovereign digital space.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -33,18 +39,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased bg-black selection:bg-primary/30 overflow-x-hidden">
+    <html lang="ar" suppressHydrationWarning>
+      <body className={`${inter.className} antialiased bg-black selection:bg-primary/30 overflow-x-hidden`}>
         <FirebaseClientProvider>
           <LanguageProvider>
             <UploadProvider>
               <GlobalUploadBar />
-              <NotificationHandler /> {/* محرك التنبيهات الخارجية */}
+              <NotificationHandler />
               {children}
               <Toaster />
             </UploadProvider>
