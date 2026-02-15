@@ -63,6 +63,7 @@ export default function UserProfilePage() {
   const { data: reverseFollowDoc } = useDoc<any>(reverseFollowRef);
   const followsMe = !!reverseFollowDoc;
 
+  // الصداقة السيادية: متابعة متبادلة
   const isFriend = isFollowing && followsMe;
 
   // Lists state

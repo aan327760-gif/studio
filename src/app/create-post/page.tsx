@@ -158,7 +158,7 @@ function CreatePostContent() {
                         variant="destructive" 
                         size="icon" 
                         className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 hover:bg-red-600 border-none shadow-xl"
-                        onClick={() => removeImage(index)}
+                        onClick={() => removeImage(i)}
                       >
                         <X className="h-4 w-4" />
                       </Button>

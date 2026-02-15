@@ -182,7 +182,7 @@ export const PostCard = memo(({
                 <video 
                   ref={videoRef} 
                   src={carouselImages[0]} 
-                  className="w-full h-auto object-contain max-h-[85vh] transition-opacity duration-300" 
+                  className="w-full h-auto object-contain max-h-[85vh]" 
                   onClick={(e) => { 
                     e.stopPropagation(); 
                     if(videoRef.current) isPlaying ? videoRef.current.pause() : videoRef.current.play(); 
