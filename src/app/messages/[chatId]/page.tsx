@@ -114,6 +114,8 @@ export default function DirectChatRoomPage() {
               const msgDate = msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date();
               const prevMsg = index > 0 ? messages[index - 1] : null;
               const prevDate = prevMsg?.createdAt?.toDate ? prevMsg.createdAt.toDate() : null;
+              
+              // عرض الفاصل الزمني إذا مر أكثر من ساعة أو هو أول رسالة في اليوم
               const showTimeSeparator = !prevDate || (msgDate.getTime() - prevDate.getTime() > 3600000);
 
               return (
@@ -127,13 +129,30 @@ export default function DirectChatRoomPage() {
                   )}
                   <div className={cn("flex items-end gap-2 mb-1", isMe ? "justify-end" : "justify-start")}>
                     {!isMe && <Avatar className="h-7 w-7 ring-1 ring-zinc-900 mb-0.5 shrink-0"><AvatarImage src={otherUser?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>}
-                    <div className={cn("p-3.5 text-[15px] font-medium shadow-sm max-w-[75%] break-words", isMe ? "bg-blue-600 text-white rounded-3xl rounded-tr-sm" : "bg-zinc-800 text-zinc-100 rounded-3xl rounded-tl-sm")}>{msg.text}</div>
+                    <div className={cn(
+                      "p-3.5 text-[15px] font-medium shadow-sm max-w-[75%] break-words",
+                      isMe 
+                        ? "bg-blue-600 text-white rounded-[1.5rem] rounded-tr-[0.2rem]" 
+                        : "bg-zinc-800 text-zinc-100 rounded-[1.5rem] rounded-tl-[0.2rem]"
+                    )}>
+                      {msg.text}
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
         </ScrollArea>
+        
+        {showScrollDown && (
+          <Button 
+            size="icon" 
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full h-10 w-10 bg-zinc-900 border border-zinc-800 shadow-2xl animate-bounce"
+            onClick={scrollToBottom}
+          >
+            <ChevronDown className="h-5 w-5" />
+          </Button>
+        )}
       </main>
 
       <footer className="p-4 border-t border-zinc-900 bg-black">
@@ -144,8 +163,24 @@ export default function DirectChatRoomPage() {
           </div>
         ) : (
           <div className="flex gap-3 items-center bg-zinc-900 rounded-full pl-5 pr-1.5 py-1.5 border border-zinc-800/50 shadow-inner">
-            <Input placeholder={isRtl ? "اكتب رسالة..." : "Type a message..."} className="bg-transparent border-none h-9 text-[15px] focus-visible:ring-0 shadow-none p-0" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSend()} />
-            <Button size="icon" className={cn("rounded-full h-9 w-9 shrink-0 shadow-lg", newMessage.trim() ? "bg-blue-600" : "bg-zinc-800")} onClick={handleSend} disabled={!newMessage.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
+            <Input 
+              placeholder={isRtl ? "اكتب رسالة..." : "Type a message..."} 
+              className="bg-transparent border-none h-9 text-[15px] focus-visible:ring-0 shadow-none p-0" 
+              value={newMessage} 
+              onChange={(e) => setNewMessage(e.target.value)} 
+              onKeyDown={(e) => e.key === "Enter" && handleSend()} 
+            />
+            <Button 
+              size="icon" 
+              className={cn(
+                "rounded-full h-9 w-9 shrink-0 shadow-lg transition-all", 
+                newMessage.trim() ? "bg-blue-600 scale-100" : "bg-zinc-800 scale-90"
+              )} 
+              onClick={handleSend} 
+              disabled={!newMessage.trim()}
+            >
+              <Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} />
+            </Button>
           </div>
         )}
       </footer>
