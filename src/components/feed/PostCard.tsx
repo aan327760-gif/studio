@@ -277,7 +277,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
 
         {carouselImages.length > 0 && (
           <div className="mb-4">
-            <div className="relative overflow-hidden bg-black group w-full border-y border-zinc-900/50">
+            <div className="relative overflow-hidden bg-black group w-full border-y border-zinc-900/20">
               {mediaType === 'video' ? (
                 <div className="relative w-full flex items-center justify-center bg-black">
                   <video ref={videoRef} src={carouselImages[0]} className="w-full h-auto object-contain" onClick={toggleMedia} playsInline loop />

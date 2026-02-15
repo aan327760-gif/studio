@@ -24,6 +24,45 @@ import {
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
+/**
+ * دالة سيادية لضغط الصور باستخدام Canvas قبل الرفع.
+ */
+async function compressImage(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = dataUrl;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
+
+      // الحد الأقصى للأبعاد لضمان السرعة (Full HD)
+      const MAX_WIDTH = 1920;
+      const MAX_HEIGHT = 1080;
+
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(img, 0, 0, width, height);
+      
+      // ضغط الصورة بنسبة 0.7 لضمان التوازن بين الجودة والحجم
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+  });
+}
+
 async function urlToBlob(url: string): Promise<string> {
   const response = await fetch(url);
   const blob = await response.blob();
@@ -95,8 +134,10 @@ function CreatePostContent() {
 
       if (images.length > 0) {
         const uploadPromises = images.map(async (url) => {
-          const base64 = url.startsWith('data:') ? url : await urlToBlob(url);
-          return uploadToCloudinary(base64, 'image');
+          // جلب البيانات، ثم الضغط، ثم الرفع
+          const base64Raw = url.startsWith('data:') ? url : await urlToBlob(url);
+          const base64Compressed = await compressImage(base64Raw);
+          return uploadToCloudinary(base64Compressed, 'image');
         });
         finalMediaUrls = await Promise.all(uploadPromises);
         mediaType = finalMediaUrls.length > 1 ? 'album' : 'image';
@@ -129,6 +170,7 @@ function CreatePostContent() {
       });
     } catch (error: any) {
       console.error("Background Post Error:", error);
+      toast({ variant: "destructive", title: isRtl ? "فشل النشر" : "Post Failed" });
     }
   };
 
@@ -151,15 +193,15 @@ function CreatePostContent() {
       role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
     };
 
-    // تنفيذ في الخلفية دون انتظار الرد
+    // تنفيذ المعالجة والرفع في الخلفية
     processPostInBackground(content, [...localImages], videoUrlFromParams, authorInfo);
 
     toast({ 
-      title: isRtl ? "جاري النشر في الخلفية..." : "Posting in background...",
-      description: isRtl ? "يمكنك الاستمرار في التصفح بحرية." : "You can keep browsing freely."
+      title: isRtl ? "جاري المعالجة والنشر..." : "Processing & Posting...",
+      description: isRtl ? "سيعاد توجيهك الآن، والرفع سيكتمل في الخلفية." : "Redirecting now, upload continues in background."
     });
     
-    // العودة الفورية للصفحة الرئيسية
+    // العودة الفورية للصفحة الرئيسية لضمان حرية التصفح
     router.push("/");
   };
 
