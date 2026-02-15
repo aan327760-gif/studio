@@ -69,7 +69,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// الحساب الرسمي للمدير العام
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 interface PostCardProps {
@@ -100,7 +99,6 @@ export const PostCard = memo(({
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // التحقق من السلطة المطلقة
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
   const [newComment, setNewComment] = useState("");

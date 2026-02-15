@@ -50,7 +50,6 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, ResponsiveContainer } from "recharts";
 
-// الحساب الحصري للسيادة المطلقة
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function AdminDashboard() {
@@ -63,7 +62,6 @@ export default function AdminDashboard() {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
-  // التحقق الصارم من الهوية
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
   useEffect(() => {
