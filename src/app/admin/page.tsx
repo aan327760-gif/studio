@@ -55,17 +55,9 @@ import {
   Tooltip, 
   ResponsiveContainer
 } from 'recharts';
+import { VerificationBadge } from "@/components/ui/verification-badge";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
-
-// أيقونة التوثيق المتعرجة (Twitter Style)
-const VerificationBadge = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" className={cn("fill-[#1DA1F2]", className)} aria-hidden="true">
-    <g>
-      <path d="M22.5 12.5c0-1.58-.8-3.04-2.12-3.88.59-1.58.29-3.38-.98-4.65s-3.07-1.57-4.65-.98c-.84-1.32-2.3-2.12-3.88-2.12s-3.04.8-3.88 2.12c-1.58-.59-3.38-.29-4.65.98s-1.57 3.07-.98 4.65c-1.32.84-2.12 2.3-2.12 3.88s.8 3.04 2.12 3.88c-.59 1.58-.29 3.38.98 4.65s3.07 1.57 4.65.98c.84 1.32 2.3 2.12 3.88 2.12s3.04-.8 3.88-2.12c1.58.59 3.38.29 4.65-.98s1.57-3.07.98-4.65c1.32-.84 2.12-2.3 2.12-3.88zM10.5 16l-3.5-3.5 1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"></path>
-    </g>
-  </svg>
-);
 
 export default function AdminDashboard() {
   const { user, loading: userLoading } = useUser();
@@ -142,7 +134,8 @@ export default function AdminDashboard() {
     setIsBroadcasting(true);
     try {
       const batch = writeBatch(db);
-      allUsers.slice(0, 20).forEach((member: any) => {
+      // إرسال لآخر 50 مستخدم لضمان الأداء
+      allUsers.slice(0, 50).forEach((member: any) => {
         const notifRef = doc(collection(db, "notifications"));
         batch.set(notifRef, {
           userId: member.id,
@@ -222,7 +215,7 @@ export default function AdminDashboard() {
     return (
       <div className="h-screen bg-black flex flex-col items-center justify-center gap-4 text-white">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-xs font-black uppercase tracking-widest">{isRtl ? "التحقق من الهوية السيادية..." : "Verifying Sovereign Identity..."}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest">{isRtl ? "التحقق من الهوية السيادية..." : "Verifying Sovereign Identity..."}</p>
       </div>
     );
   }
@@ -240,16 +233,6 @@ export default function AdminDashboard() {
               {isSuperAdmin ? "SOVEREIGN ADMIN" : "MODERATOR"}
             </Badge>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-           <div className="hidden md:flex flex-col items-end mr-2">
-              <p className="text-[10px] font-black text-zinc-500 uppercase">System Status</p>
-              <p className="text-[10px] text-green-500 font-bold uppercase flex items-center gap-1">
-                 <span className="h-1 w-1 bg-green-500 rounded-full animate-pulse" />
-                 Operational
-              </p>
-           </div>
-           <Button variant="outline" size="icon" className="rounded-xl border-zinc-800"><Settings2 className="h-5 w-5" /></Button>
         </div>
       </header>
 
@@ -310,7 +293,6 @@ export default function AdminDashboard() {
                 <ShieldCheck className="h-4 w-4 text-green-500" />
                 {isRtl ? "الأمان" : "Safety"}
               </CardTitle>
-              <CardDescription className="text-[10px] uppercase font-bold text-zinc-600">Health Overview</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col justify-center gap-6">
                <div className="flex justify-between items-end">
@@ -318,7 +300,7 @@ export default function AdminDashboard() {
                   <span className="text-xl font-black text-green-500">98.2%</span>
                </div>
                <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 w-[98.2%] rounded-full shadow-[0_0_10px_#22c55e]" />
+                  <div className="h-full bg-green-500 w-[98.2%] rounded-full" />
                </div>
                <div className="grid grid-cols-2 gap-4 mt-2">
                   <div className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800">
@@ -424,7 +406,7 @@ export default function AdminDashboard() {
                              <Button 
                                variant="ghost" 
                                size="icon" 
-                               className={cn("h-10 w-10 transition-colors", isMemberVerified ? "text-[#1DA1F2]" : "text-zinc-800 hover:text-[#1DA1F2]")}
+                               className={cn("h-10 w-10 transition-colors", isMemberVerified ? "text-primary" : "text-zinc-800 hover:text-primary")}
                                onClick={() => handleToggleVerification(member.id, !!member.isVerified)}
                              >
                                <VerificationBadge className="h-5 w-5" />
@@ -459,9 +441,6 @@ export default function AdminDashboard() {
                      <Megaphone className="h-4 w-4 text-primary" />
                      {isRtl ? "بث رسالة للنظام" : "System-wide Broadcast"}
                   </CardTitle>
-                  <CardDescription className="text-xs font-bold text-zinc-500">
-                    {isRtl ? "سيتم إرسال هذه الرسالة لجميع المستخدمين كتنبيه رسمي." : "This message will be sent to all users as an official alert."}
-                  </CardDescription>
                </CardHeader>
                <CardContent className="space-y-4">
                   <Textarea 
@@ -477,11 +456,6 @@ export default function AdminDashboard() {
                   >
                     {isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "إرسال البث الآن" : "Send Broadcast Now")}
                   </Button>
-                  {!isSuperAdmin && (
-                    <p className="text-[10px] text-center text-red-500 font-black uppercase tracking-widest">
-                      {isRtl ? "صلاحية البث للمدير العام فقط" : "Broadcast limited to Sovereign Admin only"}
-                    </p>
-                  )}
                </CardContent>
             </Card>
           </TabsContent>

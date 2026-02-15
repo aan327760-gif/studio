@@ -8,7 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, ArrowLeft, Users, Shield, Loader2, Info, MoreVertical, Ban } from "lucide-react";
+import { Send, ArrowLeft, Loader2, Ban } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useCollection, useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, doc } from "firebase/firestore";
@@ -83,25 +83,54 @@ export default function ChatGroupPage() {
           <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.back()}>
             <ArrowLeft className={cn("h-5 w-5", isRtl ? "rotate-180" : "")} />
           </Button>
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-10 w-10 ring-1 ring-zinc-800">
             <AvatarImage src={`https://picsum.photos/seed/${groupId}/100/100`} />
             <AvatarFallback>{group?.name?.[0] || "G"}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <h2 className="font-bold text-sm truncate max-w-[120px]">{group?.name || "Lamma"}</h2>
+            <h2 className="font-black text-sm truncate max-w-[150px] tracking-tight">{group?.name || "Lamma"}</h2>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{group?.memberCount || 0} Members</p>
           </div>
         </div>
       </header>
 
       <main className="flex-1 overflow-hidden flex flex-col">
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="flex flex-col gap-4 pb-4">
+          <div className="flex flex-col gap-3 pb-6">
+            <div className="py-10 text-center opacity-30">
+               <div className="w-16 h-16 bg-zinc-900 rounded-3xl mx-auto flex items-center justify-center mb-4">
+                  <span className="text-2xl">🔒</span>
+               </div>
+               <p className="text-[10px] font-black uppercase tracking-[0.2em]">{isRtl ? "محادثة مشفرة سيادياً" : "Sovereign Encrypted Chat"}</p>
+            </div>
+
             {messages.map((msg: any, index) => {
               const isMe = msg.senderId === user?.uid;
+              const showAvatar = index === 0 || messages[index - 1]?.senderId !== msg.senderId;
+              
               return (
-                <div key={msg.id} className={cn("flex gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto")}>
-                  <div className={cn("p-3 text-sm rounded-2xl", isMe ? "bg-primary text-white" : "bg-zinc-900 text-zinc-200")}>
-                    {msg.text}
+                <div key={msg.id} className={cn("flex flex-col", isMe ? "items-end" : "items-start", !showAvatar && "mt-[-8px]")}>
+                  {showAvatar && !isMe && (
+                    <p className="text-[9px] font-black text-zinc-600 mb-1 ml-11 uppercase tracking-tighter">
+                      {msg.senderName}
+                    </p>
+                  )}
+                  <div className={cn("flex gap-2 max-w-[85%]", isMe ? "flex-row-reverse" : "flex-row")}>
+                    {!isMe && showAvatar ? (
+                      <Avatar className="h-8 w-8 ring-1 ring-zinc-800 self-end">
+                        <AvatarImage src={msg.senderAvatar} />
+                        <AvatarFallback className="text-[10px]">{msg.senderName?.[0]}</AvatarFallback>
+                      </Avatar>
+                    ) : !isMe && <div className="w-8" />}
+                    
+                    <div className={cn(
+                      "p-3.5 text-sm font-medium transition-all shadow-sm",
+                      isMe 
+                        ? "bg-primary text-white rounded-2xl rounded-tr-none" 
+                        : "bg-zinc-900 text-zinc-100 rounded-2xl rounded-tl-none border border-white/5"
+                    )}>
+                      {msg.text}
+                    </div>
                   </div>
                 </div>
               );
@@ -109,22 +138,22 @@ export default function ChatGroupPage() {
           </div>
         </ScrollArea>
 
-        <footer className="p-4 border-t border-zinc-900 bg-black/50 backdrop-blur-md">
+        <footer className="p-4 border-t border-zinc-900 bg-black/80 backdrop-blur-xl">
           {isBanned ? (
-            <div className="bg-red-500/10 p-3 rounded-2xl flex items-center justify-center gap-2 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20">
+            <div className="bg-red-500/10 p-4 rounded-3xl flex items-center justify-center gap-3 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20">
               <Ban className="h-4 w-4" />
-              {isRtl ? "لا يمكنك إرسال رسائل حالياً بسبب الحظر" : "Messaging disabled due to restriction"}
+              {isRtl ? "لا يمكنك إرسال رسائل حالياً" : "Messaging disabled"}
             </div>
           ) : (
-            <div className="flex gap-2 items-center bg-zinc-900 rounded-2xl px-2 py-1 border border-zinc-800">
+            <div className="flex gap-2 items-center bg-zinc-900/50 rounded-full pl-5 pr-1.5 py-1.5 border border-white/5">
               <Input 
                 placeholder={isRtl ? "اكتب رسالة..." : "Type a message..."} 
-                className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none"
+                className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
               />
-              <Button size="icon" className="rounded-xl bg-primary h-9 w-9" onClick={handleSend} disabled={!newMessage.trim()}>
+              <Button size="icon" className="rounded-full bg-primary h-10 w-10 shrink-0 active:scale-90 transition-transform" onClick={handleSend} disabled={!newMessage.trim()}>
                 <Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} />
               </Button>
             </div>

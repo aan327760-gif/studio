@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Heart, MessageCircle, MoreHorizontal, Send, X, Trash2, Ban, Flag } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Send, Trash2, Flag } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -24,7 +24,7 @@ import {
 } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
@@ -35,44 +35,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { VerificationBadge } from "@/components/ui/verification-badge";
 
 interface PostCardProps {
   id: string;
-  author: {
-    name: string;
-    handle: string;
-    avatar: string;
-    uid?: string;
-    isVerified?: boolean;
-    role?: string;
-    email?: string;
-  };
+  author: any;
   content: string;
   image?: string;
   mediaType?: "image" | "video" | "audio";
   likes: number;
-  comments: number;
-  reposts: number;
   time: string;
-  mediaSettings?: {
-    filter?: string;
-    textOverlay?: string;
-    textColor?: string;
-    textBg?: boolean;
-    textEffect?: string;
-    textX?: number;
-    textY?: number;
-    stickers?: any[];
-  };
+  mediaSettings?: any;
 }
-
-const VerificationBadge = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" className={cn("fill-[#1DA1F2]", className)} aria-hidden="true">
-    <g>
-      <path d="M22.5 12.5c0-1.58-.8-3.04-2.12-3.88.59-1.58.29-3.38-.98-4.65s-3.07-1.57-4.65-.98c-.84-1.32-2.3-2.12-3.88-2.12s-3.04.8-3.88 2.12c-1.58-.59-3.38-.29-4.65.98s-1.57 3.07-.98 4.65c-1.32.84-2.12 2.3-2.12 3.88s.8 3.04 2.12 3.88c-.59 1.58-.29 3.38.98 4.65s3.07 1.57 4.65.98c.84 1.32 2.3 2.12 3.88 2.12s3.04-.8 3.88-2.12c1.58.59 3.38.29 4.65-.98s1.57-3.07.98-4.65c1.32-.84 2.12-2.3 2.12-3.88zM10.5 16l-3.5-3.5 1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"></path>
-    </g>
-  </svg>
-);
 
 export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, time, mediaSettings }: PostCardProps) {
   const { isRtl } = useLanguage();
@@ -88,7 +62,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
-  const [postAuthorId, setPostAuthorId] = useState<string | null>(author.uid || null);
 
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
@@ -104,7 +77,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
         const data = docSnap.data();
         const likedBy = data.likedBy || [];
         setLikesCount(likedBy.length);
-        setPostAuthorId(data.authorId || null);
         if (user) setIsLiked(likedBy.includes(user.uid));
       }
     });
@@ -162,38 +134,38 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     }
   };
 
-  const isAuthorVerified = author.isVerified || author.email === "adelbenmaza3@gmail.com";
+  const isAuthorVerified = author?.isVerified || author?.email === "adelbenmaza3@gmail.com";
 
   return (
     <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/50 cursor-pointer active:bg-zinc-950/50 transition-colors" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-4 pb-2 flex flex-row items-center space-y-0 gap-3">
-        <Link href={`/profile/${postAuthorId || '#'}`} onClick={(e) => e.stopPropagation()}>
+        <Link href={`/profile/${author?.uid || author?.id || '#'}`} onClick={(e) => e.stopPropagation()}>
           <Avatar className="h-10 w-10 ring-1 ring-zinc-800">
-            <AvatarImage src={author.avatar} />
-            <AvatarFallback>{author.name?.[0]}</AvatarFallback>
+            <AvatarImage src={author?.avatar || author?.photoURL} />
+            <AvatarFallback>{author?.name?.[0] || author?.displayName?.[0]}</AvatarFallback>
           </Avatar>
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-center">
-            <Link href={`/profile/${postAuthorId || '#'}`} onClick={(e) => e.stopPropagation()}>
+            <Link href={`/profile/${author?.uid || author?.id || '#'}`} onClick={(e) => e.stopPropagation()}>
               <div className="flex flex-col">
                 <div className="flex items-center gap-1">
-                  <h3 className="font-bold text-sm truncate">{author.name}</h3>
+                  <h3 className="font-bold text-sm truncate">{author?.name || author?.displayName}</h3>
                   {isAuthorVerified && <VerificationBadge className="h-3.5 w-3.5" />}
                 </div>
-                <span className="text-[10px] text-zinc-500">@{author.handle}</span>
+                <span className="text-[10px] text-zinc-500">@{author?.handle || author?.email?.split('@')[0]}</span>
               </div>
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-600"><MoreHorizontal className="h-4 w-4" /></Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white">
-                <DropdownMenuItem onClick={handleReport} className="flex gap-2 text-orange-500">
+              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-xl">
+                <DropdownMenuItem onClick={handleReport} className="flex gap-2 text-orange-500 focus:bg-orange-500/10 focus:text-orange-500 rounded-lg m-1">
                   <Flag className="h-4 w-4" /> {isRtl ? "إبلاغ" : "Report"}
                 </DropdownMenuItem>
                 {isAdmin && (
-                  <DropdownMenuItem onClick={handleDelete} className="flex gap-2 text-red-500">
+                  <DropdownMenuItem onClick={handleDelete} className="flex gap-2 text-red-500 focus:bg-red-500/10 focus:text-red-500 rounded-lg m-1">
                     <Trash2 className="h-4 w-4" /> {isRtl ? "حذف" : "Delete"}
                   </DropdownMenuItem>
                 )}
@@ -218,47 +190,55 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
         <div className="px-4 py-3 flex items-center gap-6" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-1.5 group cursor-pointer" onClick={handleLike}>
-            <Heart className={cn("h-5 w-5", isLiked ? "fill-red-500 text-red-500" : "text-zinc-500")} />
+            <Heart className={cn("h-5 w-5 transition-all", isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-500 group-hover:text-red-500/50")} />
             <span className={cn("text-xs font-bold", isLiked ? "text-red-500" : "text-zinc-500")}>{likesCount}</span>
           </div>
           
           <Sheet>
             <SheetTrigger asChild>
               <div className="flex items-center gap-1.5 group cursor-pointer">
-                <MessageCircle className="h-5 w-5 text-zinc-500" />
+                <MessageCircle className="h-5 w-5 text-zinc-500 group-hover:text-primary/50" />
                 <span className="text-xs font-bold text-zinc-500">{comments.length}</span>
               </div>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[70vh] bg-zinc-950 border-zinc-800 rounded-t-[2.5rem] p-0 outline-none">
+            <SheetContent side="bottom" className="h-[75vh] bg-zinc-950 border-zinc-800 rounded-t-[3rem] p-0 outline-none">
               <SheetHeader className="p-6 border-b border-zinc-900">
+                <div className="w-12 h-1 bg-zinc-800 rounded-full mx-auto mb-4" />
                 <SheetTitle className="text-white font-black text-center">{isRtl ? "النقاشات" : "Discussions"}</SheetTitle>
               </SheetHeader>
-              <ScrollArea className="flex-1 p-6 h-[calc(70vh-140px)]">
-                {comments.map((comment: any) => (
-                  <div key={comment.id} className="flex gap-4 mb-6">
-                    <Avatar className="h-8 w-8"><AvatarImage src={comment.authorAvatar} /></Avatar>
-                    <div className="flex-1 bg-zinc-900/50 p-3 rounded-2xl">
-                      <p className="text-[10px] font-bold text-zinc-500">@{comment.authorHandle}</p>
-                      <p className="text-sm text-zinc-200">{comment.text}</p>
+              <ScrollArea className="flex-1 p-6 h-[calc(75vh-160px)]">
+                {comments.length > 0 ? comments.map((comment: any) => (
+                  <div key={comment.id} className="flex gap-4 mb-6 animate-in fade-in slide-in-from-bottom-2">
+                    <Avatar className="h-9 w-9"><AvatarImage src={comment.authorAvatar} /></Avatar>
+                    <div className="flex-1 bg-zinc-900/50 p-4 rounded-2xl border border-white/5">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">@{comment.authorHandle}</p>
+                      </div>
+                      <p className="text-sm text-zinc-200 leading-relaxed">{comment.text}</p>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="py-20 text-center opacity-20">
+                    <MessageCircle className="h-12 w-12 mx-auto mb-2" />
+                    <p className="text-sm font-bold">{isRtl ? "كن أول من يعلق" : "Be the first to comment"}</p>
+                  </div>
+                )}
               </ScrollArea>
-              <div className="p-4 border-t border-zinc-900 bg-zinc-950">
+              <div className="p-4 border-t border-zinc-900 bg-zinc-950 pb-10">
                 {isBanned ? (
-                  <div className="p-2 text-center text-[10px] text-red-500 font-bold bg-red-500/10 rounded-xl">
+                  <div className="p-3 text-center text-[10px] text-red-500 font-black uppercase bg-red-500/10 rounded-2xl border border-red-500/20">
                     {isRtl ? "أنت محظور من التعليق حالياً" : "You are restricted from commenting"}
                   </div>
                 ) : (
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center bg-zinc-900 p-1.5 rounded-full pl-4 border border-zinc-800">
                     <Input 
                       placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} 
-                      className="bg-zinc-900 border-none rounded-full h-10" 
+                      className="bg-transparent border-none rounded-full h-10 shadow-none focus-visible:ring-0" 
                       value={newComment} 
                       onChange={(e) => setNewComment(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
                     />
-                    <Button size="icon" className="rounded-full h-10 w-10 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}>
+                    <Button size="icon" className="rounded-full h-10 w-10 bg-primary shrink-0" onClick={handleAddComment} disabled={!newComment.trim()}>
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>

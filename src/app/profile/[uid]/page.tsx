@@ -22,16 +22,9 @@ import { PostCard } from "@/components/feed/PostCard";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
+import { VerificationBadge } from "@/components/ui/verification-badge";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
-
-const VerificationBadge = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" className={cn("fill-[#1DA1F2]", className)} aria-hidden="true">
-    <g>
-      <path d="M22.5 12.5c0-1.58-.8-3.04-2.12-3.88.59-1.58.29-3.38-.98-4.65s-3.07-1.57-4.65-.98c-.84-1.32-2.3-2.12-3.88-2.12s-3.04.8-3.88 2.12c-1.58-.59-3.38-.29-4.65.98s-1.57 3.07-.98 4.65c-1.32.84-2.12 2.3-2.12 3.88s.8 3.04 2.12 3.88c-.59 1.58-.29 3.38.98 4.65s3.07 1.57 4.65.98c.84 1.32 2.3 2.12 3.88 2.12s3.04-.8 3.88-2.12c1.58.59 3.38.29 4.65-.98s1.57-3.07.98-4.65c1.32-.84 2.12-2.3 2.12-3.88zM10.5 16l-3.5-3.5 1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"></path>
-    </g>
-  </svg>
-);
 
 export default function UserProfilePage() {
   const { uid } = useParams();
@@ -93,7 +86,6 @@ export default function UserProfilePage() {
 
   const isProfileAdmin = profile?.role === "admin" || profile?.email === SUPER_ADMIN_EMAIL;
   const isVisitorAdmin = currentUserProfile?.role === "admin" || currentUser?.email === SUPER_ADMIN_EMAIL;
-  
   const showCheckmark = profile?.isVerified || profile?.email === SUPER_ADMIN_EMAIL;
 
   return (
@@ -114,7 +106,6 @@ export default function UserProfilePage() {
               </Button>
             )}
             {isOwnProfile && <Link href="/settings"><Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10"><Settings className="h-5 w-5" /></Button></Link>}
-            <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10"><MoreHorizontal className="h-5 w-5" /></Button>
           </div>
         </div>
       </div>
@@ -150,11 +141,6 @@ export default function UserProfilePage() {
           {profile?.bio || (isRtl ? "لا توجد سيرة ذاتية.." : "No bio yet.")}
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500 font-bold uppercase tracking-wider">
-          <div className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /><span>{isRtl ? "الجزائر" : "Algeria"}</span></div>
-          <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /><span>{isRtl ? "انضم في 2026" : "Joined 2026"}</span></div>
-        </div>
-
         <div className="mt-6 flex gap-6 border-y border-zinc-900 py-4">
           <div className="flex flex-col items-center flex-1"><span className="font-black text-lg text-white">{profile?.followingCount || 0}</span><span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "يتابع" : "Following"}</span></div>
           <div className="flex flex-col items-center flex-1 border-x border-zinc-900"><span className="font-black text-lg text-white">{profile?.followersCount || 0}</span><span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "متابع" : "Followers"}</span></div>
@@ -166,12 +152,11 @@ export default function UserProfilePage() {
         <TabsList className="w-full bg-black rounded-none h-14 p-0 border-b border-zinc-900 justify-around glass">
           <TabsTrigger value="posts" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "المنشورات" : "Posts"}</TabsTrigger>
           <TabsTrigger value="media" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "الوسائط" : "Media"}</TabsTrigger>
-          <TabsTrigger value="likes" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "الإعجابات" : "Likes"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="posts" className="m-0">
           {postsLoading ? <div className="flex justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" /></div> : userPosts.length > 0 ? (
-            <div className="flex flex-col">{userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0]}} content={post.content} image={post.mediaUrl} mediaType={post.mediaType} likes={post.likesCount || 0} comments={0} reposts={0} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}</div>
+            <div className="flex flex-col">{userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0], uid: uid}} content={post.content} image={post.mediaUrl} mediaType={post.mediaType} likes={post.likesCount || 0} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}</div>
           ) : <div className="p-20 text-center text-zinc-500 font-bold">{isRtl ? "لا منشورات" : "No posts"}</div>}
         </TabsContent>
 
