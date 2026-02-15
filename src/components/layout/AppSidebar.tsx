@@ -110,7 +110,6 @@ export function AppSidebar() {
       color: "bg-purple-500",
       onClick: () => {
         setIsSheetOpen(false);
-        // التحقق من الصلاحيات السيادية: التوثيق أو الإعلام أو المدير العام
         if (profile?.isVerified || profile?.isPro || user?.email === ADMIN_EMAIL) {
           setIsProclamationOpen(true);
         } else {
@@ -132,7 +131,7 @@ export function AppSidebar() {
         <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
 
         {navItems.map((item, idx) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           
           if (item.special) {
             return (
@@ -174,7 +173,7 @@ export function AppSidebar() {
               <div className="flex flex-col items-center justify-center relative h-full active:scale-90 transition-transform">
                 {item.isAvatar ? (
                   <Avatar className={cn("h-7 w-7 transition-all", isActive ? "ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-60")}>
-                    <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/50/50"} />
+                    <AvatarImage src={user?.photoURL || ""} />
                     <AvatarFallback>{user?.displayName?.[0] || "U"}</AvatarFallback>
                   </Avatar>
                 ) : (

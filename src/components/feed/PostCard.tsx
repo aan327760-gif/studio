@@ -130,7 +130,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     } else {
       updateDoc(postRef, { likedBy: arrayUnion(user.uid) });
       
-      if (author?.id !== user.uid) {
+      if (author?.id !== user.uid && author?.uid !== user.uid) {
         addDoc(collection(db, "notifications"), {
           userId: author?.id || author?.uid,
           type: "like",
@@ -158,7 +158,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       createdAt: serverTimestamp()
     });
 
-    if (author?.id !== user.uid) {
+    if (author?.id !== user.uid && author?.uid !== user.uid) {
       addDoc(collection(db, "notifications"), {
         userId: author?.id || author?.uid,
         type: "comment",
