@@ -37,6 +37,7 @@ export default function LammaPage() {
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userProfileRef);
 
+  // صلاحية الإنشاء: الموثقين، الإعلام، أو المدير العام
   const isAuthorizedToCreate = profile?.isVerified || profile?.isPro || user?.email === ADMIN_EMAIL;
 
   // جلب المتابعين للدعوة
