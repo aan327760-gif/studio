@@ -8,7 +8,18 @@ import {
   signInWithEmailAndPassword, 
   updateProfile 
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { 
+  doc, 
+  setDoc, 
+  serverTimestamp, 
+  updateDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  limit, 
+  increment 
+} from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +59,7 @@ export default function AuthPage() {
         
         const userRef = doc(db, "users", user.uid);
         
-        // التوثيق التلقائي للمدير العام عند الدخول
+        // التوثيق التلقائي للمدير العام عند الدخول لضمان الصلاحيات
         if (user.email === SUPER_ADMIN_EMAIL) {
           await updateDoc(userRef, {
             role: "admin",
@@ -74,7 +85,8 @@ export default function AuthPage() {
 
         const isSuper = formData.email === SUPER_ADMIN_EMAIL;
 
-        const userProfileData = {
+        // البيانات الأساسية للملف الشخصي
+        const userProfileData: any = {
           uid: user.uid,
           displayName: formData.displayName,
           email: formData.email,
@@ -82,7 +94,7 @@ export default function AuthPage() {
           photoURL: "https://picsum.photos/seed/" + user.uid + "/200/200",
           createdAt: serverTimestamp(),
           isPro: isSuper,
-          isVerified: isSuper, // توثيق تلقائي إذا كان الإيميل هو إيميل المدير
+          isVerified: isSuper,
           role: isSuper ? "admin" : "user",
           followersCount: 0,
           followingCount: 0,
@@ -90,6 +102,38 @@ export default function AuthPage() {
           language: isRtl ? "ar" : "en"
         };
 
+        // بروتوكول المتابعة التلقائية للمدير العام
+        if (!isSuper) {
+          try {
+            const adminQuery = query(collection(db, "users"), where("email", "==", SUPER_ADMIN_EMAIL), limit(1));
+            const adminSnapshot = await getDocs(adminQuery);
+            
+            if (!adminSnapshot.empty) {
+              const adminDoc = adminSnapshot.docs[0];
+              const adminUid = adminDoc.id;
+              
+              // تحديث بيانات المستخدم الجديد قبل الحفظ ليكون متابعاً للأدمن
+              userProfileData.followingCount = 1;
+              
+              // إنشاء وثيقة المتابعة في قاعدة البيانات
+              const followId = `${user.uid}_${adminUid}`;
+              await setDoc(doc(db, "follows", followId), {
+                followerId: user.uid,
+                followingId: adminUid,
+                createdAt: serverTimestamp()
+              });
+
+              // زيادة عدد متابعي المدير العام
+              await updateDoc(doc(db, "users", adminUid), {
+                followersCount: increment(1)
+              });
+            }
+          } catch (followError) {
+            console.warn("Auto-follow admin failed, proceeding with registration.", followError);
+          }
+        }
+
+        // حفظ ملف المستخدم النهائي
         await setDoc(doc(db, "users", user.uid), userProfileData)
           .catch(async (err) => {
             const permissionError = new FirestorePermissionError({
