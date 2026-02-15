@@ -53,17 +53,17 @@ export default function HelpCenterPage() {
       title: isRtl ? "الخوارزمية والترتيب" : "Algorithm & Ranking",
       faqs: [
         {
-          question: isRtl ? "كيف تعمل الخوارزمية السيادية؟" : "How does the Sovereign Algorithm work?",
+          question: isRtl ? "كيف يتم ترتيب المنشورات في 'اكتشف'؟" : "How are posts ranked in 'Discover'?",
           answer: isRtl 
-            ? "خوارزميتنا شفافة وتعتمد على 'نقاط التأثير': الإعجاب يعطي المنشور (+10 نقاط)، التعليق (+15 نقطة)، والحفظ في الأرشيف (+20 نقطة). الأولوية للمحتوى النوعي الذي يلهم الناس لحفظه ومناقشته، مع مراعاة حداثة المنشور (عامل الزمن)." 
-            : "Our algorithm is transparent based on 'Impact Points': Like (+10), Comment (+15), and Archive/Save (+20). Priority is given to quality content that inspires people to save and discuss it, while considering post recency.",
+            ? "تعتمد خوارزميتنا السيادية على 'ذكاء التأثير'؛ حيث تعطى الأولوية للمحتوى النوعي الذي يلهم المواطنين للتفاعل معه بعمق أو الاحتفاظ به كمرجع، مع مراعاة حداثة الفكرة وتوقيتها." 
+            : "Our sovereign algorithm relies on 'Impact Intelligence'; priority is given to quality content that inspires citizens to engage deeply or keep it as a reference, while considering the recency and timing of the thought.",
           icon: Zap
         },
         {
           question: isRtl ? "هل يمكن لمواطن غير موثق تصدر الصفحة؟" : "Can unverified citizens trend?",
           answer: isRtl 
-            ? "نعم، بالتأكيد! رغم أن الموثقين يحصلون على دفعة تشجيعية، إلا أن قوة التفاعل (الحفظ والتعليق) لمواطن عادي يمكنها تجاوز أي رتبة أخرى إذا كان المحتوى قوياً ومؤثراً." 
-            : "Yes! While verified users get an initial boost, the engagement power (Saves & Comments) of an unverified citizen can surpass any rank if the content is impactful.",
+            ? "نعم، بالتأكيد! القوة الحقيقية في منصتنا هي 'قوة الفكرة'؛ فالمحتوى المؤثر الذي يحظى بنقاشات حادة أو عمليات حفظ واسعة يمكنه تجاوز أي رتبة أخرى والتصدر فوراً." 
+            : "Yes! The real power on our platform is the 'Power of the Thought'; impactful content that garners intense discussions or widespread saves can surpass any other rank and trend immediately.",
           icon: Hash
         }
       ]
@@ -88,21 +88,9 @@ export default function HelpCenterPage() {
         {
           question: isRtl ? "من يمكنه تحميل الفيديوهات؟" : "Who can download videos?",
           answer: isRtl 
-            ? "ميزة تحميل الفيديوهات هي امتياز سيادي مخصص حصرياً للمواطنين الموثقين (أصحاب الروزيتا) وللمسؤولين، لضمان حماية جهود المبدعين وتقدير النخبة." 
-            : "Video downloading is a sovereign privilege exclusively for verified citizens and admins, ensuring creators' protection and elite appreciation.",
+            ? "ميزة تحميل الفيديوهات هي امتياز سيادي مخصص حصرياً للمواطنين الموثقين وللمسؤولين، لضمان حماية جهود المبدعين وتقدير النخبة في المجتمع." 
+            : "Video downloading is a sovereign privilege exclusively for verified citizens and admins, ensuring creators' protection and elite appreciation in the community.",
           icon: Video
-        }
-      ]
-    },
-    {
-      title: isRtl ? "المجتمعات (اللمة)" : "Communities (Lamma)",
-      faqs: [
-        {
-          question: isRtl ? "كيف أنشئ 'لمة' خاصة؟" : "How do I create a private 'Lamma'?",
-          answer: isRtl 
-            ? "يمكنك إنشاء لمة ودعوة متابعينا إليها من خلال صفحة 'اللمة'. هذه المساحات مشفرة تماماً وتتيح لك نقاشات حرة بعيداً عن أعين الغرباء." 
-            : "You can create a Lamma and invite your followers through the 'Lamma' page. These spaces are fully encrypted and allow for free discussions away from strangers.",
-          icon: MessageSquare
         }
       ]
     }
@@ -161,11 +149,6 @@ export default function HelpCenterPage() {
            <Button className="w-full rounded-2xl bg-white text-black font-black h-14 hover:bg-zinc-200 shadow-xl relative z-10 active:scale-95 transition-transform">
               {isRtl ? "تواصل مع فريق الدعم" : "Contact Support Team"}
            </Button>
-           <div className="flex justify-center gap-6 relative z-10">
-              <Globe className="h-5 w-5 text-zinc-800 hover:text-white cursor-pointer" />
-              <ShieldCheck className="h-5 w-5 text-zinc-800 hover:text-white cursor-pointer" />
-              <Zap className="h-5 w-5 text-zinc-800 hover:text-white cursor-pointer" />
-           </div>
         </section>
 
         <p className="text-center text-[8px] font-black text-zinc-800 uppercase tracking-[0.5em] pt-4">

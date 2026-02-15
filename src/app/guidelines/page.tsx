@@ -41,7 +41,7 @@ export default function CommunityGuidelinesPage() {
       icon: PenTool,
       title: isRtl ? "2. بروتوكول الإيجاز والوقار" : "2. Concise Communication Protocol",
       content: isRtl 
-        ? "للحفاظ على جودة المحتوى ومنع الحشو، تلتزم المنصة بحدود صارمة للأحرف:\n• التعليقات والردود: 100 حرف كحد أقصى.\n• السيرة الذاتية للمواطن: 150 حرفاً.\nنهدف من خلال ذلك إلى تشجيع لغة فكرية مكثفة وراقية تليق بنخبة مجتمعنا."
+        ? "للحفاظ على جودة المحتوى ومنع الحشو، تلتزم المنصة بحدود صارمة للأحرف:\n• التعليقات والردود: 100 حرف كحد أقصى.\n• السيرة الذاتية للمواطن: 150 حرفاً.\nنهدف من خلال ذلك إلى تشجيع لغة فكرية مكثفة وراقية تليق بمجتمعنا."
         : "To maintain content quality and prevent filler, the platform enforces strict character limits:\n• Comments & Replies: Max 100 characters.\n• Citizen Bio: Max 150 characters.\nWe aim to encourage an intense and refined intellectual language."
     },
     {
@@ -57,7 +57,7 @@ export default function CommunityGuidelinesPage() {
       icon: Lock,
       title: isRtl ? "4. سيادة البيانات والخصوصية" : "4. Data Sovereignty & Privacy",
       content: isRtl 
-        ? "نحن نحترم خصوصيتك كحق مقدس. يُمنع 'التشهير' (Doxxing) أو نشر بيانات شخصية للغير دون إذن كتابي صريح. كما يُمنع استخدام أدوات التنقيب عن البيانات أو محاولة اختراق حسابات المواطنين الآخرين."
+        ? "نحن نحترم خصوصيتك كحق مقدس. يُمنع 'التشهير' (Doxxing) أو نشر بيانات شخصية للغير دون إذن صريح. كما يُمنع استخدام أدوات التنقيب عن البيانات أو محاولة اختراق حسابات المواطنين الآخرين."
         : "We respect your privacy as a sacred right. Doxxing or publishing third-party personal data without explicit written permission is prohibited."
     },
     {
@@ -65,8 +65,8 @@ export default function CommunityGuidelinesPage() {
       icon: Star,
       title: isRtl ? "5. معايير القنوات الإعلامية (Pro)" : "5. Media Channel Standards (Pro)",
       content: isRtl 
-        ? "القنوات الإعلامية الموثقة ملزمة بمعايير الشفافية والمصداقية. يجب ذكر المصادر عند نشر الأخبار العاجلة. الإخلال بهذه المعايير أو استغلال 'أولوية الظهور في الخوارزمية' لنشر التضليل يؤدي لسحب الرتبة فوراً."
-        : "Verified Media Channels are bound by standards of transparency and credibility. Sources must be cited. Misusing 'Algorithm Priority' for misinformation leads to immediate rank revocation."
+        ? "القنوات الإعلامية الموثقة ملزمة بمعايير الشفافية والمصداقية. يجب ذكر المصادر عند نشر الأخبار العاجلة. الإخلال بهذه المعايير أو استغلال الأولوية لنشر التضليل يؤدي لسحب الرتبة فوراً."
+        : "Verified Media Channels are bound by standards of transparency and credibility. Sources must be cited. Misusing visibility for misinformation leads to immediate rank revocation."
     },
     {
       id: "legal",
@@ -79,16 +79,13 @@ export default function CommunityGuidelinesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white max-w-3xl mx-auto border-x border-zinc-900 pb-20 selection:bg-primary/30">
-      <header className="p-6 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-between">
+    <div className="min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-900 pb-20 selection:bg-primary/30">
+      <header className="p-6 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900">
             <ArrowLeft className={isRtl ? "rotate-180" : ""} />
           </Button>
           <h1 className="text-xl font-black tracking-tight">{isRtl ? "إرشادات المجتمع" : "Community Guidelines"}</h1>
-        </div>
-        <div className="px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary">
-           Sovereign Protocol v2.2
         </div>
       </header>
 
