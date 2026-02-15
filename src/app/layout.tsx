@@ -4,6 +4,8 @@ import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { UploadProvider } from "@/context/UploadContext";
+import { GlobalUploadBar } from "@/components/layout/GlobalUploadBar";
 
 export const metadata: Metadata = {
   title: "Unbound - Break Free, Connect Deeply",
@@ -42,8 +44,11 @@ export default function RootLayout({
       <body className="font-body antialiased bg-background">
         <FirebaseClientProvider>
           <LanguageProvider>
-            {children}
-            <Toaster />
+            <UploadProvider>
+              <GlobalUploadBar />
+              {children}
+              <Toaster />
+            </UploadProvider>
           </LanguageProvider>
         </FirebaseClientProvider>
       </body>

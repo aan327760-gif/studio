@@ -11,9 +11,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, serverTimestamp, doc } from "firebase/firestore";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import { doc } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
+import { useUpload } from "@/context/UploadContext";
 import { 
   Select,
   SelectContent,
@@ -24,73 +24,21 @@ import {
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
-/**
- * دالة سيادية لضغط الصور باستخدام Canvas قبل الرفع.
- */
-async function compressImage(dataUrl: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.src = dataUrl;
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      let width = img.width;
-      let height = img.height;
-
-      // الحد الأقصى للأبعاد لضمان السرعة (Full HD)
-      const MAX_WIDTH = 1920;
-      const MAX_HEIGHT = 1080;
-
-      if (width > height) {
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
-        }
-      } else {
-        if (height > MAX_HEIGHT) {
-          width *= MAX_HEIGHT / height;
-          height = MAX_HEIGHT;
-        }
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(img, 0, 0, width, height);
-      
-      // ضغط الصورة بنسبة 0.7 لضمان التوازن بين الجودة والحجم
-      resolve(canvas.toDataURL("image/jpeg", 0.7));
-    };
-  });
-}
-
-async function urlToBlob(url: string): Promise<string> {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
 function CreatePostContent() {
   const { isRtl } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const db = useFirestore();
   const { user } = useUser();
+  const { startUpload } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userRef);
   
   const [content, setContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
   const [privacy, setPrivacy] = useState("public");
   const [allowComments, setAllowComments] = useState(true);
-
   const [localImages, setLocalImages] = useState<string[]>([]);
   const videoUrlFromParams = searchParams.get("video");
   const source = searchParams.get("source");
@@ -122,58 +70,6 @@ function CreatePostContent() {
     setLocalImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const processPostInBackground = async (
-    postContent: string, 
-    images: string[], 
-    video: string | null, 
-    authorInfo: any
-  ) => {
-    try {
-      let finalMediaUrls: string[] = [];
-      let mediaType: "image" | "video" | "audio" | "album" | null = null;
-
-      if (images.length > 0) {
-        const uploadPromises = images.map(async (url) => {
-          // جلب البيانات، ثم الضغط، ثم الرفع
-          const base64Raw = url.startsWith('data:') ? url : await urlToBlob(url);
-          const base64Compressed = await compressImage(base64Raw);
-          return uploadToCloudinary(base64Compressed, 'image');
-        });
-        finalMediaUrls = await Promise.all(uploadPromises);
-        mediaType = finalMediaUrls.length > 1 ? 'album' : 'image';
-      } else if (video) {
-        const base64 = await urlToBlob(video);
-        const url = await uploadToCloudinary(base64, 'video');
-        finalMediaUrls = [url];
-        mediaType = 'video';
-      }
-
-      await addDoc(collection(db, "posts"), {
-        content: postContent,
-        mediaUrl: finalMediaUrls[0] || null,
-        mediaUrls: finalMediaUrls,
-        mediaType: mediaType,
-        authorId: user?.uid || "anonymous",
-        author: authorInfo,
-        likesCount: 0,
-        likedBy: [],
-        savesCount: 0,
-        savedBy: [],
-        commentsCount: 0,
-        createdAt: serverTimestamp(),
-        privacy,
-        allowComments
-      });
-
-      toast({ 
-        title: isRtl ? "تم النشر بنجاح" : "Post Published Successfully"
-      });
-    } catch (error: any) {
-      console.error("Background Post Error:", error);
-      toast({ variant: "destructive", title: isRtl ? "فشل النشر" : "Post Failed" });
-    }
-  };
-
   const handleSubmit = () => {
     if (isBanned) {
       toast({ variant: "destructive", title: isRtl ? "أنت محظور" : "Account Restricted" });
@@ -182,8 +78,6 @@ function CreatePostContent() {
 
     if (!content.trim() && localImages.length === 0 && !videoUrlFromParams) return;
 
-    setIsSubmitting(true);
-    
     const authorInfo = {
       name: profile?.displayName || user?.displayName || "User",
       handle: user?.email?.split('@')[0] || "user",
@@ -193,15 +87,24 @@ function CreatePostContent() {
       role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
     };
 
-    // تنفيذ المعالجة والرفع في الخلفية
-    processPostInBackground(content, [...localImages], videoUrlFromParams, authorInfo);
+    // إطلاق الرفع في الخلفية عبر الـ Context
+    startUpload({
+      content,
+      localImages: [...localImages],
+      videoUrl: videoUrlFromParams,
+      userId: user?.uid,
+      authorInfo,
+      privacy,
+      allowComments,
+      isRtl
+    });
 
     toast({ 
-      title: isRtl ? "جاري المعالجة والنشر..." : "Processing & Posting...",
-      description: isRtl ? "سيعاد توجيهك الآن، والرفع سيكتمل في الخلفية." : "Redirecting now, upload continues in background."
+      title: isRtl ? "جاري الرفع في الخلفية..." : "Uploading in background...",
+      description: isRtl ? "يمكنك التصفح الآن، سنخبرك عند الاكتمال." : "You can browse now, we'll notify you when done."
     });
     
-    // العودة الفورية للصفحة الرئيسية لضمان حرية التصفح
+    // العودة الفورية للصفحة الرئيسية
     router.push("/");
   };
 
@@ -211,13 +114,13 @@ function CreatePostContent() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900">
           <X className="h-6 w-6" />
         </Button>
-        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Draft Sovereign</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sovereign Upload</span>
         <Button 
           onClick={handleSubmit} 
-          disabled={isSubmitting || isBanned || (!content.trim() && localImages.length === 0 && !videoUrlFromParams)} 
+          disabled={isBanned || (!content.trim() && localImages.length === 0 && !videoUrlFromParams)} 
           className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200"
         >
-          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Post")}
+          {isRtl ? "نشر" : "Post"}
         </Button>
       </header>
 
@@ -229,7 +132,7 @@ function CreatePostContent() {
           </Avatar>
           <div className="flex-1 min-w-0">
             <Textarea 
-              placeholder={isRtl ? "شارك فكرة حرة أو ألبوماً..." : "Share a free thought or album..."} 
+              placeholder={isRtl ? "شارك فكرة حرة..." : "Share a free thought..."} 
               className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[120px] mb-4" 
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
@@ -276,7 +179,7 @@ function CreatePostContent() {
             <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleAddImage} />
 
             {videoUrlFromParams && (
-              <div className="relative aspect-video rounded-[2.5rem] overflow-hidden border border-zinc-800 bg-zinc-900 mb-6 w-full shadow-2xl">
+              <div className="relative aspect-video rounded-[2rem] overflow-hidden border border-zinc-800 bg-zinc-900 mb-6 w-full shadow-2xl">
                 <video src={videoUrlFromParams} className="w-full h-full object-contain" autoPlay muted loop />
               </div>
             )}
