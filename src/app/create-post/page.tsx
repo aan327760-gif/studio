@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, Suspense } from "react";
@@ -98,11 +99,13 @@ function CreatePostContent() {
           handle: user?.email?.split('@')[0] || "user",
           avatar: user?.photoURL || "",
           isVerified: user?.email === ADMIN_EMAIL || profile?.isVerified || profile?.role === 'admin',
+          isPro: profile?.isPro || false, // حفظ حالة القناة الإعلامية لدعم الخوارزمية
           role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
         },
         likesCount: 0,
         likedBy: [],
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        mediaSettings: { filter: filterClass }
       });
 
       toast({

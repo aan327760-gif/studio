@@ -5,25 +5,62 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { PostCard } from "@/components/feed/PostCard";
 import { useLanguage } from "@/context/LanguageContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { MessageSquare, Loader2, Sparkles, UserPlus, Megaphone } from "lucide-react";
+import { MessageSquare, Loader2, Sparkles, UserPlus, Megaphone, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import { useMemo } from "react";
 
+/**
+ * الخوارزمية السيادية - Sovereign Algorithm
+ * تقوم بترتيب المنشورات بناءً على:
+ * 1. رتبة القناة الإعلامية (isPro) = 1000 نقطة
+ * 2. التوثيق (isVerified) = 500 نقطة
+ * 3. التفاعل (Likes) = 10 نقاط لكل إعجاب
+ * 4. الحداثة = نقاط سالبة لكل ساعة تمر
+ */
 export default function Home() {
   const { isRtl } = useLanguage();
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
-  // استعلام اكتشف - يحتاج فهرس بسيط (موجود تلقائياً)
+  // جلب آخر 100 منشور لتمكين الخوارزمية من العمل
   const discoverPostsQuery = useMemoFirebase(() => {
-    return query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
+    return query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(100));
   }, [db]);
-  const { data: discoverPosts, loading: discoverLoading } = useCollection<any>(discoverPostsQuery);
+  const { data: rawDiscoverPosts, loading: discoverLoading } = useCollection<any>(discoverPostsQuery);
 
-  // استعلام رسائل النظام - قمنا بإزالة orderBy لنتجنب الحاجة لفهرس مركب
+  // تطبيق الخوارزمية السيادية في الذاكرة
+  const discoverPosts = useMemo(() => {
+    if (!rawDiscoverPosts) return [];
+
+    return [...rawDiscoverPosts].sort((a, b) => {
+      const getScore = (post: any) => {
+        let score = 0;
+        const author = post.author || {};
+        
+        // أولوية القنوات الإعلامية
+        if (author.isPro) score += 1000;
+        
+        // أولوية التوثيق
+        if (author.isVerified) score += 500;
+        
+        // أولوية التفاعل
+        score += (post.likesCount || 0) * 10;
+        
+        // تأثير الزمن (تخفيض القيمة مع الوقت)
+        const postTime = post.createdAt?.seconds ? post.createdAt.seconds * 1000 : Date.now();
+        const hoursPassed = (Date.now() - postTime) / (1000 * 60 * 60);
+        score -= hoursPassed * 20;
+
+        return score;
+      };
+
+      return getScore(b) - getScore(a);
+    }).slice(0, 30); // عرض أفضل 30 منشوراً فقط لضمان الجودة
+  }, [rawDiscoverPosts]);
+
   const systemAlertQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(
@@ -34,25 +71,21 @@ export default function Home() {
   }, [db, currentUser]);
   const { data: rawSystemAlerts = [] } = useCollection<any>(systemAlertQuery);
 
-  // ترتيب التنبيهات في الذاكرة لتجنب الفهرس
   const systemAlerts = useMemo(() => {
     return [...rawSystemAlerts].sort((a, b) => 
       (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
     ).slice(0, 1);
   }, [rawSystemAlerts]);
 
-  // استعلام المتابعات
   const followsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(collection(db, "follows"), where("followerId", "==", currentUser.uid));
   }, [db, currentUser]);
   const { data: userFollows = [] } = useCollection<any>(followsQuery);
 
-  // استخراج معرّفات المتابعين
   const followingIds = useMemo(() => userFollows.map(f => f.followingId), [userFollows]);
   const followingIdsString = JSON.stringify(followingIds);
 
-  // استعلام منشورات المتابعة - أزلنا orderBy لتجنب الفهرس المركب (صعب جداً مع IN)
   const followingPostsQuery = useMemoFirebase(() => {
     const ids = JSON.parse(followingIdsString);
     if (!currentUser || ids.length === 0) return null;
@@ -64,7 +97,6 @@ export default function Home() {
   
   const { data: rawFollowingPosts = [], loading: followingLoading } = useCollection<any>(followingPostsQuery);
 
-  // ترتيب المنشورات في الذاكرة
   const followingPosts = useMemo(() => {
     return [...rawFollowingPosts].sort((a, b) => 
       (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
@@ -78,7 +110,13 @@ export default function Home() {
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 rotate-3 transition-transform hover:rotate-0">
                <span className="text-white font-black text-xl italic leading-none">U</span>
           </div>
-          <h1 className="text-xs font-black uppercase tracking-[0.3em] opacity-40 ml-1">Unbound</h1>
+          <div className="flex flex-col">
+            <h1 className="text-xs font-black uppercase tracking-[0.3em] opacity-40 ml-1">Unbound</h1>
+            <div className="flex items-center gap-1 ml-1">
+               <Zap className="h-2 w-2 text-primary fill-primary" />
+               <span className="text-[7px] font-black text-primary uppercase tracking-widest">{isRtl ? "الخوارزمية السيادية" : "Sovereign Algo"}</span>
+            </div>
+          </div>
         </div>
 
         <Link href="/lamma">
@@ -119,7 +157,7 @@ export default function Home() {
             {discoverLoading ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
-                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.3em] animate-pulse">Syncing Feed</p>
+                <p className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.3em] animate-pulse">Running Algorithm</p>
               </div>
             ) : discoverPosts.length > 0 ? (
               <div className="flex flex-col">
