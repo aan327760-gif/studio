@@ -45,6 +45,8 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -64,20 +66,20 @@ export default function AdminDashboard() {
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
   const isAdmin = isSuperAdmin || currentUserProfile?.role === "admin";
 
-  // جلب البيانات الأساسية
-  const usersQuery = useMemoFirebase(() => query(collection(db, "users"), limit(100)), [db]);
+  // جلب البيانات الأساسية - لا نقوم بالاستعلام إلا إذا كان المستخدم إدارياً
+  const usersQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "users"), limit(100)) : null, [db, isAdmin]);
   const { data: allUsers, loading: usersLoading } = useCollection<any>(usersQuery);
   
-  const reportsQuery = useMemoFirebase(() => query(collection(db, "reports"), where("status", "==", "pending"), limit(50)), [db]);
+  const reportsQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isAdmin]);
   const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
 
-  const groupsQuery = useMemoFirebase(() => query(collection(db, "groups"), limit(50)), [db]);
+  const groupsQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "groups"), limit(50)) : null, [db, isAdmin]);
   const { data: allGroups, loading: groupsLoading } = useCollection<any>(groupsQuery);
 
   // جلب الإحصائيات السريعة
   useEffect(() => {
     async function fetchStats() {
-      if (!isAdmin) return;
+      if (!isAdmin || !db) return;
       try {
         const uCount = await getCountFromServer(collection(db, "users"));
         const pCount = await getCountFromServer(collection(db, "posts"));
@@ -90,8 +92,14 @@ export default function AdminDashboard() {
           groups: gCount.data().count,
           reports: rCount.data().count
         });
-      } catch (e) {
-        console.error("Stats fetch error:", e);
+      } catch (err: any) {
+        if (err.code === 'permission-denied') {
+          const permissionError = new FirestorePermissionError({
+            path: 'stats/counts',
+            operation: 'list',
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        }
       } finally {
         setStatsLoading(false);
       }
@@ -110,26 +118,32 @@ export default function AdminDashboard() {
     banUntil.setDate(banUntil.getDate() + 3);
 
     if (confirm(isRtl ? "إيقاف المستخدم عن التفاعل (نشر/تعليق/دردشة) لمدة 3 أيام؟" : "Restrict user from interaction (post/comment/chat) for 3 days?")) {
-      try {
-        await updateDoc(doc(db, "users", userId), {
-          isBannedUntil: Timestamp.fromDate(banUntil)
+      updateDoc(doc(db, "users", userId), {
+        isBannedUntil: Timestamp.fromDate(banUntil)
+      }).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: `users/${userId}`,
+          operation: 'update',
+          requestResourceData: { isBannedUntil: banUntil }
         });
-        toast({ title: isRtl ? "تم إيقاف التفاعل بنجاح" : "Interaction restricted successfully" });
-      } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Failed to apply restriction" });
-      }
+        errorEmitter.emit('permission-error', permissionError);
+      });
+      toast({ title: isRtl ? "تم إرسال أمر الإيقاف" : "Interaction restriction request sent" });
     }
   };
 
   const handleUnbanUser = async (userId: string) => {
-    try {
-      await updateDoc(doc(db, "users", userId), {
-        isBannedUntil: null
+    updateDoc(doc(db, "users", userId), {
+      isBannedUntil: null
+    }).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: `users/${userId}`,
+        operation: 'update',
+        requestResourceData: { isBannedUntil: null }
       });
-      toast({ title: isRtl ? "تم إلغاء الحظر" : "Restriction lifted" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error" });
-    }
+      errorEmitter.emit('permission-error', permissionError);
+    });
+    toast({ title: isRtl ? "تم إرسال طلب إلغاء الحظر" : "Restriction lift request sent" });
   };
 
   const handleResolveReport = async (reportId: string, action: 'delete' | 'ignore') => {
@@ -137,10 +151,10 @@ export default function AdminDashboard() {
       if (action === 'delete') {
         const report = reports.find(r => r.id === reportId);
         if (report && report.targetType === 'post') {
-          await deleteDoc(doc(db, "posts", report.targetId));
+          deleteDoc(doc(db, "posts", report.targetId));
         }
       }
-      await updateDoc(doc(db, "reports", reportId), {
+      updateDoc(doc(db, "reports", reportId), {
         status: "resolved",
         resolvedBy: user?.uid,
         resolvedAt: serverTimestamp()
@@ -155,14 +169,14 @@ export default function AdminDashboard() {
     if (!isSuperAdmin) return;
     const newRole = targetUser.role === "admin" ? "user" : "admin";
     if (confirm(isRtl ? `تغيير رتبة ${targetUser.displayName}؟` : `Change role for ${targetUser.displayName}?`)) {
-      await updateDoc(doc(db, "users", targetUser.id), { role: newRole });
+      updateDoc(doc(db, "users", targetUser.id), { role: newRole });
       toast({ title: isRtl ? "تم تحديث الرتبة" : "Role updated" });
     }
   };
 
   const handleDeleteGroup = async (groupId: string) => {
     if (confirm(isRtl ? "حذف هذه المجموعة نهائياً؟" : "Delete this group permanently?")) {
-      await deleteDoc(doc(db, "groups", groupId));
+      deleteDoc(doc(db, "groups", groupId));
       toast({ title: isRtl ? "تم حذف المجموعة" : "Group deleted" });
     }
   };
@@ -334,7 +348,7 @@ export default function AdminDashboard() {
           <TabsContent value="groups" className="space-y-4">
              {groupsLoading ? (
                <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
-             ) : allGroups.length > 0 ? (
+             ) : (allGroups && allGroups.length > 0) ? (
                allGroups.map((group: any) => (
                  <div key={group.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl">
                     <div className="flex items-center gap-3">
