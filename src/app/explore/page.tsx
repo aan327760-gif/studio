@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Input } from "@/components/ui/input";
-import { Search, TrendingUp, Users, Hash, Loader2, UserPlus, UserCheck, Flame, MessageSquare } from "lucide-react";
+import { Search, TrendingUp, Users, Hash, Loader2, UserPlus, UserCheck, Flame, MessageSquare, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
@@ -20,6 +20,7 @@ const TRENDING_TOPICS = [
   { tag: "Unbound2026", posts: "85K", category: "Tech" },
   { tag: "LammaChat", posts: "45K", category: "Social" },
   { tag: "DigitalNomad", posts: "32K", category: "Life" },
+  { tag: "FreedomOfSpeech", posts: "18K", category: "Rights" },
 ];
 
 export default function ExplorePage() {
@@ -42,7 +43,7 @@ export default function ExplorePage() {
 
   const { data: userResults, loading: userLoading } = useCollection<any>(userResultsQuery);
 
-  // البحث عن المنشورات (بناءً على الكلمات المفتاحية في المحتوى)
+  // البحث عن المنشورات
   const postResultsQuery = useMemoFirebase(() => {
     if (!searchQuery.trim()) return null;
     return query(
@@ -55,21 +56,15 @@ export default function ExplorePage() {
 
   const { data: postResults, loading: postLoading } = useCollection<any>(postResultsQuery);
 
-  // جلب المستخدمين المقترحين
-  const suggestedUsersQuery = useMemoFirebase(() => {
-    return query(collection(db, "users"), limit(5));
-  }, [db]);
-  const { data: suggestedUsers, loading: suggestedLoading } = useCollection<any>(suggestedUsersQuery);
-
   // جلب المتابعات الحالية للمستخدم
   const followsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(collection(db, "follows"), where("followerId", "==", currentUser.uid));
   }, [db, currentUser]);
-  const { data: userFollows } = useCollection<any>(followsQuery);
+  const { data: userFollows = [] } = useCollection<any>(followsQuery);
 
   const isFollowing = (userId: string) => {
-    return (userFollows || []).some((f: any) => f.followingId === userId);
+    return userFollows.some((f: any) => f.followingId === userId);
   };
 
   const handleFollow = async (targetUserId: string) => {
@@ -106,13 +101,13 @@ export default function ExplorePage() {
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800">
       <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-md p-4 border-b border-zinc-900">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-primary transition-colors" />
           <Input 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={isRtl ? "ابحث عن أشخاص أو مواضيع..." : "Search people or topics..."} 
-            className="pl-10 bg-zinc-900 border-none rounded-full h-10 text-sm focus-visible:ring-1 focus-visible:ring-primary"
+            className="pl-10 bg-zinc-900 border-none rounded-2xl h-11 text-sm focus-visible:ring-1 focus-visible:ring-primary transition-all"
           />
         </div>
       </header>
@@ -121,10 +116,10 @@ export default function ExplorePage() {
         {searchQuery.trim() ? (
           <Tabs defaultValue="users" className="w-full" onValueChange={setActiveTab}>
             <TabsList className="w-full bg-black h-12 rounded-none p-0 border-b border-zinc-900">
-              <TabsTrigger value="users" className="flex-1 h-full rounded-none font-bold text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
+              <TabsTrigger value="users" className="flex-1 h-full rounded-none font-bold text-xs uppercase tracking-widest data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
                 {isRtl ? "أشخاص" : "People"}
               </TabsTrigger>
-              <TabsTrigger value="posts" className="flex-1 h-full rounded-none font-bold text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
+              <TabsTrigger value="posts" className="flex-1 h-full rounded-none font-bold text-xs uppercase tracking-widest data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
                 {isRtl ? "منشورات" : "Posts"}
               </TabsTrigger>
             </TabsList>
@@ -135,22 +130,22 @@ export default function ExplorePage() {
               ) : userResults.length > 0 ? (
                 <div className="space-y-4">
                   {userResults.filter(u => u.uid !== currentUser?.uid).map((user: any) => (
-                    <div key={user.uid} className="flex items-center justify-between group">
+                    <div key={user.uid} className="flex items-center justify-between group p-3 bg-zinc-950 rounded-2xl border border-transparent hover:border-zinc-800 transition-all">
                       <Link href={`/profile/${user.uid}`} className="flex gap-3 flex-1">
-                        <Avatar>
+                        <Avatar className="h-10 w-10 ring-1 ring-zinc-800 ring-offset-1 ring-offset-black">
                           <AvatarImage src={user.photoURL} />
                           <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-bold group-hover:underline">{user.displayName}</p>
-                          <p className="text-xs text-zinc-500">@{user.email?.split('@')[0]}</p>
+                          <p className="text-sm font-bold group-hover:text-primary transition-colors">{user.displayName}</p>
+                          <p className="text-[10px] text-zinc-500">@{user.email?.split('@')[0]}</p>
                         </div>
                       </Link>
                       <Button 
                         size="sm" 
                         onClick={() => handleFollow(user.uid)}
                         className={cn(
-                          "rounded-full font-bold px-4 h-8 text-xs transition-all",
+                          "rounded-full font-bold px-5 h-8 text-[11px] transition-all",
                           isFollowing(user.uid) ? "bg-zinc-800 text-white" : "bg-white text-black"
                         )}
                       >
@@ -160,7 +155,10 @@ export default function ExplorePage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-center text-zinc-600 text-sm mt-10">{isRtl ? "لم نجد مستخدمين" : "No users found"}</p>
+                <div className="text-center py-20 opacity-30 flex flex-col items-center">
+                  <Users className="h-12 w-12 mb-2" />
+                  <p className="text-sm font-bold">{isRtl ? "لا يوجد نتائج" : "No results found"}</p>
+                </div>
               )}
             </TabsContent>
 
@@ -181,6 +179,7 @@ export default function ExplorePage() {
                       comments={0}
                       reposts={0}
                       time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
+                      mediaSettings={post.mediaSettings}
                     />
                   ))}
                 </div>
@@ -192,56 +191,42 @@ export default function ExplorePage() {
         ) : (
           <>
             <section className="p-4 border-b border-zinc-900">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Flame className="h-5 w-5 text-orange-500" />
-                {isRtl ? "رائج الآن" : "Trending Now"}
+              <h2 className="text-lg font-black mb-6 flex items-center gap-2">
+                <Flame className="h-6 w-6 text-orange-500 fill-orange-500" />
+                {isRtl ? "رائج في بلا قيود" : "Trending on Unbound"}
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {TRENDING_TOPICS.map((topic, i) => (
-                  <div key={i} className="flex justify-between items-start cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors">
-                    <div>
-                      <p className="text-[10px] text-zinc-500 uppercase font-bold">{topic.category}</p>
-                      <p className="font-bold text-sm">#{topic.tag}</p>
-                      <p className="text-xs text-zinc-500">{topic.posts} {isRtl ? "منشور" : "posts"}</p>
+                  <div key={i} className="flex justify-between items-start cursor-pointer group" onClick={() => setSearchQuery(topic.tag)}>
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">{topic.category}</p>
+                      <p className="font-black text-[15px] group-hover:text-primary transition-colors">#{topic.tag}</p>
+                      <p className="text-[11px] text-zinc-500">{topic.posts} {isRtl ? "منشور" : "posts"}</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-600">
-                       <Hash className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-800">
+                       <ChevronRight className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} />
                     </Button>
                   </div>
                 ))}
               </div>
             </section>
 
-            <section className="p-4">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                {isRtl ? "قد ترغب في متابعتهم" : "Who to follow"}
-              </h2>
-              <div className="space-y-4">
-                {suggestedLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 
-                  suggestedUsers.filter(u => u.uid !== currentUser?.uid && !isFollowing(u.uid)).map((user: any) => (
-                    <div key={user.uid} className="flex items-center justify-between">
-                      <Link href={`/profile/${user.uid}`} className="flex gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.photoURL} />
-                          <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-bold">{user.displayName}</p>
-                          <p className="text-[10px] text-zinc-500">@{user.email?.split('@')[0]}</p>
-                        </div>
-                      </Link>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleFollow(user.uid)}
-                        className="rounded-full h-8 text-xs border-zinc-800 hover:bg-white hover:text-black font-bold"
-                      >
-                        {isRtl ? "متابعة" : "Follow"}
-                      </Button>
-                    </div>
-                  ))
-                }
+            <section className="p-4 py-8">
+              <div className="bg-zinc-950 border border-zinc-900 rounded-[2rem] p-6 text-center space-y-4">
+                <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <TrendingUp className="h-8 w-8 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-black text-lg">{isRtl ? "شارك في اللمة" : "Join the Lamma"}</h3>
+                  <p className="text-xs text-zinc-500 leading-relaxed px-4">
+                    {isRtl ? "اكتشف المجموعات التي تناسب اهتماماتك وشارك برأيك بحرية." : "Discover groups that fit your interests and share your opinion freely."}
+                  </p>
+                </div>
+                <Link href="/lamma">
+                  <Button className="rounded-full bg-white text-black hover:bg-zinc-200 font-black px-8 mt-2 shadow-xl">
+                    {isRtl ? "استكشف المجموعات" : "Explore Groups"}
+                  </Button>
+                </Link>
               </div>
             </section>
           </>
