@@ -2,52 +2,10 @@
 {
   "placeholderImages": [
     {
-      "id": "sticker-unbound-seal",
-      "description": "خاتم السيادة - Unbound Sovereign Seal (PNG)",
-      "imageUrl": "https://images.unsplash.com/photo-1447675702052-663a7ef9eaa6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzb3ZlcmVpZ24lMjBzZWFsfGVufDB8fHx8MTc3MTE1MTYyNXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "sovereign seal"
-    },
-    {
-      "id": "sticker-unbound-freedom",
-      "description": "رمز الحرية - Freedom Icon (PNG)",
-      "imageUrl": "https://images.unsplash.com/photo-1761301643563-b75f2e291b9f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmcmVlZG9tJTIwaWNvbnxlbnwwfHx8fDE3NzExNTE2MjV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "freedom icon"
-    },
-    {
-      "id": "sticker-unbound-privacy",
-      "description": "درع الخصوصية - Privacy Guard (PNG)",
-      "imageUrl": "https://images.unsplash.com/photo-1764158157300-2e6a4df03e9e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwcml2YWN5JTIwc2hpZWxkfGVufDB8fHx8MTc3MTE1MTYyNXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "privacy shield"
-    },
-    {
-      "id": "sticker-unbound-unity",
-      "description": "رابطة الوحدة - Unity Bond (PNG)",
-      "imageUrl": "https://images.unsplash.com/photo-1749006813473-e397da7e0a78?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx1bml0eSUyMGJvbmR8ZW58MHx8fHwxNzcxMTUxNjI1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "unity bond"
-    },
-    {
       "id": "sticker-dz-maqam",
-      "description": "مقام الشهيد - Maqam Echahid Algeria (PNG)",
-      "imageUrl": "https://images.unsplash.com/photo-1664961789870-3c97b6ee8350?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YWxnZXJpYSUyMG1vbnVtZW50fGVufDB8fHx8MTc3MTE1MTYyNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "description": "مقام الشهيد - الرمز السيادي الجزائري (PNG الشفاف)",
+      "imageUrl": "https://share.google/EAFXPJ3bAsoV7wjir",
       "imageHint": "algeria monument"
-    },
-    {
-      "id": "sticker-ps-quds",
-      "description": "قبة الصخرة - Dome of the Rock Palestine (PNG)",
-      "imageUrl": "https://images.unsplash.com/photo-1565343486806-9d939d24a993?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwYWxlc3RpbmUlMjBsYW5kbWFya3xlbnwwfHx8fDE3NzExNTE2MjV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "palestine landmark"
-    },
-    {
-      "id": "sticker-eg-pyramids",
-      "description": "أهرامات الجيزة - Pyramids of Giza Egypt (PNG)",
-      "imageUrl": "https://images.unsplash.com/photo-1600520611035-84157ad4084d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxlZ3lwdCUyMHB5cmFtaWRzfGVufDB8fHx8MTc3MTE1MTYyNXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "egypt pyramids"
-    },
-    {
-      "id": "sticker-tn-kairouan",
-      "description": "جامع القيروان - Kairouan Tunisia (PNG)",
-      "imageUrl": "https://images.unsplash.com/photo-1682862841871-553ceb226b2e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx0dW5pc2lhJTIwbGFuZG1hcmt8ZW58MHx8fHwxNzcxMTUxNjI1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "tunisia landmark"
     }
   ]
 }

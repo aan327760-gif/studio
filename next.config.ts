@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   serverActions: {
-    // رفع الحد الأقصى لدعم الفيديوهات حتى 5 دقائق (حوالي 500 ميجابايت)
     bodySizeLimit: '500mb',
   },
   images: {
@@ -35,6 +34,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'share.google',
         port: '',
         pathname: '/**',
       },

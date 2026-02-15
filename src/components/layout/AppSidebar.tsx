@@ -74,13 +74,13 @@ export function AppSidebar() {
   };
 
   const handleStartRecording = async () => {
-    // تم استبدال التسجيل الفوري ببيان أكاديمي بناءً على طلب المدير العام
+    // بيان أكاديمي لميزة الصوت بناءً على طلب المدير العام
     toast({
-      duration: 8000,
+      duration: 10000,
       title: isRtl ? "بيان تقني: الساحة الصوتية السيادية" : "Technical Proclamation: Sovereign Acoustic Arena",
       description: isRtl 
-        ? "قريباً: يهدف هذا الحيز المعرفي لتوفير بيئة رصينة لأصحاب الفكر والأكاديميين والفنانين. سيكون منبراً عاماً للمحاضرات التخصصية، السجالات السياسية المعمقة، والإبداع الموسيقي الهادف، حيث تتحول الكلمة المنطوقة إلى وثيقة سيادية."
-        : "Coming Soon: This epistemic space is engineered for thinkers, academics, and artists. It will serve as a public forum for specialized lectures, in-depth political discourse, and purposeful musical creation, where the spoken word becomes a sovereign record.",
+        ? "قريباً: يهدف هذا الحيز المعرفي لتوفير بيئة رصينة لأصحاب الفكر والأكاديميين والفنانين. سيكون منبراً عاماً للمحاضرات التخصصية، السجالات السياسية المعمقة، والإبداع الموسيقي الهادف، حيث تتحول الكلمة المنطوقة إلى وثيقة سيادية رصينة تعبر عن عمق المجتمع."
+        : "Coming Soon: This epistemic space is engineered for thinkers, academics, and artists. It will serve as a public forum for specialized lectures, in-depth political discourse, and purposeful musical creation, where the spoken word becomes a sovereign and formal record of societal depth.",
     });
     setIsSheetOpen(false);
   };
