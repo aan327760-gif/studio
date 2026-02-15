@@ -182,7 +182,7 @@ function FinalizeMediaContent() {
           <img 
             src={imageUrl} 
             alt="Finalize" 
-            className={cn("w-full h-full object-contain", filterClass)} 
+            className={cn("w-full h-auto max-h-full object-contain", filterClass)} 
             style={{ 
               transform: `rotate(${rotation}deg)`,
               filter: `brightness(${brightness}%) contrast(${contrast}%) ${filterClass === 'filter-none' ? '' : filterClass === 'grayscale' ? 'grayscale(1)' : filterClass === 'sepia' ? 'sepia(1)' : ''}`
@@ -192,7 +192,7 @@ function FinalizeMediaContent() {
         {videoUrl && (
           <video 
             src={videoUrl} 
-            className="w-full h-full object-contain" 
+            className="w-full h-auto max-h-full object-contain" 
             style={{ transform: `rotate(${rotation}deg)` }}
             autoPlay 
             muted={isMuted} 
