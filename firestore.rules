@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -26,7 +27,7 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (resource.data.followerId == request.auth.uid);
     }
     
-    // قواعد المنشورات - السماح بالوصول العام للقراءة
+    // قواعد المنشورات
     match /posts/{postId} {
       allow read: if true;
       allow list: if true;
@@ -34,7 +35,6 @@ service cloud.firestore {
       allow update: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likesCount']));
       allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
       
-      // التعليقات داخل المنشورات
       match /comments/{commentId} {
         allow read: if true;
         allow write: if isSignedIn();
@@ -49,14 +49,19 @@ service cloud.firestore {
     
     // قواعد المجموعات (اللمة)
     match /groups/{groupId} {
-      allow read: if isSignedIn() && (request.auth.uid in resource.data.members || !resource.data.isPrivate);
+      // السماح بالقراءة إذا كان المستخدم عضواً أو المجموعة ليست خاصة
+      // للسماح بالـ list (البحث)، يجب أن تتطابق شروط الاستعلام مع القواعد
+      allow read: if isSignedIn() && (
+        (request.auth.uid in resource.data.members) || 
+        (resource.data.isPrivate == false)
+      );
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && request.auth.uid in resource.data.members;
+      allow update: if isSignedIn() && (request.auth.uid in resource.data.members);
       
       // الرسائل داخل المجموعات
       match /messages/{messageId} {
-        allow read: if isSignedIn();
-        allow write: if isSignedIn();
+        allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members);
+        allow write: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members);
       }
     }
   }
