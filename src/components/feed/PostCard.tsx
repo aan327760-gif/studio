@@ -1,12 +1,12 @@
 
 "use client";
 
-import { Heart, MessageCircle, MoreHorizontal, Send, Trash2, Flag, Languages, Loader2, Star, Radio, Sparkles, Globe, Lock, ShieldAlert } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Send, Trash2, Flag, Languages, Loader2, Star, Radio, Sparkles, Globe, Lock, ShieldAlert, Play, Pause, Volume2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { 
   doc, 
@@ -55,6 +55,8 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: currentUserProfile } = useDoc<any>(userProfileRef);
@@ -64,6 +66,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [likesCount, setLikesCount] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
@@ -144,6 +147,19 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     }
   };
 
+  const toggleMedia = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (mediaType === 'video' && videoRef.current) {
+      if (isPlaying) videoRef.current.pause();
+      else videoRef.current.play();
+      setIsPlaying(!isPlaying);
+    } else if (mediaType === 'audio' && audioRef.current) {
+      if (isPlaying) audioRef.current.pause();
+      else audioRef.current.play();
+      setIsPlaying(!isPlaying);
+    }
+  };
+
   const isAuthorVerified = author?.isVerified || author?.email === "adelbenmaza3@gmail.com";
   const isMediaChannel = author?.isPro;
 
@@ -197,9 +213,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
       <CardContent className="p-0">
         <div className="px-5 pb-3">
-          <p className="text-[15px] leading-relaxed mb-3">
-            {content}
-          </p>
+          {content && <p className="text-[15px] leading-relaxed mb-3">{content}</p>}
           
           <Button 
             variant="ghost" 
@@ -214,54 +228,75 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
         {image && (
           <div className="px-5 mb-4">
-            <div className="relative rounded-[2.5rem] overflow-hidden border border-zinc-900 bg-zinc-950 shadow-2xl group">
-              <img src={image} alt="Media" className={cn("w-full h-auto max-h-[600px] object-cover transition-transform duration-700 group-hover:scale-105", mediaSettings?.filter || "filter-none")} />
-              
-              {/* Render Stickers and Text Overlay from MediaSettings */}
-              {mediaSettings && (
-                <div className="absolute inset-0 pointer-events-none select-none">
-                  {mediaSettings.textOverlay && (
-                    <div 
-                      className={cn(
-                        "absolute z-10 transition-transform", 
-                        mediaSettings.textEffect
-                      )}
-                      style={{ 
-                        left: `${mediaSettings.textX}%`, 
-                        top: `${mediaSettings.textY}%`, 
-                        transform: 'translate(-50%, -50%)' 
-                      }}
-                    >
-                      <span className={cn(
-                        "text-xl md:text-2xl font-black px-4 py-2 rounded-xl text-center block drop-shadow-2xl",
-                        mediaSettings.textColor || "text-white",
-                        mediaSettings.textBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
-                      )}>
-                        {mediaSettings.textOverlay}
-                      </span>
+            <div className="relative rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-950 shadow-2xl group">
+              {mediaType === 'video' ? (
+                <div className="relative aspect-video bg-black flex items-center justify-center">
+                  <video 
+                    ref={videoRef} 
+                    src={image} 
+                    className="w-full h-full object-contain" 
+                    onClick={toggleMedia}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                  />
+                  {!isPlaying && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+                      <div className="h-16 w-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                        <Play className="h-8 w-8 text-white fill-white" />
+                      </div>
                     </div>
                   )}
-
-                  {mediaSettings.stickers?.map((s: any) => (
-                    <div 
-                      key={s.id}
-                      className="absolute z-10"
-                      style={{ 
-                        left: `${s.x}%`, 
-                        top: `${s.y}%`, 
-                        transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` 
-                      }}
-                    >
-                      <img 
-                        src={s.imageUrl} 
-                        alt="Sticker" 
-                        className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-2xl" 
-                      />
+                </div>
+              ) : mediaType === 'audio' ? (
+                <div className="p-6 bg-zinc-900/50 flex flex-col gap-4">
+                  <audio ref={audioRef} src={image} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} className="hidden" />
+                  <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-primary text-white hover:bg-primary/90" onClick={toggleMedia}>
+                      {isPlaying ? <Pause className="h-6 w-6 fill-white" /> : <Play className="h-6 w-6 fill-white" />}
+                    </Button>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary">{isRtl ? "بصمة صوتية" : "Voice Note"}</p>
+                      <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                        <div className={cn("h-full bg-primary transition-all duration-300", isPlaying ? "w-full" : "w-0")} />
+                      </div>
                     </div>
-                  ))}
+                    <Volume2 className="h-5 w-5 text-zinc-600" />
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <img src={image} alt="Media" className={cn("w-full h-auto max-h-[600px] object-cover transition-transform duration-700 group-hover:scale-105", mediaSettings?.filter || "filter-none")} />
+                  
+                  {mediaSettings && (
+                    <div className="absolute inset-0 pointer-events-none select-none">
+                      {mediaSettings.textOverlay && (
+                        <div 
+                          className={cn("absolute z-10 transition-transform", mediaSettings.textEffect)}
+                          style={{ left: `${mediaSettings.textX}%`, top: `${mediaSettings.textY}%`, transform: 'translate(-50%, -50%)' }}
+                        >
+                          <span className={cn(
+                            "text-xl md:text-2xl font-black px-4 py-2 rounded-xl text-center block drop-shadow-2xl",
+                            mediaSettings.textColor || "text-white",
+                            mediaSettings.textBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
+                          )}>
+                            {mediaSettings.textOverlay}
+                          </span>
+                        </div>
+                      )}
+                      {mediaSettings.stickers?.map((s: any) => (
+                        <div 
+                          key={s.id}
+                          className="absolute z-10"
+                          style={{ left: `${s.x}%`, top: `${s.y}%`, transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` }}
+                        >
+                          <img src={s.imageUrl} alt="Sticker" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-2xl" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
             </div>
           </div>
         )}
@@ -283,7 +318,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 <span className="text-xs font-black text-zinc-600">{comments.length}</span>
               </div>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[80vh] bg-zinc-950 border-zinc-900 rounded-t-[3.5rem] p-0 outline-none overflow-hidden flex flex-col shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+            <SheetContent side="bottom" className="h-[80vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 outline-none overflow-hidden flex flex-col shadow-2xl">
               <SheetHeader className="p-8 border-b border-zinc-900 shrink-0">
                 <div className="w-14 h-1.5 bg-zinc-900 rounded-full mx-auto mb-6" />
                 <SheetTitle className="text-white font-black text-xl text-center tracking-tighter uppercase">{isRtl ? "غرفة النقاش" : "Sovereign Discussion"}</SheetTitle>
@@ -293,7 +328,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                   {comments.length > 0 ? comments.map((comment: any) => (
                     <div key={comment.id} className="flex gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       <Avatar className="h-10 w-10 border border-zinc-900"><AvatarImage src={comment.authorAvatar} /></Avatar>
-                      <div className="flex-1 bg-zinc-900/40 p-5 rounded-[1.5rem] border border-white/5 shadow-xl">
+                      <div className="flex-1 bg-zinc-900/40 p-5 rounded-2xl border border-white/5 shadow-xl">
                         <div className="flex justify-between items-center mb-2">
                           <p className="text-[10px] font-black text-primary uppercase tracking-widest">@{comment.authorHandle}</p>
                         </div>
