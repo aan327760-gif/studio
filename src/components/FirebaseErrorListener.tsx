@@ -23,32 +23,32 @@ export function FirebaseErrorListener() {
           duration: 20000,
           title: 'إعداد قاعدة البيانات مطلوب (فهرسين)',
           description: (
-            <div className="space-y-4 mt-2">
+            <div className="space-y-4 mt-2 text-right" dir="rtl">
               <p className="text-xs leading-relaxed text-zinc-300">
-                يا زعيم، لتعمل الصفحة الشخصية بالكامل، نحتاج لإنشاء فهرسين في Firebase Console:
+                يا زعيم، لتعمل الصفحة الشخصية بالكامل، نحتاج لإنشاء فهرسين في Firebase Console كما في الصورة:
               </p>
               
               <div className="space-y-3">
                 <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
-                  <p className="text-[10px] font-black text-primary mb-1 uppercase tracking-widest">الفهرس 1 (للمنشورات):</p>
+                  <p className="text-[10px] font-black text-primary mb-1 uppercase tracking-widest">الفهرس 1 (Posts):</p>
                   <ul className="text-[9px] text-zinc-400 space-y-1">
-                    <li>• المجموعة: <span className="text-white">posts</span></li>
-                    <li>• الحقول: <span className="text-white">authorId</span> (Asc) ثم <span className="text-white">createdAt</span> (Desc)</li>
+                    <li>• الحقل 1: <span className="text-white">authorId</span> (Croissant)</li>
+                    <li>• الحقل 2: <span className="text-white">createdAt</span> (Décroissant)</li>
                   </ul>
                 </div>
 
                 <div className="bg-zinc-900 p-3 rounded-xl border border-zinc-800">
-                  <p className="text-[10px] font-black text-orange-500 mb-1 uppercase tracking-widest">الفهرس 2 (للإعجابات):</p>
+                  <p className="text-[10px] font-black text-orange-500 mb-1 uppercase tracking-widest">الفهرس 2 (Likes):</p>
                   <ul className="text-[9px] text-zinc-400 space-y-1">
-                    <li>• المجموعة: <span className="text-white">posts</span></li>
-                    <li>• الحقول: <span className="text-white">likedBy</span> (Arrays) ثم <span className="text-white">createdAt</span> (Desc)</li>
+                    <li>• الحقل 1: <span className="text-white">likedBy</span> (Tableaux / Arrays)</li>
+                    <li>• الحقل 2: <span className="text-white">createdAt</span> (Décroissant)</li>
                   </ul>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
                 <Info className="h-3 w-3 text-primary" />
-                <p className="text-[9px] text-primary-foreground font-medium">الرابط المباشر لكل فهرس موجود الآن في الـ Console (اضغط F12).</p>
+                <p className="text-[9px] text-primary-foreground font-medium">بمجرد الضغط على Créer سيبدأ البناء وسيستغرق دقائق قليلة.</p>
               </div>
             </div>
           ),
