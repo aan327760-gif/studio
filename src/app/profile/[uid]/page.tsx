@@ -25,7 +25,7 @@ import Link from "next/link";
 import { PostCard } from "@/components/feed/PostCard";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { toast } from "@/hooks/use-toast";
-import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
+import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
@@ -51,15 +51,17 @@ export default function UserProfilePage() {
   const { data: followDoc } = useDoc<any>(followRef);
   const isFollowing = !!followDoc;
 
+  // إزالة orderBy لتجنب طلب الفهارس المركبة (Composite Indexes)
   const userPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
-    return query(collection(db, "posts"), where("authorId", "==", uid), orderBy("createdAt", "desc"), limit(30));
+    return query(collection(db, "posts"), where("authorId", "==", uid), limit(30));
   }, [db, uid]);
   const { data: userPosts = [], loading: postsLoading } = useCollection<any>(userPostsQuery);
 
+  // إزالة orderBy لتجنب طلب الفهارس المركبة
   const likedPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
-    return query(collection(db, "posts"), where("likedBy", "array-contains", uid), orderBy("createdAt", "desc"), limit(20));
+    return query(collection(db, "posts"), where("likedBy", "array-contains", uid), limit(20));
   }, [db, uid]);
   const { data: likedPosts = [], loading: likedLoading } = useCollection<any>(likedPostsQuery);
 

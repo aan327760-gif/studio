@@ -7,7 +7,6 @@ import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from "@
 import { 
   collection, 
   query, 
-  orderBy, 
   limit, 
   deleteDoc, 
   doc, 
@@ -52,17 +51,16 @@ export default function AdminDashboard() {
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
   const isAdmin = isSuperAdmin || currentUserProfile?.role === "admin";
 
-  // جلب المستخدمين - مثبت
+  // جلب المستخدمين - بدون ترتيب معقد لتجنب طلب الفهارس
   const usersQuery = useMemoFirebase(() => query(collection(db, "users"), limit(50)), [db]);
   const { data: allUsers, loading: usersLoading } = useCollection<any>(usersQuery);
   
-  // جلب البلاغات - مثبت
+  // جلب البلاغات - تمت إزالة orderBy لتجنب طلب الفهارس (Index Error)
   const reportsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(
       collection(db, "reports"), 
       where("status", "==", "pending"),
-      orderBy("createdAt", "desc"),
       limit(50)
     );
   }, [db, user]);
