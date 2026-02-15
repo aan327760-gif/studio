@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, Search, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, StopCircle, Info } from "lucide-react";
+import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, StopCircle, Info } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -53,7 +53,7 @@ export function AppSidebar() {
 
   const navItems = [
     { icon: Home, href: "/", label: "Home" },
-    { icon: Search, href: "/explore", label: "Search" },
+    { icon: MessageSquare, href: "/messages", label: "Messages" },
     { icon: Plus, href: "#", label: "Add", special: true },
     { icon: Bell, href: "/notifications", label: "Notifications", hasBadge: unreadNotifs.length > 0 },
     { 

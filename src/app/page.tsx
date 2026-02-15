@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { PostCard } from "@/components/feed/PostCard";
 import { useLanguage } from "@/context/LanguageContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { MessageSquare, Loader2, Sparkles, UserPlus, Megaphone, Zap } from "lucide-react";
+import { Search, Loader2, Sparkles, UserPlus, Megaphone, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
@@ -102,9 +102,9 @@ export default function Home() {
           </div>
         </div>
 
-        <Link href="/messages">
+        <Link href="/explore">
           <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full h-10 w-10">
-            <MessageSquare className="h-6 w-6" />
+            <Search className="h-6 w-6" />
           </Button>
         </Link>
       </header>
