@@ -5,11 +5,11 @@ import { useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Input } from "@/components/ui/input";
-import { Search, TrendingUp, Users, Hash, Loader2, UserPlus, UserCheck, Flame, MessageSquare, ChevronRight } from "lucide-react";
+import { Search, Users, Loader2, Flame, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc, orderBy } from "firebase/firestore";
+import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { PostCard } from "@/components/feed/PostCard";
@@ -41,7 +41,7 @@ export default function ExplorePage() {
     );
   }, [db, searchQuery]);
 
-  const { data: userResults, loading: userLoading } = useCollection<any>(userResultsQuery);
+  const { data: userResults = [], loading: userLoading } = useCollection<any>(userResultsQuery);
 
   // البحث عن المنشورات
   const postResultsQuery = useMemoFirebase(() => {
@@ -54,7 +54,7 @@ export default function ExplorePage() {
     );
   }, [db, searchQuery]);
 
-  const { data: postResults, loading: postLoading } = useCollection<any>(postResultsQuery);
+  const { data: postResults = [], loading: postLoading } = useCollection<any>(postResultsQuery);
 
   // جلب المتابعات الحالية للمستخدم
   const followsQuery = useMemoFirebase(() => {
@@ -137,7 +137,10 @@ export default function ExplorePage() {
                           <AvatarFallback>{user.displayName?.[0]}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-bold group-hover:text-primary transition-colors">{user.displayName}</p>
+                          <div className="flex items-center gap-1">
+                            <p className="text-sm font-bold group-hover:text-primary transition-colors">{user.displayName}</p>
+                            {user.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-[#1DA1F2] fill-[#1DA1F2]" />}
+                          </div>
                           <p className="text-[10px] text-zinc-500">@{user.email?.split('@')[0]}</p>
                         </div>
                       </Link>
@@ -208,25 +211,6 @@ export default function ExplorePage() {
                     </Button>
                   </div>
                 ))}
-              </div>
-            </section>
-
-            <section className="p-4 py-8">
-              <div className="bg-zinc-950 border border-zinc-900 rounded-[2rem] p-6 text-center space-y-4">
-                <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <TrendingUp className="h-8 w-8 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-black text-lg">{isRtl ? "شارك في اللمة" : "Join the Lamma"}</h3>
-                  <p className="text-xs text-zinc-500 leading-relaxed px-4">
-                    {isRtl ? "اكتشف المجموعات التي تناسب اهتماماتك وشارك برأيك بحرية." : "Discover groups that fit your interests and share your opinion freely."}
-                  </p>
-                </div>
-                <Link href="/lamma">
-                  <Button className="rounded-full bg-white text-black hover:bg-zinc-200 font-black px-8 mt-2 shadow-xl">
-                    {isRtl ? "استكشف المجموعات" : "Explore Groups"}
-                  </Button>
-                </Link>
               </div>
             </section>
           </>

@@ -13,6 +13,7 @@
         "bio": { "type": "string" },
         "phoneNumber": { "type": "string", "description": "Optional phone number" },
         "isPro": { "type": "boolean", "description": "Subscription status" },
+        "isVerified": { "type": "boolean", "description": "Verification status (Blue Checkmark)" },
         "language": { "type": "string", "enum": ["en", "ar"] },
         "followersCount": { "type": "number" },
         "followingCount": { "type": "number" },
@@ -65,13 +66,14 @@
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "type": { "type": "string", "enum": ["like", "comment", "follow", "message"] },
+        "type": { "type": "string", "enum": ["like", "comment", "follow", "message", "system"] },
         "fromUserId": { "type": "string" },
         "fromUserName": { "type": "string" },
         "fromUserAvatar": { "type": "string" },
         "postId": { "type": "string" },
         "read": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "message": { "type": "string" }
       }
     },
     "LammaGroup": {

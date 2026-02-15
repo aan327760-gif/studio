@@ -14,7 +14,6 @@ import {
   Timestamp,
   where,
   serverTimestamp,
-  getDocs,
   getCountFromServer,
   writeBatch
 } from "firebase/firestore";
@@ -27,15 +26,13 @@ import {
   ShieldCheck,
   Flag,
   CheckCircle,
-  UserPlus,
+  CheckCircle2,
   Trash2,
   Users,
   MessageSquare,
-  BarChart3,
   AlertTriangle,
   Settings2,
   Megaphone,
-  LayoutDashboard,
   TrendingUp,
   Activity
 } from "lucide-react";
@@ -52,15 +49,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { 
-  LineChart, 
-  Line, 
+  AreaChart,
+  Area,
   XAxis, 
-  YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  AreaChart,
-  Area 
+  ResponsiveContainer
 } from 'recharts';
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
@@ -85,23 +79,20 @@ export default function AdminDashboard() {
 
   // استعلامات البيانات
   const usersQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "users"), limit(100)) : null, [db, isAdmin]);
-  const { data: allUsers, loading: usersLoading } = useCollection<any>(usersQuery);
+  const { data: allUsers = [], loading: usersLoading } = useCollection<any>(usersQuery);
   
   const reportsQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isAdmin]);
   const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
 
-  const groupsQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "groups"), limit(50)) : null, [db, isAdmin]);
-  const { data: allGroups, loading: groupsLoading } = useCollection<any>(groupsQuery);
-
-  // إحصائيات بيانية تجريبية (تعتمد على الواقع مستقبلاً)
+  // إحصائيات بيانية تجريبية
   const chartData = [
-    { name: 'Sat', users: 400, activity: 240 },
-    { name: 'Sun', users: 300, activity: 139 },
-    { name: 'Mon', users: 200, activity: 980 },
-    { name: 'Tue', users: 278, activity: 390 },
-    { name: 'Wed', users: 189, activity: 480 },
-    { name: 'Thu', users: 239, activity: 380 },
-    { name: 'Fri', users: 349, activity: 430 },
+    { name: 'Sat', activity: 240 },
+    { name: 'Sun', activity: 139 },
+    { name: 'Mon', activity: 980 },
+    { name: 'Tue', activity: 390 },
+    { name: 'Wed', activity: 480 },
+    { name: 'Thu', activity: 380 },
+    { name: 'Fri', activity: 430 },
   ];
 
   useEffect(() => {
@@ -144,7 +135,6 @@ export default function AdminDashboard() {
     if (!broadcastMessage.trim() || !isSuperAdmin) return;
     setIsBroadcasting(true);
     try {
-      // إرسال تنبيه لكل المستخدمين المسجلين حالياً في العينة (في التطبيقات الكبيرة يستخدم Cloud Functions)
       const batch = writeBatch(db);
       allUsers.slice(0, 20).forEach((member: any) => {
         const notifRef = doc(collection(db, "notifications"));
@@ -185,6 +175,22 @@ export default function AdminDashboard() {
       isBannedUntil: null
     });
     toast({ title: isRtl ? "تم إلغاء الإيقاف" : "Restriction lifted" });
+  };
+
+  const handleToggleVerification = async (userId: string, currentStatus: boolean) => {
+    if (!isSuperAdmin) return;
+    try {
+      updateDoc(doc(db, "users", userId), {
+        isVerified: !currentStatus
+      });
+      toast({ 
+        title: !currentStatus 
+          ? (isRtl ? "تم توثيق الحساب" : "Account Verified") 
+          : (isRtl ? "تم سحب التوثيق" : "Verification Revoked") 
+      });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error" });
+    }
   };
 
   const handleResolveReport = async (reportId: string, action: 'delete' | 'ignore') => {
@@ -233,7 +239,7 @@ export default function AdminDashboard() {
            <div className="hidden md:flex flex-col items-end mr-2">
               <p className="text-[10px] font-black text-zinc-500 uppercase">System Status</p>
               <p className="text-[10px] text-green-500 font-bold uppercase flex items-center gap-1">
-                 <div className="h-1 w-1 bg-green-500 rounded-full animate-pulse" />
+                 <span className="h-1 w-1 bg-green-500 rounded-full animate-pulse" />
                  Operational
               </p>
            </div>
@@ -242,7 +248,6 @@ export default function AdminDashboard() {
       </header>
 
       <main className="p-6 space-y-8">
-        {/* ملخص الإحصائيات */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: isRtl ? "المواطنين" : "Citizens", value: stats.users, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
@@ -264,7 +269,6 @@ export default function AdminDashboard() {
           ))}
         </section>
 
-        {/* الرسوم البيانية */}
         <section className="grid md:grid-cols-3 gap-6">
           <Card className="md:col-span-2 bg-zinc-950 border-zinc-900 overflow-hidden">
             <CardHeader>
@@ -398,7 +402,8 @@ export default function AdminDashboard() {
                       <div>
                          <div className="flex items-center gap-1.5">
                             <p className="text-sm font-black">{member.displayName}</p>
-                            {member.role === "admin" && <ShieldCheck className="h-3.5 w-3.5 text-primary fill-primary" />}
+                            {member.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-[#1DA1F2] fill-[#1DA1F2]" />}
+                            {member.role === "admin" && member.email !== SUPER_ADMIN_EMAIL && <ShieldCheck className="h-3.5 w-3.5 text-primary fill-primary" />}
                             {isBanned && <Clock className="h-3.5 w-3.5 text-orange-500 animate-pulse" />}
                          </div>
                          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{member.email?.split('@')[0]}</p>
@@ -407,6 +412,16 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-2">
                        {member.email !== SUPER_ADMIN_EMAIL && (
                          <>
+                           {isSuperAdmin && (
+                             <Button 
+                               variant="ghost" 
+                               size="icon" 
+                               className={cn("h-10 w-10 transition-colors", member.isVerified ? "text-[#1DA1F2]" : "text-zinc-800 hover:text-[#1DA1F2]")}
+                               onClick={() => handleToggleVerification(member.id, !!member.isVerified)}
+                             >
+                               <CheckCircle2 className="h-5 w-5" />
+                             </Button>
+                           )}
                            {isBanned ? (
                              <Button variant="ghost" size="sm" className="rounded-xl text-orange-500 font-black text-[10px] uppercase" onClick={() => handleUnbanUser(member.id)}>
                                {isRtl ? "إلغاء الحظر" : "Unban"}

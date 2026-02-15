@@ -11,9 +11,6 @@ import {
   CheckCircle2, 
   Loader2,
   Settings,
-  Grid3X3,
-  Heart,
-  FileText,
   ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +21,6 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import Link from "next/link";
 import { PostCard } from "@/components/feed/PostCard";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { toast } from "@/hooks/use-toast";
 import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 
@@ -51,21 +47,11 @@ export default function UserProfilePage() {
   const { data: followDoc } = useDoc<any>(followRef);
   const isFollowing = !!followDoc;
 
-  // إزالة orderBy لتجنب طلب الفهارس المركبة (Composite Indexes)
   const userPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
     return query(collection(db, "posts"), where("authorId", "==", uid), limit(30));
   }, [db, uid]);
   const { data: userPosts = [], loading: postsLoading } = useCollection<any>(userPostsQuery);
-
-  // إزالة orderBy لتجنب طلب الفهارس المركبة
-  const likedPostsQuery = useMemoFirebase(() => {
-    if (!uid) return null;
-    return query(collection(db, "posts"), where("likedBy", "array-contains", uid), limit(20));
-  }, [db, uid]);
-  const { data: likedPosts = [], loading: likedLoading } = useCollection<any>(likedPostsQuery);
-
-  const userMedia = userPosts.filter(p => p.mediaUrl);
 
   const handleFollow = async () => {
     if (!currentUser || !uid || isOwnProfile || !followRef) return;
@@ -101,7 +87,7 @@ export default function UserProfilePage() {
   const isProfileAdmin = profile?.role === "admin" || profile?.email === SUPER_ADMIN_EMAIL;
   const isVisitorAdmin = currentUserProfile?.role === "admin" || currentUser?.email === SUPER_ADMIN_EMAIL;
   
-  const showCheckmark = profile?.isVerified && profile?.email !== SUPER_ADMIN_EMAIL;
+  const showCheckmark = profile?.isVerified;
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20 overflow-x-hidden">
@@ -183,7 +169,15 @@ export default function UserProfilePage() {
         </TabsContent>
 
         <TabsContent value="media" className="m-0">
-          <div className="grid grid-cols-3 gap-1 p-1">{userMedia.map((post: any) => <Link key={post.id} href={`/post/${post.id}`}><div className="aspect-square bg-zinc-900 relative overflow-hidden">{post.mediaType === 'video' ? <video src={post.mediaUrl} className="w-full h-full object-cover" /> : <img src={post.mediaUrl} alt="Media" className="w-full h-full object-cover" />}</div></Link>)}</div>
+          <div className="grid grid-cols-3 gap-1 p-1">
+            {userPosts.filter(p => p.mediaUrl).map((post: any) => (
+              <Link key={post.id} href={`/post/${post.id}`}>
+                <div className="aspect-square bg-zinc-900 relative overflow-hidden">
+                  {post.mediaType === 'video' ? <video src={post.mediaUrl} className="w-full h-full object-cover" /> : <img src={post.mediaUrl} alt="Media" className="w-full h-full object-cover" />}
+                </div>
+              </Link>
+            ))}
+          </div>
         </TabsContent>
       </Tabs>
       <AppSidebar />
