@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, Suspense, useEffect, useRef } from "react";
-import { X, Loader2, Globe, Lock, Ban, MessageSquare, ShieldCheck, Users, Mic, Play, Pause, Volume2 } from "lucide-react";
+import { useState, Suspense, useRef } from "react";
+import { X, Loader2, Globe, Plus, Trash2, Volume2, Play, Pause } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,9 +13,7 @@ import { cn } from "@/lib/utils";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, doc } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { 
   Select,
   SelectContent,
@@ -44,6 +42,7 @@ function CreatePostContent() {
   const db = useFirestore();
   const { user } = useUser();
   const audioRef = useRef<HTMLAudioElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userRef);
@@ -55,32 +54,29 @@ function CreatePostContent() {
   const [privacy, setPrivacy] = useState("public");
   const [allowComments, setAllowComments] = useState(true);
 
+  // دعم الصور المتعددة
+  const [localImages, setLocalImages] = useState<string[]>([]);
+  const videoUrlFromParams = searchParams.get("video");
+  const audioUrlFromParams = searchParams.get("audio");
+  const initialImageUrl = searchParams.get("image");
+
+  // إضافة أول صورة إذا جاءت من المحرر
+  useState(() => {
+    if (initialImageUrl) setLocalImages([initialImageUrl]);
+  });
+
   const isBanned = profile?.isBannedUntil && profile.isBannedUntil.toDate() > new Date();
 
-  // Media Data from Search Params
-  const localImageUrl = searchParams.get("image");
-  const videoUrl = searchParams.get("video");
-  const audioUrl = searchParams.get("audio");
-  const filterClass = searchParams.get("filter") || "filter-none";
-  const rotation = searchParams.get("rotation") || "0";
-  const brightness = searchParams.get("brightness") || "100";
-  const contrast = searchParams.get("contrast") || "100";
-  const isMuted = searchParams.get("muted") === "true";
-  const textOverlay = searchParams.get("textOverlay");
-  const textColor = searchParams.get("textColor");
-  const textBg = searchParams.get("textBg") === "true";
-  const textEffect = searchParams.get("textEffect");
-  const textX = searchParams.get("textX");
-  const textY = searchParams.get("textY");
-  const stickersRaw = searchParams.get("stickers");
-  const stickers = stickersRaw ? JSON.parse(stickersRaw) : [];
-
-  const toggleAudio = () => {
-    if (audioRef.current) {
-      if (isPlayingAudio) audioRef.current.pause();
-      else audioRef.current.play();
-      setIsPlayingAudio(!isPlayingAudio);
+  const handleAddImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
+      setLocalImages(prev => [...prev, ...newImages].slice(0, 4)); // حد أقصى 4 صور
     }
+  };
+
+  const removeImage = (index: number) => {
+    setLocalImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -89,46 +85,38 @@ function CreatePostContent() {
       return;
     }
 
-    if (!content.trim() && !localImageUrl && !videoUrl && !audioUrl) return;
+    if (!content.trim() && localImages.length === 0 && !videoUrlFromParams && !audioUrlFromParams) return;
 
     setIsSubmitting(true);
     try {
-      let finalMediaUrl = null;
-      let mediaType: "image" | "video" | "audio" | null = null;
+      let finalMediaUrls: string[] = [];
+      let mediaType: "image" | "video" | "audio" | "album" | null = null;
 
-      if (localImageUrl) {
-        const base64 = localImageUrl.startsWith('data:') ? localImageUrl : await urlToBlob(localImageUrl);
-        finalMediaUrl = await uploadToCloudinary(base64, 'image');
-        mediaType = 'image';
-      } else if (videoUrl) {
-        const base64 = await urlToBlob(videoUrl);
-        finalMediaUrl = await uploadToCloudinary(base64, 'video');
+      // رفع الصور المتعددة
+      if (localImages.length > 0) {
+        toast({ title: isRtl ? "جاري رفع الوسائط..." : "Uploading media..." });
+        const uploadPromises = localImages.map(async (url) => {
+          const base64 = url.startsWith('data:') ? url : await urlToBlob(url);
+          return uploadToCloudinary(base64, 'image');
+        });
+        finalMediaUrls = await Promise.all(uploadPromises);
+        mediaType = localImages.length > 1 ? 'album' : 'image';
+      } else if (videoUrlFromParams) {
+        const base64 = await urlToBlob(videoUrlFromParams);
+        const url = await uploadToCloudinary(base64, 'video');
+        finalMediaUrls = [url];
         mediaType = 'video';
-      } else if (audioUrl) {
-        const base64 = await urlToBlob(audioUrl);
-        // نستخدم 'video' للرفع لأنها النوع الأنسب في Cloudinary لدعم تشغيل الصوت بفعالية
-        finalMediaUrl = await uploadToCloudinary(base64, 'video');
+      } else if (audioUrlFromParams) {
+        const base64 = await urlToBlob(audioUrlFromParams);
+        const url = await uploadToCloudinary(base64, 'video');
+        finalMediaUrls = [url];
         mediaType = 'audio';
       }
 
-      const mediaSettings = {
-        filter: filterClass,
-        rotation,
-        brightness,
-        contrast,
-        muted: isMuted,
-        textOverlay,
-        textColor,
-        textBg,
-        textEffect,
-        textX,
-        textY,
-        stickers
-      };
-
       await addDoc(collection(db, "posts"), {
         content,
-        mediaUrl: finalMediaUrl,
+        mediaUrl: finalMediaUrls[0] || null,
+        mediaUrls: finalMediaUrls,
         mediaType: mediaType,
         authorId: user?.uid || "anonymous",
         author: {
@@ -142,7 +130,6 @@ function CreatePostContent() {
         likesCount: 0,
         likedBy: [],
         createdAt: serverTimestamp(),
-        mediaSettings,
         privacy,
         allowComments
       });
@@ -162,7 +149,7 @@ function CreatePostContent() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900"><X className="h-6 w-6" /></Button>
         <Button 
           onClick={handleSubmit} 
-          disabled={isSubmitting || isBanned || (!content.trim() && !localImageUrl && !videoUrl && !audioUrl)} 
+          disabled={isSubmitting || isBanned || (!content.trim() && localImages.length === 0 && !videoUrlFromParams && !audioUrlFromParams)} 
           className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200"
         >
           {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Post")}
@@ -177,45 +164,45 @@ function CreatePostContent() {
           </Avatar>
           <div className="flex-1 space-y-6">
             <Textarea 
-              placeholder={isRtl ? "أضف تعليقاً على هذا العمل..." : "Add a caption..."} 
+              placeholder={isRtl ? "شارك فكرة حرة أو ألبوماً..." : "Share a thought or an album..."} 
               className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[80px]" 
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
             />
 
-            {(localImageUrl || videoUrl) && (
-              <div className="relative group rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-950 shadow-2xl aspect-square flex items-center justify-center">
-                {localImageUrl ? (
-                  <img 
-                    src={localImageUrl} 
-                    alt="Preview" 
-                    className={cn("w-full h-full object-cover transition-all", filterClass)} 
-                    style={{ transform: `rotate(${rotation}deg)`, filter: `brightness(${brightness}%) contrast(${contrast}%) ${filterClass === 'filter-none' ? '' : filterClass === 'grayscale' ? 'grayscale(1)' : ''}` }}
-                  />
-                ) : (
-                  <video src={videoUrl!} className="w-full h-full object-cover" style={{ transform: `rotate(${rotation}deg)` }} muted={isMuted} loop autoPlay playsInline />
+            {/* عرض الصور المتعددة */}
+            {localImages.length > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {localImages.map((img, i) => (
+                  <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-zinc-800 group">
+                    <img src={img} alt="preview" className="w-full h-full object-cover" />
+                    <Button 
+                      variant="destructive" 
+                      size="icon" 
+                      className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeImage(i)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {localImages.length < 4 && (
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-square rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors"
+                  >
+                    <Plus className="h-6 w-6 text-zinc-500" />
+                    <span className="text-[10px] font-black text-zinc-600 uppercase">Add Image</span>
+                  </button>
                 )}
-                <div className="absolute top-3 right-3 bg-primary px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
-                   {isRtl ? "تمت المعالجة" : "Processed"}
-                </div>
               </div>
             )}
 
-            {audioUrl && (
-              <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-[2rem] flex flex-col gap-4 shadow-xl">
-                <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlayingAudio(false)} className="hidden" />
-                <div className="flex items-center gap-4">
-                  <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-primary text-white hover:bg-primary/90 shadow-lg" onClick={toggleAudio}>
-                    {isPlayingAudio ? <Pause className="h-6 w-6 fill-white" /> : <Play className="h-6 w-6 fill-white" />}
-                  </Button>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">{isRtl ? "معاينة البصمة الصوتية" : "Voice Note Preview"}</p>
-                    <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-                      <div className={cn("h-full bg-primary transition-all duration-300", isPlayingAudio ? "w-full" : "w-0")} />
-                    </div>
-                  </div>
-                  <Volume2 className="h-5 w-5 text-zinc-700" />
-                </div>
+            <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleAddImage} />
+
+            {videoUrlFromParams && (
+              <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
+                <video src={videoUrlFromParams} className="w-full h-full object-contain" autoPlay muted loop />
               </div>
             )}
 
