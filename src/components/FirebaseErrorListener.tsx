@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useEffect } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useToast } from '@/hooks/use-toast';
-import { Info, CheckCircle2 } from 'lucide-react';
+import { Info, CheckCircle2, RefreshCw, X } from 'lucide-react';
+import { ToastAction } from '@/components/ui/toast';
 
 export function FirebaseErrorListener() {
   const { toast } = useToast();
@@ -13,15 +15,14 @@ export function FirebaseErrorListener() {
       const context = error.context || {};
       const errorMessage = error.message || context.message || "";
       
-      // التحقق من خطأ الفهرس (Index Error)
       const isIndexError = errorMessage.toLowerCase().includes('index') || 
                           errorMessage.includes('فهرس') ||
                           error.code === 'failed-precondition';
       
       if (isIndexError) {
         toast({
-          duration: 30000,
-          title: 'تفعيل الفهارس (Indexes) مطلوب',
+          duration: 20000,
+          title: 'مطلوب (Indexes) تفعيل الفهارس',
           description: (
             <div className="space-y-4 mt-2 text-right" dir="rtl">
               <p className="text-xs leading-relaxed text-zinc-300">
@@ -47,10 +48,16 @@ export function FirebaseErrorListener() {
               </div>
 
               <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
-                <CheckCircle2 className="h-3 w-3 text-primary" />
-                <p className="text-[9px] text-primary-foreground font-medium">بمجرد تحول الحالة إلى (Actif)، ستعمل صفحتك فوراً.</p>
+                <Info className="h-3 w-3 text-primary" />
+                <p className="text-[9px] text-primary-foreground font-medium">بمجرد تحول الحالة إلى (Actif) في Firebase، اضغط تحديث.</p>
               </div>
             </div>
+          ),
+          action: (
+            <ToastAction altText="تحديث" onClick={() => window.location.reload()} className="bg-white text-black hover:bg-zinc-200">
+              <RefreshCw className="h-3 w-3 ml-1" />
+              تحديث
+            </ToastAction>
           ),
         });
         return;
@@ -59,7 +66,7 @@ export function FirebaseErrorListener() {
       toast({
         variant: 'destructive',
         title: 'خطأ في الصلاحيات',
-        description: "ليس لديك صلاحية للقيام بهذا الإجراء أو أن هناك خطأ في الوصول للبيانات. تأكد من تسجيل الدخول.",
+        description: "ليس لديك صلاحية للقيام بهذا الإجراء أو أن هناك خطأ في الوصول للبيانات.",
       });
     };
 
