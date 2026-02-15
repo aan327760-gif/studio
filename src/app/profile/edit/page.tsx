@@ -15,6 +15,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { cn } from "@/lib/utils";
 
 export default function EditProfilePage() {
   const { user } = useUser();
@@ -88,13 +89,11 @@ export default function EditProfilePage() {
     setLoading(true);
 
     try {
-      // Update Auth Profile (only for avatar and name)
       await updateProfile(user, {
         displayName: formData.displayName,
         photoURL: formData.photoURL
       });
 
-      // Update Firestore Profile (everything)
       await updateDoc(doc(db, "users", user.uid), {
         displayName: formData.displayName,
         bio: formData.bio,
@@ -138,7 +137,6 @@ export default function EditProfilePage() {
       </header>
 
       <main className="space-y-6">
-        {/* Banner Section */}
         <div className="relative h-32 w-full bg-zinc-900 group cursor-pointer overflow-hidden" onClick={() => bannerInputRef.current?.click()}>
           {formData.bannerURL ? (
             <img src={formData.bannerURL} alt="Banner" className="w-full h-full object-cover opacity-60" />
@@ -153,7 +151,6 @@ export default function EditProfilePage() {
           <input type="file" accept="image/*" className="hidden" ref={bannerInputRef} onChange={(e) => handleImageUpload(e, "banner")} />
         </div>
 
-        {/* Avatar Section */}
         <div className="px-6 relative -mt-12 flex items-end justify-between">
           <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
             <Avatar className="h-24 w-24 border-4 border-black shadow-xl">
