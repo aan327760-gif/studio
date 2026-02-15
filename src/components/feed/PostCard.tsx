@@ -281,7 +281,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
             <div className="relative overflow-hidden bg-black group w-full">
               {mediaType === 'video' ? (
                 <div className="relative w-full bg-black flex items-center justify-center">
-                  <video ref={videoRef} src={carouselImages[0]} className="w-full h-auto max-h-[90vh] object-cover" onClick={toggleMedia} />
+                  <video ref={videoRef} src={carouselImages[0]} className="w-full h-auto object-contain" onClick={toggleMedia} playsInline loop />
                   {!isPlaying && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="h-16 w-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center"><Play className="h-8 w-8 text-white fill-white" /></div></div>}
                 </div>
               ) : mediaType === 'audio' ? (
@@ -298,7 +298,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
                   <CarouselContent>
                     {carouselImages.map((url, idx) => (
                       <CarouselItem key={idx} className="flex justify-center items-center bg-black">
-                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto max-h-[90vh] object-cover" />
+                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto object-contain" />
                       </CarouselItem>
                     ))}
                   </CarouselContent>

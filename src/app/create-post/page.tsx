@@ -83,7 +83,64 @@ function CreatePostContent() {
     setLocalImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async () => {
+  /**
+   * دالة النشر في الخلفية لضمان عدم تعطيل تصفح المستخدم
+   */
+  const processPostInBackground = async (
+    postContent: string, 
+    images: string[], 
+    video: string | null, 
+    authorInfo: any
+  ) => {
+    try {
+      let finalMediaUrls: string[] = [];
+      let mediaType: "image" | "video" | "audio" | "album" | null = null;
+
+      if (images.length > 0) {
+        const uploadPromises = images.map(async (url) => {
+          const base64 = url.startsWith('data:') ? url : await urlToBlob(url);
+          return uploadToCloudinary(base64, 'image');
+        });
+        finalMediaUrls = await Promise.all(uploadPromises);
+        mediaType = finalMediaUrls.length > 1 ? 'album' : 'image';
+      } else if (video) {
+        const base64 = await urlToBlob(video);
+        const url = await uploadToCloudinary(base64, 'video');
+        finalMediaUrls = [url];
+        mediaType = 'video';
+      }
+
+      await addDoc(collection(db, "posts"), {
+        content: postContent,
+        mediaUrl: finalMediaUrls[0] || null,
+        mediaUrls: finalMediaUrls,
+        mediaType: mediaType,
+        authorId: user?.uid || "anonymous",
+        author: authorInfo,
+        likesCount: 0,
+        likedBy: [],
+        savesCount: 0,
+        savedBy: [],
+        commentsCount: 0,
+        createdAt: serverTimestamp(),
+        privacy,
+        allowComments
+      });
+
+      toast({ 
+        title: isRtl ? "تم النشر بنجاح" : "Post Published Successfully",
+        description: isRtl ? "فكرتك الآن متاحة للجميع." : "Your thought is now live."
+      });
+    } catch (error: any) {
+      toast({ 
+        variant: "destructive", 
+        title: isRtl ? "فشل النشر" : "Post Failed", 
+        description: error.message 
+      });
+    }
+  };
+
+  const handleSubmit = () => {
     if (isBanned) {
       toast({ variant: "destructive", title: isRtl ? "أنت محظور" : "Account Restricted" });
       return;
@@ -92,53 +149,26 @@ function CreatePostContent() {
     if (!content.trim() && localImages.length === 0 && !videoUrlFromParams) return;
 
     setIsSubmitting(true);
-    try {
-      let finalMediaUrls: string[] = [];
-      let mediaType: "image" | "video" | "audio" | "album" | null = null;
+    
+    // إعداد بيانات المؤلف قبل التوجيه
+    const authorInfo = {
+      name: profile?.displayName || user?.displayName || "User",
+      handle: user?.email?.split('@')[0] || "user",
+      avatar: profile?.photoURL || user?.photoURL || "",
+      isVerified: user?.email === ADMIN_EMAIL || profile?.isVerified || profile?.role === 'admin',
+      isPro: profile?.isPro || false,
+      role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
+    };
 
-      if (localImages.length > 0) {
-        toast({ title: isRtl ? "جاري رفع الوسائط..." : "Uploading media..." });
-        const uploadPromises = localImages.map(async (url) => {
-          const base64 = url.startsWith('data:') ? url : await urlToBlob(url);
-          return uploadToCloudinary(base64, 'image');
-        });
-        finalMediaUrls = await Promise.all(uploadPromises);
-        mediaType = finalMediaUrls.length > 1 ? 'album' : 'image';
-      } else if (videoUrlFromParams) {
-        const base64 = await urlToBlob(videoUrlFromParams);
-        const url = await uploadToCloudinary(base64, 'video');
-        finalMediaUrls = [url];
-        mediaType = 'video';
-      }
+    // بدء المعالجة في الخلفية
+    processPostInBackground(content, [...localImages], videoUrlFromParams, authorInfo);
 
-      await addDoc(collection(db, "posts"), {
-        content,
-        mediaUrl: finalMediaUrls[0] || null,
-        mediaUrls: finalMediaUrls,
-        mediaType: mediaType,
-        authorId: user?.uid || "anonymous",
-        author: {
-          name: profile?.displayName || user?.displayName || "User",
-          handle: user?.email?.split('@')[0] || "user",
-          avatar: profile?.photoURL || user?.photoURL || "",
-          isVerified: user?.email === ADMIN_EMAIL || profile?.isVerified || profile?.role === 'admin',
-          isPro: profile?.isPro || false,
-          role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
-        },
-        likesCount: 0,
-        likedBy: [],
-        createdAt: serverTimestamp(),
-        privacy,
-        allowComments
-      });
-
-      toast({ title: isRtl ? "تم النشر بنجاح" : "Post Live" });
-      router.push("/");
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Error", description: error.message });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // توجيه فوري للمستخدم لإكمال التصفح
+    toast({ 
+      title: isRtl ? "جاري النشر في الخلفية..." : "Posting in background...",
+      description: isRtl ? "يمكنك الاستمرار في التصفح بحرية." : "You can keep browsing freely."
+    });
+    router.push("/");
   };
 
   return (
@@ -171,7 +201,6 @@ function CreatePostContent() {
               onChange={(e) => setContent(e.target.value)} 
             />
 
-            {/* شريط معاينة الصور المحدث لاحتواء الهاتف */}
             {localImages.length > 0 && (
               <div className="w-full overflow-hidden mb-6">
                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x max-w-full">
@@ -181,7 +210,7 @@ function CreatePostContent() {
                       <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-100 transition-opacity bg-black/60 hover:bg-red-600 border-none"
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 hover:bg-red-600 border-none"
                         onClick={() => removeImage(i)}
                       >
                         <X className="h-4 w-4" />
