@@ -137,7 +137,11 @@ export default function AdminDashboard() {
   };
 
   if (userLoading) {
-    return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+    return (
+      <div className="h-screen bg-black flex items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (!isSuper) return null;
