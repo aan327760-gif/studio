@@ -11,28 +11,18 @@
         "photoURL": { "type": "string" },
         "bannerURL": { "type": "string", "description": "Profile cover image URL" },
         "bio": { "type": "string" },
-        "phoneNumber": { "type": "string", "description": "Optional phone number" },
-        "location": { "type": "string", "description": "User's location" },
+        "phoneNumber": { "type": "string" },
+        "location": { "type": "string" },
         "joinedAt": { "type": "string", "format": "date-time" },
-        "isPro": { "type": "boolean", "description": "Media Channel status (Official News/Media)" },
-        "isVerified": { "type": "boolean", "description": "Verification status (Blue Rosette Badge)" },
+        "isPro": { "type": "boolean", "description": "Media Channel status (Gold Star)" },
+        "isVerified": { "type": "boolean", "description": "Verification status (Blue Rosette)" },
         "language": { "type": "string", "enum": ["en", "ar"] },
         "followersCount": { "type": "number" },
         "followingCount": { "type": "number" },
-        "isBannedUntil": { "type": "string", "format": "date-time", "description": "Timestamp until which the user is restricted" },
+        "isBannedUntil": { "type": "string", "format": "date-time" },
         "role": { "type": "string", "enum": ["user", "admin"] }
       },
       "required": ["uid", "displayName"]
-    },
-    "Follow": {
-      "title": "Follow Relationship",
-      "description": "Represents a user following another user",
-      "type": "object",
-      "properties": {
-        "followerId": { "type": "string" },
-        "followingId": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
     },
     "Post": {
       "title": "Feed Post",
@@ -44,11 +34,10 @@
         "mediaUrl": { "type": "string" },
         "mediaType": { "type": "string", "enum": ["image", "video", "audio"] },
         "likesCount": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" },
         "likedBy": { "type": "array", "items": { "type": "string" } },
-        "mediaSettings": { "type": "object", "description": "Includes filters, stickers, and text overlays" },
         "privacy": { "type": "string", "enum": ["public", "followers"] },
-        "allowComments": { "type": "boolean" }
+        "allowComments": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     },
     "Comment": {
@@ -62,9 +51,9 @@
         "authorAvatar": { "type": "string" },
         "authorHandle": { "type": "string" },
         "text": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
         "likesCount": { "type": "number" },
-        "likedBy": { "type": "array", "items": { "type": "string" } }
+        "likedBy": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     },
     "Reply": {
@@ -74,80 +63,20 @@
       "properties": {
         "authorId": { "type": "string" },
         "authorName": { "type": "string" },
-        "authorAvatar": { "type": "string" },
-        "authorHandle": { "type": "string" },
         "text": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
         "likesCount": { "type": "number" },
-        "likedBy": { "type": "array", "items": { "type": "string" } }
-      }
-    },
-    "Notification": {
-      "title": "Notification",
-      "description": "In-app notifications for users",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "type": { "type": "string", "enum": ["like", "comment", "follow", "message", "system"] },
-        "fromUserId": { "type": "string" },
-        "fromUserName": { "type": "string" },
-        "fromUserAvatar": { "type": "string" },
-        "postId": { "type": "string" },
-        "read": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "message": { "type": "string" }
-      }
-    },
-    "LammaGroup": {
-      "title": "Lamma Group",
-      "description": "Chat community group",
-      "type": "object",
-      "properties": {
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "createdBy": { "type": "string" },
-        "isPrivate": { "type": "boolean" },
-        "memberCount": { "type": "number" },
-        "members": { "type": "array", "items": { "type": "string" } },
-        "icon": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "ChatMessage": {
-      "title": "ChatMessage",
-      "description": "Messages within a Lamma Group or Direct Chat",
-      "type": "object",
-      "properties": {
-        "senderId": { "type": "string" },
-        "senderName": { "type": "string" },
-        "senderAvatar": { "type": "string" },
-        "text": { "type": "string" },
+        "likedBy": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     },
     "DirectConversation": {
       "title": "Direct Conversation",
-      "description": "1-on-1 private chat",
+      "description": "Friend-only 1-on-1 private chat",
       "type": "object",
       "properties": {
         "participants": { "type": "array", "items": { "type": "string" } },
         "lastMessage": { "type": "string" },
-        "lastMessageAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Report": {
-      "title": "Content Report",
-      "description": "Reports against posts or users",
-      "type": "object",
-      "properties": {
-        "targetId": { "type": "string", "description": "Post ID or User ID being reported" },
-        "targetType": { "type": "string", "enum": ["post", "user"] },
-        "reason": { "type": "string" },
-        "reportedBy": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "resolved"] },
-        "assignedTo": { "type": "string", "description": "Admin/Moderator ID handling this report" },
-        "createdAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -155,49 +84,10 @@
     "providers": ["google.com", "password"]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": "UserProfile",
-      "description": "User profile data"
-    },
-    "/follows/{followId}": {
-      "schema": "Follow",
-      "description": "Follow relationships"
-    },
-    "/posts/{postId}": {
-      "schema": "Post",
-      "description": "Feed posts"
-    },
-    "/posts/{postId}/comments/{commentId}": {
-      "schema": "Comment",
-      "description": "Comments on a post"
-    },
-    "/posts/{postId}/comments/{commentId}/replies/{replyId}": {
-      "schema": "Reply",
-      "description": "Replies to a comment"
-    },
-    "/notifications/{notificationId}": {
-      "schema": "Notification",
-      "description": "User notifications"
-    },
-    "/groups/{groupId}": {
-      "schema": "LammaGroup",
-      "description": "Lamma communities"
-    },
-    "/groups/{groupId}/messages/{messageId}": {
-      "schema": "ChatMessage",
-      "description": "Messages in a group chat"
-    },
-    "/direct_conversations/{chatId}": {
-      "schema": "DirectConversation",
-      "description": "Direct 1-on-1 conversations"
-    },
-    "/direct_conversations/{chatId}/messages/{messageId}": {
-      "schema": "ChatMessage",
-      "description": "Direct messages"
-    },
-    "/reports/{reportId}": {
-      "schema": "Report",
-      "description": "Content reports for moderation"
-    }
+    "/users/{userId}": { "schema": "UserProfile", "description": "Citizen profiles" },
+    "/posts/{postId}": { "schema": "Post", "description": "Sovereign insights" },
+    "/posts/{postId}/comments/{commentId}": { "schema": "Comment", "description": "Post discussions" },
+    "/posts/{postId}/comments/{commentId}/replies/{replyId}": { "schema": "Reply", "description": "Comment threads" },
+    "/direct_conversations/{chatId}": { "schema": "DirectConversation", "description": "Private encrypted chats" }
   }
 }
