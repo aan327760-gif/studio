@@ -14,7 +14,6 @@ import {
   Timestamp,
   where,
   serverTimestamp,
-  getCountFromServer,
   writeBatch
 } from "firebase/firestore";
 import { 
@@ -28,9 +27,11 @@ import {
   Activity,
   Megaphone,
   Star,
-  Radio,
   CheckCircle,
   ShieldAlert,
+  ShieldCheck,
+  UserCheck,
+  MoreVertical,
   Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VerificationBadge } from "@/components/ui/verification-badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -53,59 +55,30 @@ export default function AdminDashboard() {
   const router = useRouter();
   const db = useFirestore();
 
-  const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
-  const { data: currentUserProfile } = useDoc<any>(userProfileRef);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
-  const [stats, setStats] = useState({ users: 0, posts: 0, groups: 0, reports: 0 });
-  const [statsLoading, setStatsLoading] = useState(true);
 
-  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
-  const isAdmin = isSuperAdmin || (currentUserProfile && currentUserProfile.role === "admin");
+  const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
-  // تحسين جلب البيانات بحد أقصى (MVP Limit)
-  const usersQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "users"), limit(50)) : null, [db, isAdmin]);
+  useEffect(() => {
+    if (!userLoading && !isSuper && user) {
+      router.replace("/");
+    }
+  }, [user, userLoading, router, isSuper]);
+
+  const usersQuery = useMemoFirebase(() => isSuper ? query(collection(db, "users"), limit(100)) : null, [db, isSuper]);
   const { data: allUsers = [], loading: usersLoading } = useCollection<any>(usersQuery);
   
-  const reportsQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "reports"), where("status", "==", "pending"), limit(20)) : null, [db, isAdmin]);
+  const reportsQuery = useMemoFirebase(() => isSuper ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isSuper]);
   const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
 
-  useEffect(() => {
-    async function fetchStats() {
-      if (!isAdmin || !db) return;
-      try {
-        const uCount = await getCountFromServer(collection(db, "users"));
-        const pCount = await getCountFromServer(collection(db, "posts"));
-        const gCount = await getCountFromServer(collection(db, "groups"));
-        const rCount = await getCountFromServer(query(collection(db, "reports"), where("status", "==", "pending")));
-        
-        setStats({
-          users: uCount.data().count,
-          posts: pCount.data().count,
-          groups: gCount.data().count,
-          reports: rCount.data().count
-        });
-      } catch (err: any) {
-        console.warn("Stats fetch skipped due to permissions or index.");
-      } finally {
-        setStatsLoading(false);
-      }
-    }
-    fetchStats();
-  }, [db, isAdmin]);
-
-  useEffect(() => {
-    if (!userLoading && !isAdmin && user) router.replace("/");
-  }, [user, userLoading, router, isAdmin]);
-
   const handleBroadcast = async () => {
-    if (!broadcastMessage.trim() || !isSuperAdmin) return;
+    if (!broadcastMessage.trim() || !isSuper) return;
     setIsBroadcasting(true);
     try {
       const batch = writeBatch(db);
-      // بث لآخر المواطنين النشطين (كفاءة الأداء)
+      // بث للمواطنين الموجودين في القائمة (MVP)
       allUsers.forEach((member: any) => {
         const notifRef = doc(collection(db, "notifications"));
         batch.set(notifRef, {
@@ -127,118 +100,116 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleToggleVerify = async (userId: string, current: boolean) => {
+    await updateDoc(doc(db, "users", userId), { isVerified: !current });
+    toast({ title: isRtl ? "تم تحديث التوثيق" : "Verification Updated" });
+  };
+
+  const handleTogglePro = async (userId: string, current: boolean) => {
+    await updateDoc(doc(db, "users", userId), { isPro: !current });
+    toast({ title: isRtl ? "تم تحديث رتبة الإعلام" : "Media Rank Updated" });
+  };
+
   if (userLoading) {
     return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
 
+  if (!isSuper) return null;
+
   return (
-    <div className="min-h-screen bg-black text-white max-w-5xl mx-auto border-x border-zinc-900 pb-20 selection:bg-primary/30">
-      <header className="p-8 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900 h-12 w-12 border border-zinc-800">
-            <ArrowLeft className={cn("h-6 w-6", isRtl ? "rotate-180" : "")} />
+    <div className="min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-900 pb-24 selection:bg-primary/30">
+      <header className="p-6 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900 h-10 w-10">
+            <ArrowLeft className={cn("h-5 w-5", isRtl ? "rotate-180" : "")} />
           </Button>
           <div>
-            <h1 className="text-3xl font-black tracking-tighter">{isRtl ? "غرفة العمليات" : "War Room"}</h1>
-            <Badge className="bg-primary/20 text-primary border-primary/20 text-[9px] font-black uppercase tracking-widest mt-1">
-              {isSuperAdmin ? "ROOT ACCESS" : "COMMAND MODERATOR"}
-            </Badge>
+            <h1 className="text-xl font-black tracking-tighter uppercase">{isRtl ? "غرفة العمليات" : "War Room"}</h1>
+            <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black tracking-widest mt-0.5">ROOT ACCESS</Badge>
           </div>
         </div>
-        <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-           <ShieldAlert className="h-6 w-6 text-primary" />
+        <div className="h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+           <ShieldAlert className="h-5 w-5 text-primary" />
         </div>
       </header>
 
-      <main className="p-6 space-y-10">
-        {/* ملخص الإحصائيات */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { label: isRtl ? "المواطنين" : "Citizens", value: stats.users, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-            { label: isRtl ? "الأفكار" : "Insights", value: stats.posts, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-            { label: isRtl ? "المجتمعات" : "Lamma", value: stats.groups, icon: MessageSquare, color: "text-purple-500", bg: "bg-purple-500/10" },
-            { label: isRtl ? "التهديدات" : "Threats", value: stats.reports, icon: AlertTriangle, color: "text-red-500", bg: "bg-red-500/10" },
-          ].map((stat, i) => (
-            <Card key={i} className="bg-zinc-950 border-zinc-900 shadow-2xl overflow-hidden group">
-              <CardContent className="p-8">
-                <div className={cn("p-3 rounded-2xl inline-flex mb-6 group-hover:scale-110 transition-transform", stat.bg)}>
-                  <stat.icon className={cn("h-6 w-6", stat.color)} />
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">{stat.label}</p>
-                <h3 className="text-3xl font-black">
-                  {statsLoading ? "..." : stat.value.toLocaleString()}
-                </h3>
-              </CardContent>
-            </Card>
-          ))}
-        </section>
+      <main className="p-4 space-y-8">
+        <div className="grid grid-cols-2 gap-3">
+           <Card className="bg-zinc-950 border-zinc-900 shadow-xl p-4 flex flex-col items-center gap-2">
+              <Users className="h-5 w-5 text-blue-500" />
+              <span className="text-[9px] font-black text-zinc-500 uppercase">{isRtl ? "المواطنين" : "Citizens"}</span>
+              <span className="text-xl font-black">{allUsers.length}</span>
+           </Card>
+           <Card className="bg-zinc-950 border-zinc-900 shadow-xl p-4 flex flex-col items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              <span className="text-[9px] font-black text-zinc-500 uppercase">{isRtl ? "التهديدات" : "Threats"}</span>
+              <span className="text-xl font-black">{reports.length}</span>
+           </Card>
+        </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-16 p-1.5 rounded-[2rem] mb-10 shadow-xl">
-            <TabsTrigger value="users" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary">
-              {isRtl ? "إدارة الهويات" : "Identity MGMT"}
+          <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6">
+            <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
+              {isRtl ? "الهويات" : "Identity"}
             </TabsTrigger>
-            <TabsTrigger value="reports" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary">
-              {isRtl ? "التهديدات" : "Threats"} {reports.length > 0 && <Badge className="ml-2 bg-red-600 border-none h-5 px-1.5 text-[10px]">{reports.length}</Badge>}
+            <TabsTrigger value="reports" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
+              {isRtl ? "البلاغات" : "Reports"}
             </TabsTrigger>
-            <TabsTrigger value="broadcast" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary">
-              {isRtl ? "بيان سيادي" : "Proclamation"}
+            <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
+              {isRtl ? "البث" : "Broadcast"}
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="space-y-6">
-             <div className="relative mb-8">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600" />
+          <TabsContent value="users" className="space-y-4">
+             <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
                 <Input 
                   placeholder={isRtl ? "ابحث عن مواطن..." : "Search citizen..."} 
-                  className="bg-zinc-950 border-zinc-900 rounded-[1.5rem] pl-14 h-16 text-sm font-bold"
+                  className="bg-zinc-950 border-zinc-900 rounded-2xl pl-11 h-12 text-xs font-bold"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
              </div>
-             <div className="grid gap-4">
-               {allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
-                 <div key={member.id} className="flex items-center justify-between p-5 bg-zinc-950 border border-zinc-900 rounded-[2rem] hover:border-zinc-800 transition-all shadow-lg">
-                    <div className="flex items-center gap-5">
-                      <Avatar className="h-14 w-14 border-2 border-zinc-800">
+             
+             <div className="space-y-3">
+               {usersLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div> : 
+                allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
+                 <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem] hover:border-zinc-800 transition-all shadow-lg group">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12 border border-zinc-800">
                          <AvatarImage src={member.photoURL} />
-                         <AvatarFallback className="bg-zinc-900">{member.displayName?.[0]}</AvatarFallback>
+                         <AvatarFallback>{member.displayName?.[0]}</AvatarFallback>
                       </Avatar>
-                      <div className="space-y-1">
-                         <div className="flex items-center gap-2">
-                            <p className="text-base font-black tracking-tight">{member.displayName}</p>
-                            {member.isVerified && <VerificationBadge className="h-4 w-4" />}
-                            {member.isPro && <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />}
+                      <div className="min-w-0">
+                         <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-black truncate max-w-[100px]">{member.displayName}</p>
+                            {member.isVerified && <VerificationBadge className="h-3 w-3" />}
                          </div>
-                         <p className="text-[10px] text-zinc-600 font-bold uppercase">@{member.email?.split('@')[0]}</p>
+                         <p className="text-[9px] text-zinc-600 font-bold uppercase truncate">@{member.email?.split('@')[0]}</p>
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                       {isSuperAdmin && (
-                         <div className="flex gap-2">
-                            <Button 
-                              variant="ghost" size="icon" 
-                              className={cn("h-12 w-12 rounded-2xl transition-all", member.isVerified ? "bg-primary/10 text-primary border border-primary/20" : "bg-zinc-900 text-zinc-700 border border-zinc-800")}
-                              onClick={() => updateDoc(doc(db, "users", member.id), { isVerified: !member.isVerified })}
-                            >
-                              <VerificationBadge className="h-6 w-6" />
-                            </Button>
-                            <Button 
-                              variant="ghost" size="icon" 
-                              className={cn("h-12 w-12 rounded-2xl transition-all", member.isPro ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20" : "bg-zinc-900 text-zinc-700 border border-zinc-800")}
-                              onClick={() => updateDoc(doc(db, "users", member.id), { isPro: !member.isPro })}
-                            >
-                              <Radio className="h-6 w-6" />
-                            </Button>
-                         </div>
-                       )}
-                       <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-zinc-900 text-zinc-700 hover:text-red-500 border border-zinc-800 transition-all" onClick={() => {
+                    <div className="flex gap-2">
+                       <Button 
+                         variant="ghost" size="icon" 
+                         className={cn("h-9 w-9 rounded-xl", member.isVerified ? "bg-blue-500/10 text-blue-500" : "bg-zinc-900 text-zinc-700")}
+                         onClick={() => handleToggleVerify(member.id, member.isVerified)}
+                       >
+                         <ShieldCheck className="h-4 w-4" />
+                       </Button>
+                       <Button 
+                         variant="ghost" size="icon" 
+                         className={cn("h-9 w-9 rounded-xl", member.isPro ? "bg-yellow-500/10 text-yellow-500" : "bg-zinc-900 text-zinc-700")}
+                         onClick={() => handleTogglePro(member.id, member.isPro)}
+                       >
+                         <Star className="h-4 w-4" />
+                       </Button>
+                       <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-zinc-900 text-zinc-700 hover:text-red-500" onClick={() => {
                           const banUntil = new Date();
-                          banUntil.setDate(banUntil.getDate() + 3); // 3 days ban
+                          banUntil.setDate(banUntil.getDate() + 7);
                           updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });
-                          toast({ title: "Citizen restricted for 72h" });
+                          toast({ title: "7 Days Sanction Applied" });
                        }}>
-                         <Ban className="h-6 w-6" />
+                         <Ban className="h-4 w-4" />
                        </Button>
                     </div>
                  </div>
@@ -246,86 +217,60 @@ export default function AdminDashboard() {
              </div>
           </TabsContent>
 
-          <TabsContent value="reports" className="space-y-6">
-             {reportsLoading ? (
-               <div className="py-20 flex justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /></div>
-             ) : reports.length > 0 ? (
-               <div className="grid gap-6">
-                 {reports.map((report: any) => (
-                   <div key={report.id} className="p-8 bg-zinc-950 border border-zinc-900 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-6 opacity-5"><AlertTriangle className="h-20 w-20 text-red-500" /></div>
-                      <div className="flex justify-between items-start relative z-10 mb-6">
-                        <div className="flex items-center gap-6">
-                          <div className="p-5 bg-red-500/10 rounded-2xl border border-red-500/20"><AlertTriangle className="h-8 w-8 text-red-500" /></div>
-                          <div className="space-y-1">
-                            <p className="text-lg font-black">{isRtl ? "مخالفة سيادية" : "Protocol Violation"}</p>
-                            <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Type: {report.targetType}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 mb-6">
-                         <p className="text-sm font-bold text-zinc-300 leading-relaxed italic">"{report.reason}"</p>
-                      </div>
-                      <div className="flex gap-4 relative z-10">
-                         <Button variant="ghost" className="flex-1 rounded-2xl border border-zinc-800 font-black h-14 hover:bg-zinc-900" onClick={async () => {
-                           await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
-                           toast({ title: "Dismissed" });
-                         }}>
-                           {isRtl ? "تجاهل" : "Dismiss"}
-                         </Button>
-                         <Button className="flex-1 rounded-2xl bg-red-600 text-white font-black h-14 hover:bg-red-700 shadow-xl" onClick={async () => {
-                           if (report.targetId) {
-                             if (report.targetType === 'post') await deleteDoc(doc(db, "posts", report.targetId));
-                             if (report.targetType === 'user') {
-                                const banDate = new Date();
-                                banDate.setFullYear(banDate.getFullYear() + 1); // 1 year ban
-                                await updateDoc(doc(db, "users", report.targetId), { isBannedUntil: Timestamp.fromDate(banDate) });
-                             }
-                           }
-                           await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
-                           toast({ title: "Sanction Applied" });
-                         }}>
-                           {isRtl ? "تطبيق العقوبة" : "Sanction"}
-                         </Button>
-                      </div>
+          <TabsContent value="reports" className="space-y-4">
+             {reportsLoading ? <Loader2 className="h-6 w-6 animate-spin mx-auto opacity-20" /> : 
+              reports.length > 0 ? reports.map((report: any) => (
+                <Card key={report.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] shadow-xl overflow-hidden relative">
+                   <div className="absolute top-0 right-0 p-4 opacity-10"><AlertTriangle className="h-12 w-12 text-red-500" /></div>
+                   <div className="flex items-center gap-3 mb-4">
+                      <div className="h-8 w-8 rounded-xl bg-red-500/10 flex items-center justify-center"><AlertTriangle className="h-4 w-4 text-red-500" /></div>
+                      <span className="text-[10px] font-black uppercase tracking-widest">{isRtl ? "خرق للبروتوكول" : "Protocol Breach"}</span>
                    </div>
-                 ))}
-               </div>
-             ) : (
-               <div className="py-40 text-center opacity-10 flex flex-col items-center gap-6">
-                 <CheckCircle className="h-24 w-24" />
-                 <p className="text-lg font-black uppercase tracking-widest">{isRtl ? "البيئة آمنة تماماً" : "Pure Sovereignty"}</p>
-               </div>
-             )}
+                   <p className="text-xs text-zinc-400 italic mb-6 leading-relaxed">"{report.reason}"</p>
+                   <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 rounded-xl h-10 text-[10px] font-black uppercase border-zinc-800" onClick={() => updateDoc(doc(db, "reports", report.id), { status: "resolved" })}>
+                        {isRtl ? "تجاهل" : "Dismiss"}
+                      </Button>
+                      <Button className="flex-1 rounded-xl h-10 text-[10px] font-black uppercase bg-red-600 hover:bg-red-700" onClick={async () => {
+                         if (report.targetId) {
+                           if (report.targetType === 'post') await deleteDoc(doc(db, "posts", report.targetId));
+                           if (report.targetType === 'user') await updateDoc(doc(db, "users", report.targetId), { isBannedUntil: Timestamp.fromDate(new Date(Date.now() + 31536000000)) });
+                         }
+                         await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
+                         toast({ title: "Action Taken" });
+                      }}>
+                        {isRtl ? "تطبيق" : "Enforce"}
+                      </Button>
+                   </div>
+                </Card>
+              )) : (
+                <div className="py-20 text-center opacity-10 flex flex-col items-center gap-4">
+                   <CheckCircle className="h-16 w-16" />
+                   <p className="text-[10px] font-black uppercase tracking-widest">{isRtl ? "البيئة آمنة تماماً" : "Pure Sovereignty"}</p>
+                </div>
+              )}
           </TabsContent>
 
-          <TabsContent value="broadcast" className="space-y-10">
-            <Card className="bg-zinc-950 border-zinc-900 border-2 border-dashed border-primary/30 rounded-[3rem] shadow-2xl overflow-hidden">
-               <CardHeader className="p-10 pb-6 text-center">
-                  <CardTitle className="text-xl font-black uppercase tracking-widest flex items-center justify-center gap-4">
-                     <Megaphone className="h-8 w-8 text-primary animate-pulse" />
-                     {isRtl ? "بث بيان القيادة العليا" : "Command Broadcast"}
-                  </CardTitle>
-               </CardHeader>
-               <CardContent className="p-10 pt-0 space-y-8">
-                  <Textarea 
-                    placeholder={isRtl ? "اكتب هنا نص البيان الموجه لجميع المواطنين..." : "Enter official proclamation for all citizens..."}
-                    className="bg-zinc-900 border-zinc-800 rounded-[2rem] min-h-[200px] resize-none text-lg font-bold p-8 shadow-inner"
-                    value={broadcastMessage}
-                    onChange={(e) => setBroadcastMessage(e.target.value)}
-                  />
-                  <Button 
-                    className="w-full h-18 rounded-[2rem] bg-white text-black hover:bg-zinc-200 font-black text-xl shadow-2xl transition-all active:scale-95"
-                    disabled={isBroadcasting || !broadcastMessage.trim() || !isSuperAdmin}
-                    onClick={handleBroadcast}
-                  >
-                    {isBroadcasting ? <Loader2 className="h-8 w-8 animate-spin" /> : (isRtl ? "تنفيذ البث الفوري" : "Execute Broadcast")}
-                  </Button>
-                  <p className="text-center text-[10px] text-zinc-600 font-black uppercase tracking-widest">
-                    ⚠️ {isRtl ? "سيظهر هذا البيان لجميع المواطنين في شريط الصفحة الرئيسية" : "This message will be pinned for all citizens"}
-                  </p>
-               </CardContent>
-            </Card>
+          <TabsContent value="broadcast" className="space-y-6">
+             <Card className="bg-zinc-950 border-zinc-900 border-2 border-dashed border-primary/20 rounded-[2.5rem] p-6 shadow-2xl">
+                <div className="flex items-center gap-3 mb-6">
+                   <Megaphone className="h-6 w-6 text-primary animate-pulse" />
+                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "بث أمر القيادة" : "Command Broadcast"}</h3>
+                </div>
+                <Textarea 
+                  placeholder={isRtl ? "اكتب هنا نص البيان الموجه لجميع المواطنين..." : "Enter official proclamation..."}
+                  className="bg-zinc-900 border-zinc-800 rounded-2xl min-h-[150px] resize-none text-sm font-bold p-5 shadow-inner mb-6"
+                  value={broadcastMessage}
+                  onChange={(e) => setBroadcastMessage(e.target.value)}
+                />
+                <Button 
+                  className="w-full h-14 rounded-2xl bg-white text-black hover:bg-zinc-200 font-black text-lg shadow-xl transition-all"
+                  disabled={isBroadcasting || !broadcastMessage.trim() || !isSuper}
+                  onClick={handleBroadcast}
+                >
+                  {isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "تنفيذ البث" : "Execute")}
+                </Button>
+             </Card>
           </TabsContent>
         </Tabs>
       </main>

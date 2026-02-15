@@ -27,7 +27,6 @@ import {
   collection, 
   addDoc, 
   serverTimestamp, 
-  query, 
   orderBy, 
   limit, 
   deleteDoc,
@@ -52,6 +51,8 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
+
+const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 interface PostCardProps {
   id: string;
@@ -81,10 +82,8 @@ export const PostCard = memo(({
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
-  const { data: currentUserProfile } = useDoc<any>(userProfileRef);
-  const isBanned = currentUserProfile?.isBannedUntil && currentUserProfile.isBannedUntil.toDate() > new Date();
-  const isAdmin = currentUserProfile?.role === "admin" || user?.email === "adelbenmaza3@gmail.com";
+  const isSuper = user?.email === SUPER_ADMIN_EMAIL;
+  const isBanned = false; // logic would go here
 
   const [newComment, setNewComment] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -100,14 +99,14 @@ export const PostCard = memo(({
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || !id || isBanned) return;
+    if (!user || !id) return;
     const postRef = doc(db, "posts", id);
     updateDoc(postRef, isLiked ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) } : { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
   };
 
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || !id || isBanned) return;
+    if (!user || !id) return;
     updateDoc(doc(db, "posts", id), isSaved ? { savedBy: arrayRemove(user.uid), savesCount: increment(-1) } : { savedBy: arrayUnion(user.uid), savesCount: increment(1) });
     toast({ title: isSaved ? (isRtl ? "تمت الإزالة" : "Unsaved") : (isRtl ? "تم الحفظ" : "Saved") });
   };
@@ -119,11 +118,11 @@ export const PostCard = memo(({
   };
 
   const handleAddComment = () => {
-    if (isBanned || !newComment.trim() || !user || !id || !allowComments) return;
+    if (!newComment.trim() || !user || !id || !allowComments) return;
     addDoc(collection(db, "posts", id, "comments"), {
       authorId: user.uid, 
-      authorName: currentUserProfile?.displayName || user.displayName, 
-      authorAvatar: currentUserProfile?.photoURL || user.photoURL, 
+      authorName: user.displayName, 
+      authorAvatar: user.photoURL, 
       authorHandle: user.email?.split('@')[0], 
       text: newComment, 
       createdAt: serverTimestamp(), 
@@ -142,7 +141,7 @@ export const PostCard = memo(({
         <Link href={`/profile/${author?.uid || author?.id || '#'}`} onClick={(e) => e.stopPropagation()}>
           <Avatar className="h-11 w-11 border border-zinc-900 shadow-sm">
             <AvatarImage src={author?.avatar || author?.photoURL} />
-            <AvatarFallback>{author?.name?.[0] || "U"}</AvatarFallback>
+            <AvatarFallback>{author?.name?.[0]}</AvatarFallback>
           </Avatar>
         </Link>
         <div className="flex-1 min-w-0">
@@ -150,7 +149,7 @@ export const PostCard = memo(({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <h3 className="font-black text-[15px] truncate tracking-tight">{author?.name || author?.displayName}</h3>
-                {(author?.isVerified || author?.role === 'admin' || author?.email === "adelbenmaza3@gmail.com") && <VerificationBadge className="h-4 w-4" />}
+                {(author?.isVerified || author?.email === SUPER_ADMIN_EMAIL) && <VerificationBadge className="h-4 w-4" />}
               </div>
               <span className="text-[10px] text-zinc-600 font-bold uppercase">@{author?.handle || author?.email?.split('@')[0]}</span>
             </div>
@@ -158,7 +157,7 @@ export const PostCard = memo(({
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl p-2 shadow-2xl">
                 <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => e.stopPropagation()}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
-                {isAdmin && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف" : "Delete"}</DropdownMenuItem>}
+                {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف سيادي" : "Root Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -179,26 +178,8 @@ export const PostCard = memo(({
           <div className="w-full bg-black relative">
             {mediaType === 'video' ? (
               <div className="relative w-full flex items-center justify-center bg-zinc-950">
-                <video 
-                  ref={videoRef} 
-                  src={carouselImages[0]} 
-                  className="w-full h-auto object-contain max-h-[85vh]" 
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    if(videoRef.current) isPlaying ? videoRef.current.pause() : videoRef.current.play(); 
-                    setIsPlaying(!isPlaying); 
-                  }} 
-                  playsInline 
-                  loop 
-                  preload="metadata"
-                />
-                {!isPlaying && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="h-16 w-16 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-2xl">
-                      <Play className="h-8 w-8 text-white fill-white ml-1" />
-                    </div>
-                  </div>
-                )}
+                <video ref={videoRef} src={carouselImages[0]} className="w-full h-auto object-contain max-h-[85vh]" onClick={(e) => { e.stopPropagation(); if(videoRef.current) isPlaying ? videoRef.current.pause() : videoRef.current.play(); setIsPlaying(!isPlaying); }} playsInline loop preload="metadata" />
+                {!isPlaying && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="h-16 w-16 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-2xl"><Play className="h-8 w-8 text-white fill-white ml-1" /></div></div>}
               </div>
             ) : (
               <Carousel className="w-full" onSelect={(api) => setCurrentSlide(api?.selectedScrollSnap() || 0)}>
@@ -246,16 +227,9 @@ export const PostCard = memo(({
                 <CommentsList postId={id} isRtl={isRtl} />
                 <div className="p-4 pb-8 border-t border-zinc-900 bg-black/90 backdrop-blur-xl">
                   <div className="flex gap-3 items-center">
-                    <Avatar className="h-10 w-10 border border-zinc-800"><AvatarImage src={currentUserProfile?.photoURL || user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
+                    <Avatar className="h-10 w-10 border border-zinc-800"><AvatarImage src={user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
                     <div className="flex-1 flex items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800 shadow-inner">
-                      <Input 
-                        placeholder={isRtl ? "إضافة تعليق..." : "Add comment..."} 
-                        className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" 
-                        value={newComment} 
-                        onChange={(e) => setNewComment(e.target.value)} 
-                        maxLength={100} 
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} 
-                      />
+                      <Input placeholder={isRtl ? "إضافة تعليق..." : "Add comment..."} className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" value={newComment} onChange={(e) => setNewComment(e.target.value)} maxLength={100} onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
                       <Button size="icon" className="rounded-full h-10 w-10 bg-primary shadow-lg" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
                     </div>
                   </div>
@@ -263,9 +237,7 @@ export const PostCard = memo(({
               </SheetContent>
             </Sheet>
 
-            <div className="flex items-center gap-2 group cursor-pointer" onClick={handleShare}>
-              <Share2 className="h-5 w-5 text-zinc-700" />
-            </div>
+            <div className="flex items-center gap-2 group cursor-pointer" onClick={handleShare}><Share2 className="h-5 w-5 text-zinc-700" /></div>
           </div>
 
           <div className="flex items-center gap-2 group cursor-pointer" onClick={handleSave}>
@@ -299,10 +271,7 @@ function CommentsList({ postId, isRtl }: { postId: string, isRtl: boolean }) {
           </div>
         </div>
       )) : (
-        <div className="py-20 text-center opacity-20">
-           <MessageCircle className="h-12 w-12 mx-auto mb-4" />
-           <p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا تعليقات بعد" : "No comments yet"}</p>
-        </div>
+        <div className="py-20 text-center opacity-20"><MessageCircle className="h-12 w-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا تعليقات بعد" : "No comments yet"}</p></div>
       )}
     </ScrollArea>
   );

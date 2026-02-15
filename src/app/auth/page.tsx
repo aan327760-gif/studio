@@ -59,12 +59,12 @@ export default function AuthPage() {
         
         const userRef = doc(db, "users", user.uid);
         
-        // التوثيق التلقائي للمدير العام عند الدخول لضمان الصلاحيات
+        // التوثيق التلقائي للمدير العام الحصري عند الدخول
         if (user.email === SUPER_ADMIN_EMAIL) {
           await updateDoc(userRef, {
-            role: "admin",
             isVerified: true,
-            isPro: true
+            isPro: true,
+            role: "admin" // رتبة داخلية اختيارية، القوة الفعلية في الإيميل
           });
         }
 
@@ -85,7 +85,6 @@ export default function AuthPage() {
 
         const isSuper = formData.email === SUPER_ADMIN_EMAIL;
 
-        // البيانات الأساسية للملف الشخصي
         const userProfileData: any = {
           uid: user.uid,
           displayName: formData.displayName,
@@ -102,47 +101,27 @@ export default function AuthPage() {
           language: isRtl ? "ar" : "en"
         };
 
-        // بروتوكول المتابعة التلقائية للمدير العام
+        // بروتوكول المتابعة التلقائية للمدير العام (حصري)
         if (!isSuper) {
           try {
             const adminQuery = query(collection(db, "users"), where("email", "==", SUPER_ADMIN_EMAIL), limit(1));
             const adminSnapshot = await getDocs(adminQuery);
             
             if (!adminSnapshot.empty) {
-              const adminDoc = adminSnapshot.docs[0];
-              const adminUid = adminDoc.id;
-              
-              // تحديث بيانات المستخدم الجديد قبل الحفظ ليكون متابعاً للأدمن
+              const adminUid = adminSnapshot.docs[0].id;
               userProfileData.followingCount = 1;
-              
-              // إنشاء وثيقة المتابعة في قاعدة البيانات
               const followId = `${user.uid}_${adminUid}`;
               await setDoc(doc(db, "follows", followId), {
                 followerId: user.uid,
                 followingId: adminUid,
                 createdAt: serverTimestamp()
               });
-
-              // زيادة عدد متابعي المدير العام
-              await updateDoc(doc(db, "users", adminUid), {
-                followersCount: increment(1)
-              });
+              await updateDoc(doc(db, "users", adminUid), { followersCount: increment(1) });
             }
-          } catch (followError) {
-            console.warn("Auto-follow admin failed, proceeding with registration.", followError);
-          }
+          } catch (e) {}
         }
 
-        // حفظ ملف المستخدم النهائي
-        await setDoc(doc(db, "users", user.uid), userProfileData)
-          .catch(async (err) => {
-            const permissionError = new FirestorePermissionError({
-              path: `users/${user.uid}`,
-              operation: 'create',
-              requestResourceData: userProfileData
-            });
-            errorEmitter.emit('permission-error', permissionError);
-          });
+        await setDoc(doc(db, "users", user.uid), userProfileData);
 
         toast({
           title: isRtl ? "تم إنشاء الحساب" : "Account Created",
@@ -174,9 +153,7 @@ export default function AuthPage() {
             {isLogin ? (isRtl ? "عودة حميدة" : "Welcome Back") : (isRtl ? "ابدأ رحلتك" : "Start Journey")}
           </CardTitle>
           <CardDescription className="text-zinc-500 font-medium">
-            {isLogin 
-              ? (isRtl ? "أدخل بياناتك لتكمل تواصلك بحرية" : "Enter details to continue freely")
-              : (isRtl ? "كن جزءاً من منصة بلا قيود" : "Be part of Unbound OS")}
+            {isLogin ? (isRtl ? "أدخل بياناتك لتكمل تواصلك بحرية" : "Enter details to continue freely") : (isRtl ? "كن جزءاً من منصة بلا قيود" : "Be part of Unbound OS")}
           </CardDescription>
         </CardHeader>
         <CardContent className="px-8">
@@ -184,64 +161,36 @@ export default function AuthPage() {
             {!isLogin && (
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "الاسم الكامل" : "Full Name"}</Label>
-                <div className="relative">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
-                  <Input
-                    id="displayName"
-                    placeholder={isRtl ? "أحمد محمد" : "John Doe"}
-                    className="bg-zinc-900 border-zinc-800 pl-12 h-12 rounded-2xl focus:ring-primary"
-                    required
-                    value={formData.displayName}
-                    onChange={(e) => setFormData({...formData, displayName: e.target.value})}
-                  />
-                </div>
+                <Input
+                  placeholder={isRtl ? "أحمد محمد" : "John Doe"}
+                  className="bg-zinc-900 border-zinc-800 h-12 rounded-2xl focus:ring-primary"
+                  required
+                  value={formData.displayName}
+                  onChange={(e) => setFormData({...formData, displayName: e.target.value})}
+                />
               </div>
             )}
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "البريد الإلكتروني" : "Email"}</Label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  className="bg-zinc-900 border-zinc-800 pl-12 h-12 rounded-2xl focus:ring-primary"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                />
-              </div>
+              <Input
+                type="email"
+                placeholder="name@example.com"
+                className="bg-zinc-900 border-zinc-800 h-12 rounded-2xl focus:ring-primary"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "كلمة السر" : "Password"}</Label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
-                <Input
-                  id="password"
-                  type="password"
-                  className="bg-zinc-900 border-zinc-800 pl-12 h-12 rounded-2xl focus:ring-primary"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                />
-              </div>
+              <Input
+                type="password"
+                className="bg-zinc-900 border-zinc-800 h-12 rounded-2xl focus:ring-primary"
+                required
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+              />
             </div>
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "رقم الهاتف (اختياري)" : "Phone (Optional)"}</Label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+213..."
-                    className="bg-zinc-900 border-zinc-800 pl-12 h-12 rounded-2xl"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  />
-                </div>
-              </div>
-            )}
             <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 font-black h-14 rounded-2xl mt-4 shadow-xl active:scale-95 transition-all" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : (isLogin ? (isRtl ? "دخول" : "Sign In") : (isRtl ? "إنشاء حساب" : "Join Now"))}
             </Button>
@@ -253,11 +202,6 @@ export default function AuthPage() {
             <button onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline ml-1">
               {isLogin ? (isRtl ? "سجل الآن" : "Create one") : (isRtl ? "دخول" : "Sign In")}
             </button>
-          </div>
-          <div className="flex items-center gap-2 opacity-10">
-            <div className="h-[1px] flex-1 bg-white" />
-            <span className="text-[8px] font-black uppercase tracking-[0.4em]">Secure Auth</span>
-            <div className="h-[1px] flex-1 bg-white" />
           </div>
         </CardFooter>
       </Card>
