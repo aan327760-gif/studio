@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, Archive } from "lucide-react";
+import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -72,7 +72,18 @@ export function AppSidebar() {
   const createOptions = [
     { icon: ImageIcon, label: isRtl ? "الصور" : "Images", color: "bg-green-500", onClick: () => imageInputRef.current?.click() },
     { icon: Video, label: isRtl ? "فيديو" : "Videos", color: "bg-blue-500", onClick: () => videoInputRef.current?.click() },
-    { icon: Mic, label: isRtl ? "صوت" : "Audio", color: "bg-orange-500", onClick: () => { setIsSheetOpen(false); toast({ title: isRtl ? "قريباً" : "Coming Soon", description: isRtl ? "ميزة التسجيل الصوتي في المرحلة القادمة." : "Voice recording in next phase." }); } },
+    { 
+      icon: Mic, 
+      label: isRtl ? "صوت" : "Audio", 
+      color: "bg-orange-500", 
+      onClick: () => { 
+        setIsSheetOpen(false); 
+        toast({ 
+          title: isRtl ? "قريباً" : "Coming Soon", 
+          description: isRtl ? "ميزة التسجيل الصوتي في المرحلة القادمة." : "Voice recording in next phase." 
+        }); 
+      } 
+    },
     { icon: PenLine, label: isRtl ? "نشر" : "Post", color: "bg-primary", onClick: () => { setIsSheetOpen(false); router.push("/create-post"); } },
   ];
 

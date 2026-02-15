@@ -7,7 +7,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, ArrowLeft, Loader2, ShieldCheck, MoreVertical, Lock, ChevronDown } from "lucide-react";
+import { Send, ArrowLeft, Loader2, MoreVertical, ChevronDown, Lock } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useCollection, useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, doc, updateDoc } from "firebase/firestore";
