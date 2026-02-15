@@ -34,9 +34,9 @@ export async function uploadToCloudinary(fileData: string, resourceType: 'image'
   } catch (error: any) {
     console.error('Cloudinary Error Details:', error);
 
-    // معالجة خطأ "Invalid Signature" الشهير
+    // معالجة خطأ "Invalid Signature" بشكل محدد جداً
     if (error.message?.includes('Invalid Signature') || error.http_code === 401) {
-      throw new Error('خطأ في "التوقيع" (Signature): الرمز السري (API Secret) الذي وضعته غير صحيح. تأكد من نسخه من بجانب API Key في Cloudinary.');
+      throw new Error('خطأ في الرمز السري (API Secret): الرمز الذي وضعته غير صحيح. تأكد من نسخه بالضغط على زر "Show" بجانب API Secret في لوحة تحكم Cloudinary.');
     }
 
     if (error.message?.includes('api_key')) {
