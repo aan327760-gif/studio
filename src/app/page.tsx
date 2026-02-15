@@ -14,24 +14,17 @@ import { useMemo } from "react";
 
 /**
  * الخوارزمية السيادية - Sovereign Algorithm
- * تقوم بترتيب المنشورات بناءً على:
- * 1. رتبة القناة الإعلامية (isPro) = 1000 نقطة
- * 2. التوثيق (isVerified) = 500 نقطة
- * 3. التفاعل (Likes) = 10 نقاط لكل إعجاب
- * 4. الحداثة = نقاط سالبة لكل ساعة تمر
  */
 export default function Home() {
   const { isRtl } = useLanguage();
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
-  // جلب آخر 100 منشور لتمكين الخوارزمية من العمل
   const discoverPostsQuery = useMemoFirebase(() => {
     return query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(100));
   }, [db]);
   const { data: rawDiscoverPosts, loading: discoverLoading } = useCollection<any>(discoverPostsQuery);
 
-  // تطبيق الخوارزمية السيادية في الذاكرة
   const discoverPosts = useMemo(() => {
     if (!rawDiscoverPosts) return [];
 
@@ -39,26 +32,16 @@ export default function Home() {
       const getScore = (post: any) => {
         let score = 0;
         const author = post.author || {};
-        
-        // أولوية القنوات الإعلامية
         if (author.isPro) score += 1000;
-        
-        // أولوية التوثيق
         if (author.isVerified) score += 500;
-        
-        // أولوية التفاعل
         score += (post.likesCount || 0) * 10;
-        
-        // تأثير الزمن (تخفيض القيمة مع الوقت)
         const postTime = post.createdAt?.seconds ? post.createdAt.seconds * 1000 : Date.now();
         const hoursPassed = (Date.now() - postTime) / (1000 * 60 * 60);
         score -= hoursPassed * 20;
-
         return score;
       };
-
       return getScore(b) - getScore(a);
-    }).slice(0, 30); // عرض أفضل 30 منشوراً فقط لضمان الجودة
+    }).slice(0, 30);
   }, [rawDiscoverPosts]);
 
   const systemAlertQuery = useMemoFirebase(() => {
@@ -107,7 +90,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
       <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-zinc-900">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 rotate-3 transition-transform hover:rotate-0">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
                <span className="text-white font-black text-xl italic leading-none">U</span>
           </div>
           <div className="flex flex-col">
@@ -119,7 +102,7 @@ export default function Home() {
           </div>
         </div>
 
-        <Link href="/lamma">
+        <Link href="/messages">
           <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full h-10 w-10">
             <MessageSquare className="h-6 w-6" />
           </Button>

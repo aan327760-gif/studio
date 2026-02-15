@@ -11,7 +11,8 @@ import {
   Star,
   Heart,
   Calendar,
-  MapPin
+  MapPin,
+  MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,10 +22,11 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import Link from "next/link";
 import { PostCard } from "@/components/feed/PostCard";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
+import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc, getDocs } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -49,14 +51,12 @@ export default function UserProfilePage() {
   const { data: followDoc } = useDoc<any>(followRef);
   const isFollowing = !!followDoc;
 
-  // استعلام منشورات المستخدم
   const userPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
     return query(collection(db, "posts"), where("authorId", "==", uid), limit(30));
   }, [db, uid]);
   const { data: userPosts = [], loading: postsLoading } = useCollection<any>(userPostsQuery);
 
-  // استعلام المنشورات التي أعجبت المستخدم
   const likedPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
     return query(collection(db, "posts"), where("likedBy", "array-contains", uid), limit(30));
@@ -80,6 +80,31 @@ export default function UserProfilePage() {
         fromUserName: currentUser.displayName || "User", fromUserAvatar: currentUser.photoURL || "",
         read: false, createdAt: serverTimestamp()
       });
+    }
+  };
+
+  const handleStartMessage = async () => {
+    if (!currentUser || !uid || isOwnProfile) return;
+    
+    try {
+      const participants = [currentUser.uid, uid as string].sort();
+      const chatId = participants.join("_");
+      const chatRef = doc(db, "direct_conversations", chatId);
+      
+      const chatSnap = await getDocs(query(collection(db, "direct_conversations"), where("participants", "==", participants)));
+      
+      if (chatSnap.empty) {
+        await setDoc(chatRef, {
+          participants,
+          updatedAt: serverTimestamp(),
+          lastMessage: "",
+          createdAt: serverTimestamp()
+        });
+      }
+      
+      router.push(`/messages/${chatId}`);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Chat initialization failed" });
     }
   };
 
@@ -147,13 +172,20 @@ export default function UserProfilePage() {
             </div>
           </div>
           
-          {isOwnProfile ? (
-            <Link href="/profile/edit"><Button variant="outline" className="rounded-full font-black px-6 border-zinc-700">{isRtl ? "تعديل" : "Edit"}</Button></Link>
-          ) : (
-            <Button onClick={handleFollow} className={cn("rounded-full font-black px-8 h-10", isFollowing ? "bg-zinc-900 text-white border border-zinc-800" : "bg-white text-black")}>
-              {isFollowing ? (isRtl ? "يتابع" : "Following") : (isRtl ? "متابعة" : "Follow")}
-            </Button>
-          )}
+          <div className="flex flex-col gap-2">
+            {isOwnProfile ? (
+              <Link href="/profile/edit"><Button variant="outline" className="rounded-full font-black px-6 border-zinc-700">{isRtl ? "تعديل" : "Edit"}</Button></Link>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="outline" size="icon" className="rounded-full border-zinc-700 h-10 w-10" onClick={handleStartMessage}>
+                  <MessageSquare className="h-5 w-5" />
+                </Button>
+                <Button onClick={handleFollow} className={cn("rounded-full font-black px-8 h-10", isFollowing ? "bg-zinc-900 text-white border border-zinc-800" : "bg-white text-black")}>
+                  {isFollowing ? (isRtl ? "يتابع" : "Following") : (isRtl ? "متابعة" : "Follow")}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 text-[15px] leading-relaxed text-zinc-300 font-medium">

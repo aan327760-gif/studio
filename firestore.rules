@@ -61,7 +61,6 @@ service cloud.firestore {
     
     // قواعد التنبيهات
     match /notifications/{notificationId} {
-      // السماح للمستخدم برؤية تنبيهاته فقط، وللنظام برؤية الكل للأغراض الإدارية
       allow read, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (request.query.limit <= 50) && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn() && isNotBanned();
@@ -81,6 +80,17 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if isSignedIn() && (isAdmin() || request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members);
         allow write: if isSignedIn() && isNotBanned() && (request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members);
+      }
+    }
+
+    // قواعد المراسلة الخاصة (Direct Conversations)
+    match /direct_conversations/{chatId} {
+      allow read, write: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
+      allow create: if isSignedIn() && isNotBanned();
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/direct_conversations/$(chatId)).data.participants || isAdmin());
+        allow write: if isSignedIn() && isNotBanned() && (request.auth.uid in get(/databases/$(database)/documents/direct_conversations/$(chatId)).data.participants);
       }
     }
 

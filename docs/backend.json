@@ -97,7 +97,7 @@
     },
     "ChatMessage": {
       "title": "ChatMessage",
-      "description": "Messages within a Lamma Group",
+      "description": "Messages within a Lamma Group or Direct Chat",
       "type": "object",
       "properties": {
         "senderId": { "type": "string" },
@@ -105,6 +105,17 @@
         "senderAvatar": { "type": "string" },
         "text": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "DirectConversation": {
+      "title": "Direct Conversation",
+      "description": "1-on-1 private chat",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       }
     },
     "Report": {
@@ -153,6 +164,14 @@
     "/groups/{groupId}/messages/{messageId}": {
       "schema": "ChatMessage",
       "description": "Messages in a group chat"
+    },
+    "/direct_conversations/{chatId}": {
+      "schema": "DirectConversation",
+      "description": "Direct 1-on-1 conversations"
+    },
+    "/direct_conversations/{chatId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Direct messages"
     },
     "/reports/{reportId}": {
       "schema": "Report",
