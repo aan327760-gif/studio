@@ -20,7 +20,7 @@ import { Loader2, Mail, Lock, Phone, User as UserIcon } from "lucide-react";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
+const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function AuthPage() {
   const { isRtl } = useLanguage();
@@ -46,48 +46,22 @@ export default function AuthPage() {
         const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
         const user = userCredential.user;
         
-        // التحقق وتحديث حالة الإدارة والتوثيق فوراً
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
         
-        const statusUpdates = {
-          isVerified: user.email === ADMIN_EMAIL,
-          role: user.email === ADMIN_EMAIL ? "admin" : "user"
-        };
-
-        if (!userDoc.exists()) {
-          const newUserProfile = {
-            uid: user.uid,
-            displayName: user.displayName || "User",
-            email: user.email,
-            phoneNumber: null,
-            photoURL: user.photoURL || "https://picsum.photos/seed/" + user.uid + "/200/200",
-            createdAt: serverTimestamp(),
-            isPro: user.email === ADMIN_EMAIL,
-            followersCount: 0,
-            followingCount: 0,
-            bio: "",
-            ...statusUpdates
-          };
-          
-          await setDoc(userRef, newUserProfile).catch(async (err) => {
-            const permissionError = new FirestorePermissionError({
-              path: `users/${user.uid}`,
-              operation: 'create',
-              requestResourceData: newUserProfile
-            });
-            errorEmitter.emit('permission-error', permissionError);
+        if (user.email === SUPER_ADMIN_EMAIL) {
+          await updateDoc(userRef, {
+            role: "admin",
+            isVerified: true,
+            isPro: true
           });
-        } else {
-          // تحديث الصلاحيات إذا تغير الإيميل أو لأول مرة
-          await updateDoc(userRef, statusUpdates);
         }
 
         toast({
           title: isRtl ? "تم تسجيل الدخول" : "Logged In",
-          description: user.email === ADMIN_EMAIL 
-            ? (isRtl ? "مرحباً أيها المدير!" : "Welcome, Admin!") 
-            : (isRtl ? "مرحباً بك مجدداً في Unbound" : "Welcome back to Unbound"),
+          description: user.email === SUPER_ADMIN_EMAIL 
+            ? (isRtl ? "مرحباً أيها المدير العام!" : "Welcome, Master Admin!") 
+            : (isRtl ? "مرحباً بك مجدداً في Unbound" : "Welcome back back to Unbound"),
         });
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
@@ -98,6 +72,8 @@ export default function AuthPage() {
           photoURL: "https://picsum.photos/seed/" + user.uid + "/200/200"
         });
 
+        const isSuper = formData.email === SUPER_ADMIN_EMAIL;
+
         const userProfileData = {
           uid: user.uid,
           displayName: formData.displayName,
@@ -105,9 +81,9 @@ export default function AuthPage() {
           phoneNumber: formData.phone || null,
           photoURL: "https://picsum.photos/seed/" + user.uid + "/200/200",
           createdAt: serverTimestamp(),
-          isPro: formData.email === ADMIN_EMAIL,
-          isVerified: formData.email === ADMIN_EMAIL,
-          role: formData.email === ADMIN_EMAIL ? "admin" : "user",
+          isPro: isSuper,
+          isVerified: isSuper,
+          role: isSuper ? "admin" : "user",
           followersCount: 0,
           followingCount: 0,
           bio: "",
@@ -151,9 +127,7 @@ export default function AuthPage() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold tracking-tight">
-            {isLogin 
-              ? (isRtl ? "تسجيل الدخول" : "Welcome Back") 
-              : (isRtl ? "إنشاء حساب جديد" : "Create Account")}
+            {isLogin ? (isRtl ? "تسجيل الدخول" : "Welcome Back") : (isRtl ? "إنشاء حساب جديد" : "Create Account")}
           </CardTitle>
           <CardDescription className="text-zinc-500">
             {isLogin 
@@ -171,7 +145,7 @@ export default function AuthPage() {
                   <Input
                     id="displayName"
                     placeholder={isRtl ? "أحمد محمد" : "John Doe"}
-                    className="bg-zinc-900 border-zinc-800 pl-10 focus:ring-primary"
+                    className="bg-zinc-900 border-zinc-800 pl-10"
                     required
                     value={formData.displayName}
                     onChange={(e) => setFormData({...formData, displayName: e.target.value})}
@@ -187,7 +161,7 @@ export default function AuthPage() {
                   id="email"
                   type="email"
                   placeholder="name@example.com"
-                  className="bg-zinc-900 border-zinc-800 pl-10 focus:ring-primary"
+                  className="bg-zinc-900 border-zinc-800 pl-10"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -201,7 +175,7 @@ export default function AuthPage() {
                 <Input
                   id="password"
                   type="password"
-                  className="bg-zinc-900 border-zinc-800 pl-10 focus:ring-primary"
+                  className="bg-zinc-900 border-zinc-800 pl-10"
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
@@ -210,46 +184,31 @@ export default function AuthPage() {
             </div>
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="phone">
-                  {isRtl ? "رقم الهاتف (اختياري)" : "Phone Number (Optional)"}
-                </Label>
+                <Label htmlFor="phone">{isRtl ? "رقم الهاتف (اختياري)" : "Phone Number (Optional)"}</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
                   <Input
                     id="phone"
                     type="tel"
                     placeholder="+213..."
-                    className="bg-zinc-900 border-zinc-800 pl-10 focus:ring-primary"
+                    className="bg-zinc-900 border-zinc-800 pl-10"
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
                   />
                 </div>
               </div>
             )}
-            <Button 
-              type="submit" 
-              className="w-full bg-white text-black hover:bg-zinc-200 font-bold h-11 rounded-xl mt-6 transition-all"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 font-bold h-11 rounded-xl mt-6" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLogin 
-                ? (isRtl ? "دخول" : "Sign In") 
-                : (isRtl ? "إنشاء حساب" : "Create Account")}
+              {isLogin ? (isRtl ? "دخول" : "Sign In") : (isRtl ? "إنشاء حساب" : "Create Account")}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center text-sm text-zinc-500">
-            {isLogin 
-              ? (isRtl ? "ليس لديك حساب؟" : "Don't have an account?") 
-              : (isRtl ? "لديك حساب بالفعل؟" : "Already have an account?")}{" "}
-            <button 
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary font-bold hover:underline"
-            >
-              {isLogin 
-                ? (isRtl ? "سجل الآن" : "Sign Up") 
-                : (isRtl ? "تسجيل الدخول" : "Log In")}
+            {isLogin ? (isRtl ? "ليس لديك حساب؟" : "Don't have an account?") : (isRtl ? "لديك حساب بالفعل؟" : "Already have an account?")}{" "}
+            <button onClick={() => setIsLogin(!isLogin)} className="text-primary font-bold hover:underline">
+              {isLogin ? (isRtl ? "سجل الآن" : "Sign Up") : (isRtl ? "تسجيل الدخول" : "Log In")}
             </button>
           </div>
         </CardFooter>

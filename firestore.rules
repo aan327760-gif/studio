@@ -8,9 +8,15 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // وظيفة للتحقق من أن المستخدم هو المدير
-    function isAdmin() {
+    // البريد الإلكتروني للمدير العام (السلطة العليا)
+    function isSuperAdmin() {
       return isSignedIn() && request.auth.token.email == "adelbenmaza3@gmail.com";
+    }
+
+    // وظيفة للتحقق من أن المستخدم لديه رتبة مشرف أو هو المدير العام
+    function isAdmin() {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return isSignedIn() && (isSuperAdmin() || userDoc.data.role == "admin");
     }
 
     // وظيفة للتحقق من أن المستخدم ليس محظوراً
@@ -28,7 +34,10 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isSignedIn();
-      allow update: if isAdmin() || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isBannedUntil', 'role', 'isVerified']));
+      // المدير العام يعدل أي شيء، المشرف يعدل فقط الحظر، المالك يعدل بياناته ما عدا الرتبة والحظر
+      allow update: if isSuperAdmin() 
+                    || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isBannedUntil']))
+                    || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isBannedUntil', 'role', 'isVerified']));
     }
     
     // قواعد المتابعة
