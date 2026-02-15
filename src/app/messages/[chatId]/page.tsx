@@ -7,7 +7,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, ArrowLeft, Loader2, ShieldCheck, MoreVertical } from "lucide-react";
+import { Send, ArrowLeft, Loader2, ShieldCheck, MoreVertical, Lock } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useCollection, useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, doc, updateDoc } from "firebase/firestore";
@@ -30,6 +30,17 @@ export default function DirectChatRoomPage() {
   const otherUserRef = useMemoFirebase(() => otherUserId ? doc(db, "users", otherUserId) : null, [db, otherUserId]);
   const { data: otherUser } = useDoc<any>(otherUserRef);
 
+  // فحص علاقة الصداقة (المتابعة المتبادلة)
+  const followId = user && otherUserId ? `${user.uid}_${otherUserId}` : null;
+  const followRef = useMemoFirebase(() => followId ? doc(db, "follows", followId) : null, [db, followId]);
+  const { data: followDoc } = useDoc<any>(followRef);
+
+  const reverseFollowId = user && otherUserId ? `${otherUserId}_${user.uid}` : null;
+  const reverseFollowRef = useMemoFirebase(() => reverseFollowId ? doc(db, "follows", reverseFollowId) : null, [db, reverseFollowId]);
+  const { data: reverseFollowDoc } = useDoc<any>(reverseFollowRef);
+
+  const isFriend = !!followDoc && !!reverseFollowDoc;
+
   const messagesQuery = useMemoFirebase(() => {
     if (!chatId) return null;
     return query(
@@ -51,6 +62,10 @@ export default function DirectChatRoomPage() {
   }, [messages]);
 
   const handleSend = () => {
+    if (!isFriend) {
+      toast({ variant: "destructive", title: isRtl ? "المراسلة للأصدقاء فقط" : "Friends only" });
+      return;
+    }
     if (!newMessage.trim() || !user || !chatId) return;
     
     const msgData = {
@@ -88,7 +103,7 @@ export default function DirectChatRoomPage() {
             <h2 className="font-black text-sm truncate max-w-[150px] tracking-tight">{otherUser?.displayName || "Citizen"}</h2>
             <div className="flex items-center gap-1">
                <ShieldCheck className="h-2.5 w-2.5 text-primary" />
-               <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "تواصل مشفر" : "Encrypted Chat"}</p>
+               <p className="text-[8px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "تواصل مشفر سيادياً" : "Sovereign Encrypted Chat"}</p>
             </div>
           </div>
         </div>
@@ -123,18 +138,30 @@ export default function DirectChatRoomPage() {
         </ScrollArea>
 
         <footer className="p-4 border-t border-zinc-900 bg-black/80 backdrop-blur-xl">
-          <div className="flex gap-2 items-center bg-zinc-900/50 rounded-full pl-5 pr-1.5 py-1.5 border border-white/5 shadow-inner">
-            <Input 
-              placeholder={isRtl ? "اكتب رسالة خاصة..." : "Type a private message..."} 
-              className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" 
-              value={newMessage} 
-              onChange={(e) => setNewMessage(e.target.value)} 
-              onKeyDown={(e) => e.key === "Enter" && handleSend()} 
-            />
-            <Button size="icon" className="rounded-full bg-primary h-10 w-10 shrink-0 shadow-lg" onClick={handleSend} disabled={!newMessage.trim()}>
-              <Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} />
-            </Button>
-          </div>
+          {!isFriend ? (
+            <div className="p-4 bg-red-500/10 rounded-[1.5rem] border border-red-500/20 text-center space-y-2">
+               <div className="flex justify-center mb-1"><Lock className="h-4 w-4 text-red-500" /></div>
+               <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">
+                 {isRtl ? "المراسلة للأصدقاء فقط" : "Messages restricted to friends"}
+               </p>
+               <p className="text-[8px] font-bold text-zinc-500 uppercase">
+                 {isRtl ? "يجب أن تكون المتابعة متبادلة لإرسال الرسائل" : "Mutual follow required to send messages"}
+               </p>
+            </div>
+          ) : (
+            <div className="flex gap-2 items-center bg-zinc-900/50 rounded-full pl-5 pr-1.5 py-1.5 border border-white/5 shadow-inner">
+              <Input 
+                placeholder={isRtl ? "اكتب رسالة خاصة..." : "Type a private message..."} 
+                className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" 
+                value={newMessage} 
+                onChange={(e) => setNewMessage(e.target.value)} 
+                onKeyDown={(e) => e.key === "Enter" && handleSend()} 
+              />
+              <Button size="icon" className="rounded-full bg-primary h-10 w-10 shrink-0 shadow-lg" onClick={handleSend} disabled={!newMessage.trim()}>
+                <Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} />
+              </Button>
+            </div>
+          )}
         </footer>
       </main>
     </div>

@@ -12,7 +12,8 @@ import {
   Heart,
   Calendar,
   MapPin,
-  MessageSquare
+  MessageSquare,
+  Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,10 +47,19 @@ export default function UserProfilePage() {
   const currentUserRef = useMemoFirebase(() => currentUser ? doc(db, "users", currentUser.uid) : null, [db, currentUser]);
   const { data: currentUserProfile } = useDoc<any>(currentUserRef);
 
+  // فحص المتابعة: هل أنا أتابعه؟
   const followId = currentUser && uid ? `${currentUser.uid}_${uid}` : null;
   const followRef = useMemoFirebase(() => (followId && !isOwnProfile) ? doc(db, "follows", followId) : null, [db, followId, isOwnProfile]);
   const { data: followDoc } = useDoc<any>(followRef);
   const isFollowing = !!followDoc;
+
+  // فحص المتابعة العكسية: هل هو يتابعني؟
+  const reverseFollowId = currentUser && uid ? `${uid}_${currentUser.uid}` : null;
+  const reverseFollowRef = useMemoFirebase(() => (reverseFollowId && !isOwnProfile) ? doc(db, "follows", reverseFollowId) : null, [db, reverseFollowId, isOwnProfile]);
+  const { data: reverseFollowDoc } = useDoc<any>(reverseFollowRef);
+  const followsMe = !!reverseFollowDoc;
+
+  const isFriend = isFollowing && followsMe;
 
   const userPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
@@ -84,7 +94,7 @@ export default function UserProfilePage() {
   };
 
   const handleStartMessage = async () => {
-    if (!currentUser || !uid || isOwnProfile) return;
+    if (!currentUser || !uid || isOwnProfile || !isFriend) return;
     
     try {
       const participants = [currentUser.uid, uid as string].sort();
@@ -177,11 +187,17 @@ export default function UserProfilePage() {
               <Link href="/profile/edit"><Button variant="outline" className="rounded-full font-black px-6 border-zinc-700">{isRtl ? "تعديل" : "Edit"}</Button></Link>
             ) : (
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" className="rounded-full border-zinc-700 h-10 w-10" onClick={handleStartMessage}>
-                  <MessageSquare className="h-5 w-5" />
-                </Button>
+                {isFriend ? (
+                  <Button variant="outline" size="icon" className="rounded-full border-zinc-700 h-10 w-10 bg-primary/10 border-primary/30" onClick={handleStartMessage}>
+                    <MessageSquare className="h-5 w-5 text-primary" />
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="icon" className="rounded-full border-zinc-800 h-10 w-10 opacity-40 cursor-not-allowed" disabled>
+                    <Lock className="h-4 w-4 text-zinc-600" />
+                  </Button>
+                )}
                 <Button onClick={handleFollow} className={cn("rounded-full font-black px-8 h-10", isFollowing ? "bg-zinc-900 text-white border border-zinc-800" : "bg-white text-black")}>
-                  {isFollowing ? (isRtl ? "يتابع" : "Following") : (isRtl ? "متابعة" : "Follow")}
+                  {isFollowing ? (isRtl ? "يتبع" : "Following") : (isRtl ? "متابعة" : "Follow")}
                 </Button>
               </div>
             )}
@@ -191,6 +207,15 @@ export default function UserProfilePage() {
         <div className="mt-4 text-[15px] leading-relaxed text-zinc-300 font-medium">
           {profile?.bio || (isRtl ? "لا توجد سيرة ذاتية.." : "No bio yet.")}
         </div>
+
+        {!isOwnProfile && !isFriend && isFollowing && (
+          <div className="mt-4 p-3 bg-zinc-900/50 rounded-2xl border border-zinc-800 flex items-center gap-3">
+             <Info className="h-4 w-4 text-zinc-500" />
+             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tight">
+               {isRtl ? "المراسلة ستفتح بمجرد أن يتابعك هذا المواطن" : "Messaging opens once this citizen follows you back"}
+             </p>
+          </div>
+        )}
 
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500 font-bold uppercase tracking-widest">
            {profile?.location && (
