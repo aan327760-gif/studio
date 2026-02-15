@@ -74,44 +74,15 @@ export function AppSidebar() {
   };
 
   const handleStartRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(blob);
-        
-        // تحويل الـ blob إلى Base64 لنقله عبر الرابط بشكل مؤقت (لأغراض المعاينة فقط)
-        // أو الأفضل تمريره كـ blob URL ومعالجته في الصفحة التالية
-        setIsSheetOpen(false);
-        router.push(`/create-post?audio=${encodeURIComponent(audioUrl)}`);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-      
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => {
-          if (prev >= 60) {
-            handleStopRecording();
-            return 60;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: isRtl ? "خطأ في الميكروفون" : "Microphone Error",
-        description: isRtl ? "يرجى السماح بالوصول للميكروفون للتسجيل." : "Please allow microphone access to record.",
-      });
-    }
+    // تم استبدال التسجيل الفوري ببيان أكاديمي بناءً على طلب المدير العام
+    toast({
+      duration: 8000,
+      title: isRtl ? "بيان تقني: الساحة الصوتية السيادية" : "Technical Proclamation: Sovereign Acoustic Arena",
+      description: isRtl 
+        ? "قريباً: يهدف هذا الحيز المعرفي لتوفير بيئة رصينة لأصحاب الفكر والأكاديميين والفنانين. سيكون منبراً عاماً للمحاضرات التخصصية، السجالات السياسية المعمقة، والإبداع الموسيقي الهادف، حيث تتحول الكلمة المنطوقة إلى وثيقة سيادية."
+        : "Coming Soon: This epistemic space is engineered for thinkers, academics, and artists. It will serve as a public forum for specialized lectures, in-depth political discourse, and purposeful musical creation, where the spoken word becomes a sovereign record.",
+    });
+    setIsSheetOpen(false);
   };
 
   const handleStopRecording = () => {
