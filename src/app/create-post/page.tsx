@@ -106,7 +106,8 @@ function CreatePostContent() {
         mediaType = 'video';
       } else if (audioUrl) {
         const base64 = await urlToBlob(audioUrl);
-        finalMediaUrl = await uploadToCloudinary(base64, 'raw');
+        // نستخدم 'video' للرفع لأنها النوع الأنسب في Cloudinary لدعم تشغيل الصوت بفعالية
+        finalMediaUrl = await uploadToCloudinary(base64, 'video');
         mediaType = 'audio';
       }
 
@@ -183,7 +184,7 @@ function CreatePostContent() {
             />
 
             {(localImageUrl || videoUrl) && (
-              <div className="relative group rounded-[2rem] overflow-hidden border border-zinc-800 bg-zinc-900/50 aspect-square flex items-center justify-center">
+              <div className="relative group rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-950 shadow-2xl aspect-square flex items-center justify-center">
                 {localImageUrl ? (
                   <img 
                     src={localImageUrl} 
