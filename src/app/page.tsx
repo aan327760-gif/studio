@@ -16,11 +16,13 @@ export default function Home() {
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
+  // استعلام اكتشف - مثبت
   const discoverPostsQuery = useMemoFirebase(() => {
     return query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
   }, [db]);
   const { data: discoverPosts, loading: discoverLoading } = useCollection<any>(discoverPostsQuery);
 
+  // استعلام المتابعات - مثبت
   const followsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(collection(db, "follows"), where("followerId", "==", currentUser.uid));
@@ -29,6 +31,7 @@ export default function Home() {
 
   const followingIds = userFollows?.map(f => f.followingId) || [];
 
+  // استعلام منشورات المتابعة - مثبت
   const followingPostsQuery = useMemoFirebase(() => {
     if (!currentUser || followingIds.length === 0) return null;
     return query(

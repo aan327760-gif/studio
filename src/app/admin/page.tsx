@@ -14,29 +14,21 @@ import {
   updateDoc, 
   Timestamp,
   where,
-  addDoc,
   serverTimestamp
 } from "firebase/firestore";
 import { 
-  Users, 
-  FileText, 
-  MessageSquare, 
-  ShieldAlert, 
-  Trash2, 
   ArrowLeft,
   Loader2,
   Search,
   Ban,
   Clock,
-  UserCheck,
-  UserX,
   ShieldCheck,
   Flag,
   CheckCircle,
-  UserPlus
+  UserPlus,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -60,12 +52,11 @@ export default function AdminDashboard() {
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
   const isAdmin = isSuperAdmin || currentUserProfile?.role === "admin";
 
-  // جلب المستخدمين
-  const { data: allUsers, loading: usersLoading } = useCollection<any>(
-    query(collection(db, "users"), limit(50))
-  );
+  // جلب المستخدمين - مثبت
+  const usersQuery = useMemoFirebase(() => query(collection(db, "users"), limit(50)), [db]);
+  const { data: allUsers, loading: usersLoading } = useCollection<any>(usersQuery);
   
-  // جلب البلاغات (توزيعها: غير المسندة أو المسندة لهذا المشرف)
+  // جلب البلاغات - مثبت
   const reportsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(
@@ -78,7 +69,7 @@ export default function AdminDashboard() {
   const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
 
   useEffect(() => {
-    if (!userLoading && !isAdmin && !userLoading) {
+    if (!userLoading && !isAdmin && user) {
       router.replace("/");
     }
   }, [user, userLoading, router, isAdmin]);
@@ -89,7 +80,7 @@ export default function AdminDashboard() {
 
     if (confirm(isRtl ? "إيقاف المستخدم عن التفاعل لمدة 3 أيام؟" : "Restrict user interaction for 3 days?")) {
       try {
-        await updateDoc(doc(db, "users", userId), {
+        updateDoc(doc(db, "users", userId), {
           isBannedUntil: Timestamp.fromDate(banUntil)
         });
         toast({ title: isRtl ? "تم إيقاف التفاعل" : "Interaction restricted" });
@@ -104,10 +95,10 @@ export default function AdminDashboard() {
       if (action === 'delete') {
         const report = reports.find(r => r.id === reportId);
         if (report && report.targetType === 'post') {
-          await deleteDoc(doc(db, "posts", report.targetId));
+          deleteDoc(doc(db, "posts", report.targetId));
         }
       }
-      await updateDoc(doc(db, "reports", reportId), {
+      updateDoc(doc(db, "reports", reportId), {
         status: "resolved",
         resolvedBy: user?.uid,
         resolvedAt: serverTimestamp()
@@ -122,7 +113,7 @@ export default function AdminDashboard() {
     if (!isSuperAdmin) return;
     const newRole = targetUser.role === "admin" ? "user" : "admin";
     if (confirm(isRtl ? `تغيير رتبة ${targetUser.displayName}؟` : `Change role for ${targetUser.displayName}?`)) {
-      await updateDoc(doc(db, "users", targetUser.id), { role: newRole });
+      updateDoc(doc(db, "users", targetUser.id), { role: newRole });
       toast({ title: "Updated" });
     }
   };
