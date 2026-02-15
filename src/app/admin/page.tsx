@@ -30,7 +30,8 @@ import {
   Star,
   Radio,
   CheckCircle,
-  ShieldAlert
+  ShieldAlert,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -64,15 +65,16 @@ export default function AdminDashboard() {
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
   const isAdmin = isSuperAdmin || (currentUserProfile && currentUserProfile.role === "admin");
 
-  const usersQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "users"), limit(100)) : null, [db, isAdmin]);
+  // تحسين جلب البيانات بحد أقصى (MVP Limit)
+  const usersQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "users"), limit(50)) : null, [db, isAdmin]);
   const { data: allUsers = [], loading: usersLoading } = useCollection<any>(usersQuery);
   
-  const reportsQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isAdmin]);
+  const reportsQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "reports"), where("status", "==", "pending"), limit(20)) : null, [db, isAdmin]);
   const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
 
   useEffect(() => {
     async function fetchStats() {
-      if (!isAdmin || !db || !currentUserProfile) return;
+      if (!isAdmin || !db) return;
       try {
         const uCount = await getCountFromServer(collection(db, "users"));
         const pCount = await getCountFromServer(collection(db, "posts"));
@@ -86,25 +88,25 @@ export default function AdminDashboard() {
           reports: rCount.data().count
         });
       } catch (err: any) {
-        console.warn("Stats fetch error:", err.message);
+        console.warn("Stats fetch skipped due to permissions or index.");
       } finally {
         setStatsLoading(false);
       }
     }
     fetchStats();
-  }, [db, isAdmin, currentUserProfile?.id]);
+  }, [db, isAdmin]);
 
   useEffect(() => {
-    if (!userLoading && !isAdmin && user && currentUserProfile) router.replace("/");
-  }, [user, userLoading, router, isAdmin, currentUserProfile]);
+    if (!userLoading && !isAdmin && user) router.replace("/");
+  }, [user, userLoading, router, isAdmin]);
 
   const handleBroadcast = async () => {
     if (!broadcastMessage.trim() || !isSuperAdmin) return;
     setIsBroadcasting(true);
     try {
       const batch = writeBatch(db);
-      // بث لأول 100 مستخدم (MVP Limit)
-      allUsers.slice(0, 100).forEach((member: any) => {
+      // بث لآخر المواطنين النشطين (كفاءة الأداء)
+      allUsers.forEach((member: any) => {
         const notifRef = doc(collection(db, "notifications"));
         batch.set(notifRef, {
           userId: member.id,
@@ -116,35 +118,30 @@ export default function AdminDashboard() {
         });
       });
       await batch.commit();
-      toast({ title: isRtl ? "تم إرسال البث بنجاح" : "Command broadcast sent" });
+      toast({ title: isRtl ? "تم إرسال البيان السيادي" : "Sovereign Proclamation Sent" });
       setBroadcastMessage("");
     } catch (error) {
-      toast({ variant: "destructive", title: "Error" });
+      toast({ variant: "destructive", title: "Broadcast Failed" });
     } finally {
       setIsBroadcasting(false);
     }
   };
 
-  if (userLoading || (!isAdmin && !userLoading && user)) {
-    return (
-      <div className="h-screen bg-black flex flex-col items-center justify-center gap-4 text-white">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-[0.3em]">{isRtl ? "جاري التحقق من الصلاحيات..." : "Authenticating Command..."}</p>
-      </div>
-    );
+  if (userLoading) {
+    return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-black text-white max-w-5xl mx-auto border-x border-zinc-900 pb-20">
+    <div className="min-h-screen bg-black text-white max-w-5xl mx-auto border-x border-zinc-900 pb-20 selection:bg-primary/30">
       <header className="p-8 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900 h-12 w-12 border border-zinc-800">
             <ArrowLeft className={cn("h-6 w-6", isRtl ? "rotate-180" : "")} />
           </Button>
           <div>
-            <h1 className="text-3xl font-black tracking-tighter">{isRtl ? "مركز القيادة" : "Sovereign Command"}</h1>
+            <h1 className="text-3xl font-black tracking-tighter">{isRtl ? "غرفة العمليات" : "War Room"}</h1>
             <Badge className="bg-primary/20 text-primary border-primary/20 text-[9px] font-black uppercase tracking-widest mt-1">
-              {isSuperAdmin ? "ROOT ADMINISTRATOR" : "SYSTEM MODERATOR"}
+              {isSuperAdmin ? "ROOT ACCESS" : "COMMAND MODERATOR"}
             </Badge>
           </div>
         </div>
@@ -154,21 +151,22 @@ export default function AdminDashboard() {
       </header>
 
       <main className="p-6 space-y-10">
+        {/* ملخص الإحصائيات */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { label: isRtl ? "المواطنين" : "Citizens", value: stats.users, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
             { label: isRtl ? "الأفكار" : "Insights", value: stats.posts, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-            { label: isRtl ? "اللمة" : "Communities", value: stats.groups, icon: MessageSquare, color: "text-purple-500", bg: "bg-purple-500/10" },
+            { label: isRtl ? "المجتمعات" : "Lamma", value: stats.groups, icon: MessageSquare, color: "text-purple-500", bg: "bg-purple-500/10" },
             { label: isRtl ? "التهديدات" : "Threats", value: stats.reports, icon: AlertTriangle, color: "text-red-500", bg: "bg-red-500/10" },
           ].map((stat, i) => (
-            <Card key={i} className="bg-zinc-950 border-zinc-900 shadow-2xl relative overflow-hidden group">
+            <Card key={i} className="bg-zinc-950 border-zinc-900 shadow-2xl overflow-hidden group">
               <CardContent className="p-8">
                 <div className={cn("p-3 rounded-2xl inline-flex mb-6 group-hover:scale-110 transition-transform", stat.bg)}>
                   <stat.icon className={cn("h-6 w-6", stat.color)} />
                 </div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">{stat.label}</p>
                 <h3 className="text-3xl font-black">
-                  {statsLoading ? <Loader2 className="h-6 w-6 animate-spin opacity-20" /> : stat.value.toLocaleString()}
+                  {statsLoading ? "..." : stat.value.toLocaleString()}
                 </h3>
               </CardContent>
             </Card>
@@ -177,14 +175,14 @@ export default function AdminDashboard() {
 
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-16 p-1.5 rounded-[2rem] mb-10 shadow-xl">
-            <TabsTrigger value="users" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:shadow-lg">
-              {isRtl ? "إدارة المواطنين" : "Citizen Management"}
+            <TabsTrigger value="users" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary">
+              {isRtl ? "إدارة الهويات" : "Identity MGMT"}
             </TabsTrigger>
-            <TabsTrigger value="reports" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:shadow-lg">
-              {isRtl ? "البلاغات" : "Threat Reports"} {reports.length > 0 && <Badge className="ml-2 bg-red-600 border-none h-5 px-1.5 text-[10px]">{reports.length}</Badge>}
+            <TabsTrigger value="reports" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary">
+              {isRtl ? "التهديدات" : "Threats"} {reports.length > 0 && <Badge className="ml-2 bg-red-600 border-none h-5 px-1.5 text-[10px]">{reports.length}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="broadcast" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:shadow-lg">
-              {isRtl ? "بيان رسمي" : "Proclamation"}
+            <TabsTrigger value="broadcast" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary">
+              {isRtl ? "بيان سيادي" : "Proclamation"}
             </TabsTrigger>
           </TabsList>
 
@@ -192,8 +190,8 @@ export default function AdminDashboard() {
              <div className="relative mb-8">
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600" />
                 <Input 
-                  placeholder={isRtl ? "ابحث عن هوية..." : "Search citizen identity..."} 
-                  className="bg-zinc-950 border-zinc-900 rounded-[1.5rem] pl-14 h-16 text-sm font-bold shadow-inner"
+                  placeholder={isRtl ? "ابحث عن مواطن..." : "Search citizen..."} 
+                  className="bg-zinc-950 border-zinc-900 rounded-[1.5rem] pl-14 h-16 text-sm font-bold"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -212,7 +210,7 @@ export default function AdminDashboard() {
                             {member.isVerified && <VerificationBadge className="h-4 w-4" />}
                             {member.isPro && <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />}
                          </div>
-                         <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{member.email?.split('@')[0]}</p>
+                         <p className="text-[10px] text-zinc-600 font-bold uppercase">@{member.email?.split('@')[0]}</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
@@ -221,7 +219,6 @@ export default function AdminDashboard() {
                             <Button 
                               variant="ghost" size="icon" 
                               className={cn("h-12 w-12 rounded-2xl transition-all", member.isVerified ? "bg-primary/10 text-primary border border-primary/20" : "bg-zinc-900 text-zinc-700 border border-zinc-800")}
-                              title={isRtl ? "توثيق هوية" : "Grant Rosette"}
                               onClick={() => updateDoc(doc(db, "users", member.id), { isVerified: !member.isVerified })}
                             >
                               <VerificationBadge className="h-6 w-6" />
@@ -229,7 +226,6 @@ export default function AdminDashboard() {
                             <Button 
                               variant="ghost" size="icon" 
                               className={cn("h-12 w-12 rounded-2xl transition-all", member.isPro ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20" : "bg-zinc-900 text-zinc-700 border border-zinc-800")}
-                              title={isRtl ? "توثيق قناة إعلامية" : "Grant Media Status"}
                               onClick={() => updateDoc(doc(db, "users", member.id), { isPro: !member.isPro })}
                             >
                               <Radio className="h-6 w-6" />
@@ -238,7 +234,7 @@ export default function AdminDashboard() {
                        )}
                        <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-zinc-900 text-zinc-700 hover:text-red-500 border border-zinc-800 transition-all" onClick={() => {
                           const banUntil = new Date();
-                          banUntil.setDate(banUntil.getDate() + 3);
+                          banUntil.setDate(banUntil.getDate() + 3); // 3 days ban
                           updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });
                           toast({ title: "Citizen restricted for 72h" });
                        }}>
@@ -262,8 +258,8 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-6">
                           <div className="p-5 bg-red-500/10 rounded-2xl border border-red-500/20"><AlertTriangle className="h-8 w-8 text-red-500" /></div>
                           <div className="space-y-1">
-                            <p className="text-lg font-black">{isRtl ? "بلاغ عن مخالفة" : "Policy Violation Report"}</p>
-                            <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{isRtl ? "النوع: " : "Target: "}{report.targetType}</p>
+                            <p className="text-lg font-black">{isRtl ? "مخالفة سيادية" : "Protocol Violation"}</p>
+                            <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Type: {report.targetType}</p>
                           </div>
                         </div>
                       </div>
@@ -273,7 +269,7 @@ export default function AdminDashboard() {
                       <div className="flex gap-4 relative z-10">
                          <Button variant="ghost" className="flex-1 rounded-2xl border border-zinc-800 font-black h-14 hover:bg-zinc-900" onClick={async () => {
                            await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
-                           toast({ title: "Threat Ignored" });
+                           toast({ title: "Dismissed" });
                          }}>
                            {isRtl ? "تجاهل" : "Dismiss"}
                          </Button>
@@ -287,9 +283,9 @@ export default function AdminDashboard() {
                              }
                            }
                            await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
-                           toast({ title: "Sovereign Action Applied" });
+                           toast({ title: "Sanction Applied" });
                          }}>
-                           {isRtl ? "تطبيق العقوبة" : "Apply Sanction"}
+                           {isRtl ? "تطبيق العقوبة" : "Sanction"}
                          </Button>
                       </div>
                    </div>
@@ -298,22 +294,22 @@ export default function AdminDashboard() {
              ) : (
                <div className="py-40 text-center opacity-10 flex flex-col items-center gap-6">
                  <CheckCircle className="h-24 w-24" />
-                 <p className="text-lg font-black uppercase tracking-widest">{isRtl ? "المنطقة آمنة بالكامل" : "Perimeter Secured"}</p>
+                 <p className="text-lg font-black uppercase tracking-widest">{isRtl ? "البيئة آمنة تماماً" : "Pure Sovereignty"}</p>
                </div>
              )}
           </TabsContent>
 
           <TabsContent value="broadcast" className="space-y-10">
             <Card className="bg-zinc-950 border-zinc-900 border-2 border-dashed border-primary/30 rounded-[3rem] shadow-2xl overflow-hidden">
-               <CardHeader className="p-10 pb-6">
-                  <CardTitle className="text-xl font-black uppercase tracking-widest flex items-center gap-4">
+               <CardHeader className="p-10 pb-6 text-center">
+                  <CardTitle className="text-xl font-black uppercase tracking-widest flex items-center justify-center gap-4">
                      <Megaphone className="h-8 w-8 text-primary animate-pulse" />
-                     {isRtl ? "بيان القيادة السيادية" : "Sovereign Proclamation"}
+                     {isRtl ? "بث بيان القيادة العليا" : "Command Broadcast"}
                   </CardTitle>
                </CardHeader>
                <CardContent className="p-10 pt-0 space-y-8">
                   <Textarea 
-                    placeholder={isRtl ? "اكتب هنا نص البيان الرسمي الموجه لجميع المواطنين..." : "Enter official proclamation for all citizens..."}
+                    placeholder={isRtl ? "اكتب هنا نص البيان الموجه لجميع المواطنين..." : "Enter official proclamation for all citizens..."}
                     className="bg-zinc-900 border-zinc-800 rounded-[2rem] min-h-[200px] resize-none text-lg font-bold p-8 shadow-inner"
                     value={broadcastMessage}
                     onChange={(e) => setBroadcastMessage(e.target.value)}
@@ -323,8 +319,11 @@ export default function AdminDashboard() {
                     disabled={isBroadcasting || !broadcastMessage.trim() || !isSuperAdmin}
                     onClick={handleBroadcast}
                   >
-                    {isBroadcasting ? <Loader2 className="h-8 w-8 animate-spin" /> : (isRtl ? "بث البيان فوراً" : "Execute Broadcast")}
+                    {isBroadcasting ? <Loader2 className="h-8 w-8 animate-spin" /> : (isRtl ? "تنفيذ البث الفوري" : "Execute Broadcast")}
                   </Button>
+                  <p className="text-center text-[10px] text-zinc-600 font-black uppercase tracking-widest">
+                    ⚠️ {isRtl ? "سيظهر هذا البيان لجميع المواطنين في شريط الصفحة الرئيسية" : "This message will be pinned for all citizens"}
+                  </p>
                </CardContent>
             </Card>
           </TabsContent>
