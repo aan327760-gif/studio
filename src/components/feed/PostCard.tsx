@@ -182,6 +182,21 @@ export const PostCard = memo(({
     };
     addDoc(collection(db, "posts", id, "comments"), commentData);
     updateDoc(doc(db, "posts", id), { commentsCount: increment(1) });
+    
+    // إرسال تنبيه لصاحب المنشور عند إضافة تعليق
+    if (author?.uid !== user.uid) {
+      addDoc(collection(db, "notifications"), {
+        userId: author.uid,
+        type: "comment",
+        fromUserId: user.uid,
+        fromUserName: user.displayName,
+        fromUserAvatar: user.photoURL,
+        message: isRtl ? "علق على رؤيتك" : "commented on your insight",
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    }
+
     setNewComment("");
     setReplyTo(null);
   };
