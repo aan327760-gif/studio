@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Camera, Loader2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, Image as ImageIcon, MapPin } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { toast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,6 +28,7 @@ export default function EditProfilePage() {
   const [formData, setFormData] = useState({
     displayName: "",
     bio: "",
+    location: "",
     photoURL: "",
     bannerURL: ""
   });
@@ -42,6 +43,7 @@ export default function EditProfilePage() {
       setFormData({
         displayName: profile.displayName || "",
         bio: profile.bio || "",
+        location: profile.location || "",
         photoURL: profile.photoURL || "",
         bannerURL: profile.bannerURL || ""
       });
@@ -96,6 +98,7 @@ export default function EditProfilePage() {
       await updateDoc(doc(db, "users", user.uid), {
         displayName: formData.displayName,
         bio: formData.bio,
+        location: formData.location,
         photoURL: formData.photoURL,
         bannerURL: formData.bannerURL
       });
@@ -147,7 +150,7 @@ export default function EditProfilePage() {
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-all">
             {uploading === "banner" ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
           </div>
-          <input type="file" accept="image/*,image/heic,image/heif,image/webp,image/avif,image/png,image/jpeg" className="hidden" ref={bannerInputRef} onChange={(e) => handleImageUpload(e, "banner")} />
+          <input type="file" accept="image/*" className="hidden" ref={bannerInputRef} onChange={(e) => handleImageUpload(e, "banner")} />
         </div>
 
         {/* Avatar Section */}
@@ -160,7 +163,7 @@ export default function EditProfilePage() {
             <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               {uploading === "avatar" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
             </div>
-            <input type="file" accept="image/*,image/heic,image/heif,image/webp,image/avif,image/png,image/jpeg" className="hidden" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, "avatar")} />
+            <input type="file" accept="image/*" className="hidden" ref={avatarInputRef} onChange={(e) => handleImageUpload(e, "avatar")} />
           </div>
         </div>
 
@@ -172,6 +175,19 @@ export default function EditProfilePage() {
               onChange={(e) => setFormData({...formData, displayName: e.target.value})}
               className="bg-zinc-900 border-zinc-800 rounded-xl focus-visible:ring-primary h-12"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-zinc-500 text-xs font-bold uppercase tracking-wider">{isRtl ? "الموقع" : "Location"}</Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
+              <Input 
+                value={formData.location}
+                onChange={(e) => setFormData({...formData, location: e.target.value})}
+                placeholder={isRtl ? "الجزائر، العاصمة" : "Algiers, Algeria"}
+                className="bg-zinc-900 border-zinc-800 rounded-xl focus-visible:ring-primary h-12 pl-10"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

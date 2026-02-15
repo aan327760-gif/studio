@@ -7,15 +7,11 @@ import {
   ChevronRight, 
   Languages, 
   ShieldCheck, 
-  BellRing, 
   CircleHelp, 
   Info, 
   ArrowLeft,
-  Moon,
   Lock,
-  EyeOff,
   LogOut,
-  User,
   ShieldAlert,
   Star,
   Globe,
@@ -197,7 +193,7 @@ export default function SettingsPage() {
               {isRtl ? "الدعم والمعلومات" : "Support & About"}
             </h2>
             <div className="bg-zinc-950 border border-zinc-900 rounded-[2rem] overflow-hidden">
-              <div className="flex items-center justify-between p-5 hover:bg-white/[0.02] cursor-pointer transition-colors" onClick={handleUnderDev}>
+              <div className="flex items-center justify-between p-5 hover:bg-white/[0.02] cursor-pointer transition-colors" onClick={() => router.push('/help')}>
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-2xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
                     <CircleHelp className="h-5 w-5 text-zinc-400" />
@@ -207,7 +203,7 @@ export default function SettingsPage() {
                 <ChevronRight className={cn("h-4 w-4 text-zinc-800", isRtl ? "rotate-180" : "")} />
               </div>
               <Separator className="bg-zinc-900/50" />
-              <div className="flex items-center justify-between p-5 hover:bg-white/[0.02] cursor-pointer transition-colors" onClick={handleUnderDev}>
+              <div className="flex items-center justify-between p-5 hover:bg-white/[0.02] cursor-pointer transition-colors" onClick={() => router.push('/about')}>
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-2xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
                     <Info className="h-5 w-5 text-zinc-400" />

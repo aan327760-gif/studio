@@ -5,15 +5,13 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
-  MoreHorizontal, 
-  Calendar, 
-  MapPin, 
   Loader2,
   Settings,
   ShieldCheck,
   Star,
-  Radio,
-  Heart
+  Heart,
+  Calendar,
+  MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -123,7 +121,7 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      <div className="px-4 relative -mt-14">
+      <div className="px-6 relative -mt-14">
         <Avatar className="h-28 w-28 border-[6px] border-black shadow-2xl mb-4">
           <AvatarImage src={profile?.photoURL} />
           <AvatarFallback className="bg-zinc-800 text-3xl font-black">{profile?.displayName?.[0]?.toUpperCase()}</AvatarFallback>
@@ -160,6 +158,19 @@ export default function UserProfilePage() {
 
         <div className="mt-4 text-[15px] leading-relaxed text-zinc-300 font-medium">
           {profile?.bio || (isRtl ? "لا توجد سيرة ذاتية.." : "No bio yet.")}
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500 font-bold uppercase tracking-widest">
+           {profile?.location && (
+             <div className="flex items-center gap-1.5">
+               <MapPin className="h-3.5 w-3.5" />
+               <span>{profile.location}</span>
+             </div>
+           )}
+           <div className="flex items-center gap-1.5">
+             <Calendar className="h-3.5 w-3.5" />
+             <span>{isRtl ? "انضم" : "Joined"} {profile?.createdAt?.toDate ? profile.createdAt.toDate().toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' }) : "Recently"}</span>
+           </div>
         </div>
 
         <div className="mt-6 flex gap-6 border-y border-zinc-900 py-4">
