@@ -12,7 +12,8 @@ import {
   Settings,
   ShieldCheck,
   Star,
-  Radio
+  Radio,
+  Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,11 +51,19 @@ export default function UserProfilePage() {
   const { data: followDoc } = useDoc<any>(followRef);
   const isFollowing = !!followDoc;
 
+  // استعلام منشورات المستخدم
   const userPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
     return query(collection(db, "posts"), where("authorId", "==", uid), limit(30));
   }, [db, uid]);
   const { data: userPosts = [], loading: postsLoading } = useCollection<any>(userPostsQuery);
+
+  // استعلام المنشورات التي أعجبت المستخدم
+  const likedPostsQuery = useMemoFirebase(() => {
+    if (!uid) return null;
+    return query(collection(db, "posts"), where("likedBy", "array-contains", uid), limit(30));
+  }, [db, uid]);
+  const { data: likedPosts = [], loading: likedLoading } = useCollection<any>(likedPostsQuery);
 
   const handleFollow = async () => {
     if (!currentUser || !uid || isOwnProfile || !followRef) return;
@@ -90,7 +99,7 @@ export default function UserProfilePage() {
   const isProfileAdmin = profile?.role === "admin" || profile?.email === SUPER_ADMIN_EMAIL;
   const isVisitorAdmin = currentUserProfile?.role === "admin" || currentUser?.email === SUPER_ADMIN_EMAIL;
   const showCheckmark = profile?.isVerified || profile?.email === SUPER_ADMIN_EMAIL;
-  const isMediaChannel = profile?.isPro; // تم تخصيص الـ Pro للقنوات الإعلامية
+  const isMediaChannel = profile?.isPro;
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20 overflow-x-hidden">
@@ -164,6 +173,7 @@ export default function UserProfilePage() {
         <TabsList className="w-full bg-black rounded-none h-14 p-0 border-b border-zinc-900 justify-around glass">
           <TabsTrigger value="posts" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "المنشورات" : "Posts"}</TabsTrigger>
           <TabsTrigger value="media" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "الوسائط" : "Media"}</TabsTrigger>
+          <TabsTrigger value="likes" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "الإعجابات" : "Likes"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="posts" className="m-0">
@@ -182,6 +192,32 @@ export default function UserProfilePage() {
               </Link>
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="likes" className="m-0">
+          {likedLoading ? (
+            <div className="flex justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" /></div>
+          ) : likedPosts.length > 0 ? (
+            <div className="flex flex-col">
+              {likedPosts.map((post: any) => (
+                <PostCard 
+                  key={post.id} 
+                  id={post.id} 
+                  author={post.author} 
+                  content={post.content} 
+                  image={post.mediaUrl} 
+                  mediaType={post.mediaType} 
+                  likes={post.likesCount || 0} 
+                  time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="p-20 text-center flex flex-col items-center gap-4 opacity-20">
+              <Heart className="h-12 w-12" />
+              <p className="text-sm font-bold">{isRtl ? "لا توجد إعجابات بعد" : "No likes yet"}</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
       <AppSidebar />
