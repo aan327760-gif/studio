@@ -90,6 +90,7 @@ export default function ExplorePage() {
         fromUserId: currentUser.uid,
         fromUserName: currentUser.displayName || "Someone",
         fromUserAvatar: currentUser.photoURL || "",
+        message: isRtl ? "بدأ في متابعتك" : "started following you",
         read: false,
         createdAt: serverTimestamp()
       });

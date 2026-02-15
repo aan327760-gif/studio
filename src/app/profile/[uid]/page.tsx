@@ -13,7 +13,8 @@ import {
   Calendar,
   MapPin,
   MessageSquare,
-  Lock
+  Lock,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -86,9 +87,14 @@ export default function UserProfilePage() {
       updateDoc(doc(db, "users", uid as string), { followersCount: increment(1) });
 
       addDoc(collection(db, "notifications"), {
-        userId: uid, type: "follow", fromUserId: currentUser.uid,
-        fromUserName: currentUser.displayName || "User", fromUserAvatar: currentUser.photoURL || "",
-        read: false, createdAt: serverTimestamp()
+        userId: uid, 
+        type: "follow", 
+        fromUserId: currentUser.uid,
+        fromUserName: currentUserProfile?.displayName || currentUser.displayName || "User", 
+        fromUserAvatar: currentUserProfile?.photoURL || currentUser.photoURL || "",
+        message: isRtl ? "بدأ في متابعتك" : "started following you",
+        read: false, 
+        createdAt: serverTimestamp()
       });
     }
   };
@@ -246,7 +252,7 @@ export default function UserProfilePage() {
 
         <TabsContent value="posts" className="m-0">
           {postsLoading ? <div className="flex justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" /></div> : userPosts.length > 0 ? (
-            <div className="flex flex-col">{userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0], uid: uid}} content={post.content} image={post.mediaUrl} mediaType={post.mediaType} likes={post.likesCount || 0} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}</div>
+            <div className="flex flex-col">{userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0], uid: uid, id: uid}} content={post.content} image={post.mediaUrl} mediaType={post.mediaType} likes={post.likesCount || 0} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}</div>
           ) : <div className="p-20 text-center text-zinc-500 font-bold">{isRtl ? "لا منشورات" : "No posts"}</div>}
         </TabsContent>
 

@@ -103,12 +103,28 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       updateDoc(postRef, { likedBy: arrayRemove(user.uid) });
     } else {
       updateDoc(postRef, { likedBy: arrayUnion(user.uid) });
+      
+      // إرسال تنبيه للمؤلف (إذا لم يكن هو الفاعل)
+      if (author?.id !== user.uid) {
+        addDoc(collection(db, "notifications"), {
+          userId: author?.id || author?.uid,
+          type: "like",
+          fromUserId: user.uid,
+          fromUserName: currentUserProfile?.displayName || user.displayName,
+          fromUserAvatar: currentUserProfile?.photoURL || user.photoURL,
+          postId: id,
+          message: isRtl ? "أعجب بمنشورك" : "liked your post",
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
     }
   };
 
   const handleAddComment = async () => {
     if (isBanned || !newComment.trim() || !user || !id || !allowComments) return;
-    addDoc(collection(db, "posts", id, "comments"), {
+    
+    await addDoc(collection(db, "posts", id, "comments"), {
       authorId: user.uid,
       authorName: currentUserProfile?.displayName || user.displayName || "User",
       authorAvatar: currentUserProfile?.photoURL || user.photoURL || "",
@@ -116,6 +132,22 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       text: newComment,
       createdAt: serverTimestamp()
     });
+
+    // إرسال تنبيه للمؤلف
+    if (author?.id !== user.uid) {
+      addDoc(collection(db, "notifications"), {
+        userId: author?.id || author?.uid,
+        type: "comment",
+        fromUserId: user.uid,
+        fromUserName: currentUserProfile?.displayName || user.displayName,
+        fromUserAvatar: currentUserProfile?.photoURL || user.photoURL,
+        postId: id,
+        message: isRtl ? "علق على منشورك" : "commented on your post",
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    }
+
     setNewComment("");
   };
 
