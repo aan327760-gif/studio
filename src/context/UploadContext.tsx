@@ -16,7 +16,7 @@ interface UploadContextType {
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
 /**
- * دالة ضغط الصور سيادياً لتقليل الحجم قبل الرفع.
+ * محرك الضغط السيادي - معالجة خفيفة لا ترهق المعالج
  */
 const compressImage = async (url: string): Promise<string> => {
   return new Promise((resolve) => {
@@ -25,7 +25,7 @@ const compressImage = async (url: string): Promise<string> => {
     img.src = url;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 1200;
+      const MAX_WIDTH = 1080; // عرض قياسي عالمي
       let width = img.width;
       let height = img.height;
 
@@ -37,15 +37,19 @@ const compressImage = async (url: string): Promise<string> => {
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+      }
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
     };
     img.onerror = () => resolve(url);
   });
 };
 
 /**
- * محرك الرفع في الخلفية - نسخة محسنة للأداء وسرعة التنقل
+ * نظام الرفع في الخلفية - إصدار "السيادة السلسة"
  */
 export function UploadProvider({ children }: { children: React.ReactNode }) {
   const [isUploading, setIsUploading] = useState(false);
@@ -56,37 +60,30 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
     const { content, localImages, videoUrl, authorInfo, privacy, allowComments, isRtl } = payload;
     
     setIsUploading(true);
-    setProgress(5); 
+    setProgress(10); 
 
     try {
       let finalMediaUrls: string[] = [];
       let mediaType: "image" | "video" | "audio" | "album" | null = null;
 
-      // 1. ضغط ومعالجة الصور في الخلفية
+      // 1. معالجة الصور (الضغط التدريجي)
       if (localImages && localImages.length > 0) {
         mediaType = localImages.length > 1 ? 'album' : 'image';
         
-        // الضغط المتتابع لعدم إرهاق المعالج
-        const compressed = [];
-        for (const rawUrl of localImages) {
-          const compressedUrl = await compressImage(rawUrl);
-          compressed.push(compressedUrl);
-          setProgress(prev => Math.min(30, prev + (25 / localImages.length)));
-        }
-
-        // الرفع لـ Cloudinary
-        const uploadPromises = compressed.map(async (base64: string) => {
-          const url = await uploadToCloudinary(base64, 'image');
-          setProgress(prev => Math.min(85, prev + (55 / localImages.length)));
+        const uploadPromises = localImages.map(async (rawUrl: string, idx: number) => {
+          const compressed = await compressImage(rawUrl);
+          setProgress(prev => Math.min(40, prev + (20 / localImages.length)));
+          const url = await uploadToCloudinary(compressed, 'image');
+          setProgress(prev => Math.min(90, prev + (50 / localImages.length)));
           return url;
         });
         finalMediaUrls = await Promise.all(uploadPromises);
       } 
       
-      // 2. معالجة الفيديو في الخلفية
+      // 2. معالجة الفيديوهات (التدفق المباشر)
       else if (videoUrl) {
         mediaType = 'video';
-        setProgress(20);
+        setProgress(30);
         
         const response = await fetch(videoUrl);
         const blob = await response.blob();
@@ -98,10 +95,10 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
         
         const url = await uploadToCloudinary(base64, 'video');
         finalMediaUrls = [url];
-        setProgress(90);
+        setProgress(95);
       }
 
-      // 3. حفظ التدوينة النهائية في Firestore
+      // 3. التوثيق النهائي في Firestore
       await addDoc(collection(db, "posts"), {
         content,
         mediaUrl: finalMediaUrls[0] || null,
@@ -120,15 +117,15 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
       });
 
       setProgress(100);
-      toast({ title: isRtl ? "تم النشر بنجاح" : "Post Published" });
+      toast({ title: isRtl ? "تم النشر بنجاح" : "Sovereign Post Published" });
     } catch (error: any) {
-      console.error("Global Upload Error:", error);
-      toast({ variant: "destructive", title: isRtl ? "فشل النشر" : "Upload Failed" });
+      console.error("Sovereign Upload Engine Failure:", error);
+      toast({ variant: "destructive", title: isRtl ? "فشل البروتوكول" : "Upload Failed" });
     } finally {
       setTimeout(() => {
         setIsUploading(false);
         setProgress(0);
-      }, 1000);
+      }, 1500);
     }
   };
 

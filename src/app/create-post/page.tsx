@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { X, Plus, ImageIcon, Loader2 } from "lucide-react";
+import { X, Plus, ImageIcon, Loader2, Sparkles } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -91,7 +91,7 @@ function CreatePostContent() {
       uid: user?.uid
     };
 
-    // البدء الفوري في الرفع بالخلفية
+    // البدء الفوري والمغادرة السيادية
     startUpload({
       content,
       localImages,
@@ -104,24 +104,31 @@ function CreatePostContent() {
     });
 
     toast({ 
-      title: isRtl ? "جاري النشر في الخلفية" : "Publishing in background",
+      title: isRtl ? "جاري الرفع في الخلفية" : "Uploading in background",
+      description: isRtl ? "يمكنك إكمال التصفح بحرية الآن." : "Continue browsing freely.",
     });
     
-    // الانتقال الفوري والمطلق لتجنب التعلق
+    // انتقال مطلق وبدون عودة (Replace) لضمان الخفة
     router.replace("/");
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
-      <header className="p-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-20 border-b border-zinc-900">
+      <header className="p-4 flex items-center justify-between sticky top-0 bg-black/90 backdrop-blur-xl z-20 border-b border-zinc-900">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900">
           <X className="h-6 w-6" />
         </Button>
-        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sovereign Upload</span>
+        <div className="flex flex-col items-center">
+           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Unbound OS</span>
+           <div className="flex items-center gap-1">
+              <Sparkles className="h-2 w-2 text-primary fill-primary" />
+              <span className="text-[8px] font-black text-primary uppercase">Sovereign Upload</span>
+           </div>
+        </div>
         <Button 
           onClick={handleSubmit} 
           disabled={isBanned || isProcessing || (!content.trim() && localImages.length === 0 && !videoUrlFromParams)} 
-          className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200 min-w-[80px]"
+          className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200 min-w-[80px] shadow-xl"
         >
           {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Post")}
         </Button>
@@ -129,14 +136,14 @@ function CreatePostContent() {
 
       <main className="flex-1 overflow-y-auto pb-32 p-4 custom-scrollbar">
         <div className="flex gap-4">
-          <Avatar className="h-11 w-11 border border-zinc-800">
+          <Avatar className="h-11 w-11 border border-zinc-800 shadow-sm">
             <AvatarImage src={user?.photoURL || ""} />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <Textarea 
               placeholder={isRtl ? "شارك فكرة حرة..." : "Share a free thought..."} 
-              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[120px] mb-4" 
+              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[120px] mb-4 placeholder:text-zinc-700" 
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
             />
@@ -145,13 +152,13 @@ function CreatePostContent() {
               <div className="w-full overflow-hidden mb-6">
                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
                   {localImages.map((img, i) => (
-                    <div key={i} className="relative h-32 w-32 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group snap-center">
+                    <div key={i} className="relative h-40 w-40 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group snap-center shadow-2xl">
                       <img src={img} alt="preview" className="w-full h-full object-cover" />
                       <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 hover:bg-red-600 border-none"
-                        onClick={() => removeImage(i)}
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 hover:bg-red-600 border-none shadow-xl"
+                        onClick={() => removeImage(index)}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -160,10 +167,10 @@ function CreatePostContent() {
                   {localImages.length < 4 && (
                     <button 
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-32 w-32 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors"
+                      className="h-40 w-40 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-950 transition-all group"
                     >
-                      <Plus className="h-6 w-6 text-zinc-500" />
-                      <span className="text-[8px] font-black text-zinc-600 uppercase">Add</span>
+                      <Plus className="h-6 w-6 text-zinc-600 group-hover:text-primary" />
+                      <span className="text-[8px] font-black text-zinc-700 uppercase tracking-widest group-hover:text-primary">Add More</span>
                     </button>
                   )}
                 </div>
@@ -171,10 +178,12 @@ function CreatePostContent() {
             )}
 
             {!videoUrlFromParams && localImages.length === 0 && (
-              <div className="flex gap-4 py-4 border-t border-zinc-900">
-                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors">
-                    <ImageIcon className="h-5 w-5" />
-                    <span className="text-xs font-black uppercase tracking-widest">{isRtl ? "أضف صور" : "Add Images"}</span>
+              <div className="flex gap-4 py-4 border-t border-zinc-900/50">
+                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-zinc-500 hover:text-white transition-all group">
+                    <div className="h-10 w-10 rounded-2xl bg-zinc-900 flex items-center justify-center border border-zinc-800 group-hover:border-primary/30 group-hover:bg-primary/5">
+                       <ImageIcon className="h-5 w-5 group-hover:text-primary" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isRtl ? "إضافة وسائط" : "Add Media"}</span>
                  </button>
               </div>
             )}
@@ -182,25 +191,31 @@ function CreatePostContent() {
             <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleAddImage} />
 
             {videoUrlFromParams && (
-              <div className="relative aspect-video rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 mb-6 shadow-2xl">
+              <div className="relative aspect-video rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-950 mb-6 shadow-2xl">
                 <video src={videoUrlFromParams} className="w-full h-full object-contain" autoPlay muted loop />
               </div>
             )}
 
-            <div className="space-y-4 pt-6 border-t border-zinc-900">
-               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem]">
-                  <span className="text-sm font-bold">{isRtl ? "الجمهور" : "Audience"}</span>
+            <div className="space-y-4 pt-6 border-t border-zinc-900/50">
+               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-3xl shadow-sm">
+                  <div className="flex flex-col">
+                     <span className="text-xs font-black uppercase tracking-widest">{isRtl ? "الجمهور" : "Audience"}</span>
+                     <span className="text-[9px] text-zinc-600 font-bold uppercase">{isRtl ? "من يرى منشورك" : "Who sees this"}</span>
+                  </div>
                   <Select value={privacy} onValueChange={setPrivacy}>
-                    <SelectTrigger className="w-[100px] bg-zinc-900 border-none h-8 text-xs font-bold"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
+                    <SelectTrigger className="w-[110px] bg-zinc-900 border-none h-9 text-[10px] font-black uppercase tracking-widest rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-zinc-950 border-zinc-800 text-white rounded-2xl">
                       <SelectItem value="public">{isRtl ? "عام" : "Public"}</SelectItem>
                       <SelectItem value="followers">{isRtl ? "متابعون" : "Followers"}</SelectItem>
                     </SelectContent>
                   </Select>
                </div>
-               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem]">
-                  <span className="text-sm font-bold">{isRtl ? "السماح بالتعليق" : "Allow Comments"}</span>
-                  <Switch checked={allowComments} onCheckedChange={setAllowComments} />
+               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-3xl shadow-sm">
+                  <div className="flex flex-col">
+                     <span className="text-xs font-black uppercase tracking-widest">{isRtl ? "التعليقات" : "Comments"}</span>
+                     <span className="text-[9px] text-zinc-600 font-bold uppercase">{isRtl ? "فتح النقاش" : "Open discussion"}</span>
+                  </div>
+                  <Switch checked={allowComments} onCheckedChange={setAllowComments} className="data-[state=checked]:bg-primary" />
                </div>
             </div>
           </div>
@@ -212,7 +227,7 @@ function CreatePostContent() {
 
 export default function CreatePostPage() {
   return (
-    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white">Loading...</div>}>
+    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /></div>}>
       <CreatePostContent />
     </Suspense>
   );

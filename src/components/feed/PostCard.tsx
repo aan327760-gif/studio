@@ -8,7 +8,7 @@ import {
   Trash2, 
   Flag, 
   Play, 
-  Download,
+  Share2,
   Send,
   Bookmark,
   X
@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
-import { useState, useEffect, useRef, memo } from "react";
+import { useState, useRef, memo } from "react";
 import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from "@/firebase";
 import { 
   doc, 
@@ -94,7 +94,7 @@ export const PostCard = memo(({
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
 
-  const truncationLimit = 240;
+  const truncationLimit = 200;
   const isLongContent = content?.length > truncationLimit;
   const displayContent = isExpanded ? content : content?.slice(0, truncationLimit) + "...";
 
@@ -110,6 +110,12 @@ export const PostCard = memo(({
     if (!user || !id || isBanned) return;
     updateDoc(doc(db, "posts", id), isSaved ? { savedBy: arrayRemove(user.uid), savesCount: increment(-1) } : { savedBy: arrayUnion(user.uid), savesCount: increment(1) });
     toast({ title: isSaved ? (isRtl ? "تمت الإزالة" : "Unsaved") : (isRtl ? "تم الحفظ" : "Saved") });
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
+    toast({ title: isRtl ? "تم نسخ الرابط السيادي" : "Sovereign link copied" });
   };
 
   const handleAddComment = () => {
@@ -134,7 +140,7 @@ export const PostCard = memo(({
     <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/30 cursor-pointer overflow-hidden" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-5 pb-3 flex flex-row items-center gap-4">
         <Link href={`/profile/${author?.uid || author?.id || '#'}`} onClick={(e) => e.stopPropagation()}>
-          <Avatar className="h-11 w-11 border border-zinc-900">
+          <Avatar className="h-11 w-11 border border-zinc-900 shadow-sm">
             <AvatarImage src={author?.avatar || author?.photoURL} />
             <AvatarFallback>{author?.name?.[0] || "U"}</AvatarFallback>
           </Avatar>
@@ -149,9 +155,9 @@ export const PostCard = memo(({
               <span className="text-[10px] text-zinc-600 font-bold uppercase">@{author?.handle || author?.email?.split('@')[0]}</span>
             </div>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl p-2 shadow-2xl">
-                <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
+                <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => e.stopPropagation()}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
                 {isAdmin && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف" : "Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -176,7 +182,7 @@ export const PostCard = memo(({
                 <video 
                   ref={videoRef} 
                   src={carouselImages[0]} 
-                  className="w-full h-auto object-contain max-h-[85vh]" 
+                  className="w-full h-auto object-contain max-h-[85vh] transition-opacity duration-300" 
                   onClick={(e) => { 
                     e.stopPropagation(); 
                     if(videoRef.current) isPlaying ? videoRef.current.pause() : videoRef.current.play(); 
@@ -184,11 +190,12 @@ export const PostCard = memo(({
                   }} 
                   playsInline 
                   loop 
+                  preload="metadata"
                 />
                 {!isPlaying && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="h-16 w-16 rounded-full bg-black/20 backdrop-blur-sm border border-white/10 flex items-center justify-center">
-                      <Play className="h-8 w-8 text-white fill-white" />
+                    <div className="h-16 w-16 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-2xl">
+                      <Play className="h-8 w-8 text-white fill-white ml-1" />
                     </div>
                   </div>
                 )}
@@ -205,7 +212,7 @@ export const PostCard = memo(({
                 {carouselImages.length > 1 && (
                   <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
                     {carouselImages.map((_, idx) => (
-                      <div key={idx} className={cn("h-1 w-3 rounded-full transition-all", idx === currentSlide ? "bg-primary w-5" : "bg-white/30")} />
+                      <div key={idx} className={cn("h-1 w-3 rounded-full transition-all duration-300", idx === currentSlide ? "bg-primary w-5" : "bg-white/20")} />
                     ))}
                   </div>
                 )}
@@ -214,10 +221,10 @@ export const PostCard = memo(({
           </div>
         )}
 
-        <div className="px-5 py-4 flex items-center justify-between border-t border-zinc-900/10" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 py-4 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 group cursor-pointer" onClick={handleLike}>
-              <Heart className={cn("h-5 w-5 transition-transform active:scale-125", isLiked ? "fill-red-500 text-red-500" : "text-zinc-700")} />
+              <Heart className={cn("h-5 w-5 transition-all duration-300 active:scale-150", isLiked ? "fill-red-500 text-red-500" : "text-zinc-700")} />
               <span className={cn("text-xs font-black", isLiked ? "text-red-500" : "text-zinc-700")}>{likes}</span>
             </div>
             
@@ -231,34 +238,38 @@ export const PostCard = memo(({
               <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 flex flex-col outline-none shadow-2xl">
                 <SheetHeader className="p-4 border-b border-zinc-900">
                   <div className="flex items-center justify-between">
-                    <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-500 rounded-full"><X className="h-5 w-5" /></Button></SheetClose>
-                    <SheetTitle className="text-white font-black text-lg uppercase">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
+                    <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-500 rounded-full hover:bg-zinc-900"><X className="h-5 w-5" /></Button></SheetClose>
+                    <SheetTitle className="text-white font-black text-lg uppercase tracking-widest">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
                     <div className="w-10" />
                   </div>
                 </SheetHeader>
                 <CommentsList postId={id} isRtl={isRtl} />
-                <div className="p-4 pb-8 border-t border-zinc-900 bg-black/90">
+                <div className="p-4 pb-8 border-t border-zinc-900 bg-black/90 backdrop-blur-xl">
                   <div className="flex gap-3 items-center">
-                    <Avatar className="h-10 w-10"><AvatarImage src={currentUserProfile?.photoURL || user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
-                    <div className="flex-1 flex items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800">
+                    <Avatar className="h-10 w-10 border border-zinc-800"><AvatarImage src={currentUserProfile?.photoURL || user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
+                    <div className="flex-1 flex items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800 shadow-inner">
                       <Input 
                         placeholder={isRtl ? "إضافة تعليق..." : "Add comment..."} 
-                        className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none" 
+                        className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" 
                         value={newComment} 
                         onChange={(e) => setNewComment(e.target.value)} 
                         maxLength={100} 
                         onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} 
                       />
-                      <Button size="icon" className="rounded-full h-10 w-10 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
+                      <Button size="icon" className="rounded-full h-10 w-10 bg-primary shadow-lg" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
                     </div>
                   </div>
                 </div>
               </SheetContent>
             </Sheet>
+
+            <div className="flex items-center gap-2 group cursor-pointer" onClick={handleShare}>
+              <Share2 className="h-5 w-5 text-zinc-700" />
+            </div>
           </div>
 
           <div className="flex items-center gap-2 group cursor-pointer" onClick={handleSave}>
-            <Bookmark className={cn("h-5 w-5 transition-transform active:scale-125", isSaved ? "fill-primary text-primary" : "text-zinc-700")} />
+            <Bookmark className={cn("h-5 w-5 transition-all duration-300 active:scale-125", isSaved ? "fill-primary text-primary" : "text-zinc-700")} />
             {saves > 0 && <span className={cn("text-xs font-black", isSaved ? "text-primary" : "text-zinc-700")}>{saves}</span>}
           </div>
         </div>
@@ -272,19 +283,27 @@ PostCard.displayName = "PostCard";
 function CommentsList({ postId, isRtl }: { postId: string, isRtl: boolean }) {
   const db = useFirestore();
   const commentsQuery = useMemoFirebase(() => query(collection(db, "posts", postId, "comments"), orderBy("createdAt", "desc"), limit(20)), [db, postId]);
-  const { data: comments = [], loading } = useCollection<any>(commentsQuery);
+  const { data: comments = [] } = useCollection<any>(commentsQuery);
 
   return (
-    <ScrollArea className="flex-1 p-4 space-y-8 pb-32">
-      {comments.map((comment: any) => (
-        <div key={comment.id} className="flex gap-4 mb-6">
-          <Avatar className="h-9 w-9"><AvatarImage src={comment.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
+    <ScrollArea className="flex-1 p-4 pb-32">
+      {comments.length > 0 ? comments.map((comment: any) => (
+        <div key={comment.id} className="flex gap-4 mb-6 animate-in fade-in slide-in-from-bottom-2">
+          <Avatar className="h-9 w-9 border border-zinc-900"><AvatarImage src={comment.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
           <div className="flex-1 space-y-1">
-            <span className="text-xs font-black text-zinc-400 uppercase">@{comment.authorHandle}</span>
-            <p className="text-[14px] text-zinc-200 leading-relaxed">{comment.text}</p>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-zinc-500 uppercase tracking-tighter">@{comment.authorHandle}</span>
+              <span className="text-[9px] text-zinc-700 font-bold uppercase">{comment.createdAt?.toDate ? 'NOW' : ''}</span>
+            </div>
+            <p className="text-[14px] text-zinc-200 leading-relaxed font-medium">{comment.text}</p>
           </div>
         </div>
-      ))}
+      )) : (
+        <div className="py-20 text-center opacity-20">
+           <MessageCircle className="h-12 w-12 mx-auto mb-4" />
+           <p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا تعليقات بعد" : "No comments yet"}</p>
+        </div>
+      )}
     </ScrollArea>
   );
 }
