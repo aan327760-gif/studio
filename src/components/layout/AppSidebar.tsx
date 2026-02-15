@@ -65,11 +65,20 @@ export function AppSidebar() {
   ];
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
       setIsSheetOpen(false);
-      router.push(`/edit-image?image=${encodeURIComponent(imageUrl)}`);
+      if (files.length > 1) {
+        // إذا تم اختيار أكثر من صورة، نتوجه مباشرة لصفحة الإنشاء كألبوم
+        const urls = Array.from(files).map(f => URL.createObjectURL(f));
+        // تخزين مؤقت للروابط في SessionStorage لنقلها لصفحة الإنشاء
+        sessionStorage.setItem('pending_album_images', JSON.stringify(urls));
+        router.push('/create-post?source=album');
+      } else {
+        // صورة واحدة، نتوجه للمحرر
+        const imageUrl = URL.createObjectURL(files[0]);
+        router.push(`/edit-image?image=${encodeURIComponent(imageUrl)}`);
+      }
     }
   };
 
@@ -127,7 +136,8 @@ export function AppSidebar() {
   return (
     <>
       <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto glass border-t border-zinc-800 z-50 px-2 h-16 shadow-2xl flex justify-around items-center">
-        <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
+        {/* تفعيل خاصية multiple لاختيار عدة صور */}
+        <input type="file" accept="image/*" multiple className="hidden" ref={imageInputRef} onChange={handleImageChange} />
         <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
 
         {navItems.map((item, idx) => {

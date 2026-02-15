@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, Suspense, useRef } from "react";
-import { X, Loader2, Globe, Plus, Trash2, Volume2, Play, Pause } from "lucide-react";
+import { useState, Suspense, useRef, useEffect } from "react";
+import { X, Loader2, Globe, Plus, Trash2, ImageIcon, Camera } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,7 +41,6 @@ function CreatePostContent() {
   const searchParams = useSearchParams();
   const db = useFirestore();
   const { user } = useUser();
-  const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
@@ -49,7 +48,6 @@ function CreatePostContent() {
   
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   
   const [privacy, setPrivacy] = useState("public");
   const [allowComments, setAllowComments] = useState(true);
@@ -57,13 +55,21 @@ function CreatePostContent() {
   // دعم الصور المتعددة
   const [localImages, setLocalImages] = useState<string[]>([]);
   const videoUrlFromParams = searchParams.get("video");
-  const audioUrlFromParams = searchParams.get("audio");
   const initialImageUrl = searchParams.get("image");
+  const source = searchParams.get("source");
 
-  // إضافة أول صورة إذا جاءت من المحرر
-  useState(() => {
-    if (initialImageUrl) setLocalImages([initialImageUrl]);
-  });
+  // تحميل الصور إذا جاءت كألبوم من الـ Sidebar
+  useEffect(() => {
+    if (source === 'album') {
+      const stored = sessionStorage.getItem('pending_album_images');
+      if (stored) {
+        setLocalImages(JSON.parse(stored));
+        sessionStorage.removeItem('pending_album_images');
+      }
+    } else if (initialImageUrl) {
+      setLocalImages([initialImageUrl]);
+    }
+  }, [source, initialImageUrl]);
 
   const isBanned = profile?.isBannedUntil && profile.isBannedUntil.toDate() > new Date();
 
@@ -85,7 +91,7 @@ function CreatePostContent() {
       return;
     }
 
-    if (!content.trim() && localImages.length === 0 && !videoUrlFromParams && !audioUrlFromParams) return;
+    if (!content.trim() && localImages.length === 0 && !videoUrlFromParams) return;
 
     setIsSubmitting(true);
     try {
@@ -94,23 +100,18 @@ function CreatePostContent() {
 
       // رفع الصور المتعددة
       if (localImages.length > 0) {
-        toast({ title: isRtl ? "جاري رفع الوسائط..." : "Uploading media..." });
+        toast({ title: isRtl ? "جاري رفع الوسائط السيادية..." : "Uploading sovereign media..." });
         const uploadPromises = localImages.map(async (url) => {
           const base64 = url.startsWith('data:') ? url : await urlToBlob(url);
           return uploadToCloudinary(base64, 'image');
         });
         finalMediaUrls = await Promise.all(uploadPromises);
-        mediaType = localImages.length > 1 ? 'album' : 'image';
+        mediaType = finalMediaUrls.length > 1 ? 'album' : 'image';
       } else if (videoUrlFromParams) {
         const base64 = await urlToBlob(videoUrlFromParams);
         const url = await uploadToCloudinary(base64, 'video');
         finalMediaUrls = [url];
         mediaType = 'video';
-      } else if (audioUrlFromParams) {
-        const base64 = await urlToBlob(audioUrlFromParams);
-        const url = await uploadToCloudinary(base64, 'video');
-        finalMediaUrls = [url];
-        mediaType = 'audio';
       }
 
       await addDoc(collection(db, "posts"), {
@@ -147,9 +148,12 @@ function CreatePostContent() {
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
       <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-20 border-b border-zinc-900">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900"><X className="h-6 w-6" /></Button>
+        <div className="flex items-center gap-2">
+           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Draft Sovereign</span>
+        </div>
         <Button 
           onClick={handleSubmit} 
-          disabled={isSubmitting || isBanned || (!content.trim() && localImages.length === 0 && !videoUrlFromParams && !audioUrlFromParams)} 
+          disabled={isSubmitting || isBanned || (!content.trim() && localImages.length === 0 && !videoUrlFromParams)} 
           className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200"
         >
           {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Post")}
@@ -164,17 +168,17 @@ function CreatePostContent() {
           </Avatar>
           <div className="flex-1 space-y-6">
             <Textarea 
-              placeholder={isRtl ? "شارك فكرة حرة أو ألبوماً..." : "Share a thought or an album..."} 
-              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[80px]" 
+              placeholder={isRtl ? "شارك فكرة حرة أو ألبوماً..." : "Share a free thought or album..."} 
+              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[120px]" 
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
             />
 
-            {/* عرض الصور المتعددة */}
+            {/* عرض الصور المحددة */}
             {localImages.length > 0 && (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                 {localImages.map((img, i) => (
-                  <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-zinc-800 group">
+                  <div key={i} className="relative h-40 w-40 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group">
                     <img src={img} alt="preview" className="w-full h-full object-cover" />
                     <Button 
                       variant="destructive" 
@@ -182,19 +186,28 @@ function CreatePostContent() {
                       className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => removeImage(i)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
                 {localImages.length < 4 && (
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors"
+                    className="h-40 w-40 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors"
                   >
                     <Plus className="h-6 w-6 text-zinc-500" />
                     <span className="text-[10px] font-black text-zinc-600 uppercase">Add Image</span>
                   </button>
                 )}
+              </div>
+            )}
+
+            {!videoUrlFromParams && localImages.length === 0 && (
+              <div className="flex gap-4 py-4 border-t border-zinc-900">
+                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors">
+                    <ImageIcon className="h-5 w-5" />
+                    <span className="text-xs font-black uppercase tracking-widest">{isRtl ? "أضف صور" : "Add Images"}</span>
+                 </button>
               </div>
             )}
 
