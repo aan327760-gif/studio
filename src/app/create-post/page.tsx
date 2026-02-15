@@ -11,9 +11,11 @@ import { useLanguage } from "@/context/LanguageContext";
 import { moderateContent } from "@/ai/flows/content-moderation-assistant";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useFirestore, useUser } from "@/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { collection, addDoc, serverTimestamp, doc } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+
+const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 async function urlToBlob(url: string): Promise<string> {
   const response = await fetch(url);
@@ -32,6 +34,10 @@ function CreatePostContent() {
   const searchParams = useSearchParams();
   const db = useFirestore();
   const { user } = useUser();
+
+  // جلب بيانات المستخدم لمعرفة حالة التوثيق
+  const userRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
+  const { data: profile } = useDoc<any>(userRef);
   
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +60,6 @@ function CreatePostContent() {
 
     setIsSubmitting(true);
     try {
-      // 1. فحص المحتوى
       const moderationResult = await moderateContent({ text: content || "Media Post" });
       
       if (!moderationResult.isAppropriate) {
@@ -67,7 +72,6 @@ function CreatePostContent() {
         return;
       }
 
-      // 2. الرفع إلى Cloudinary
       let finalMediaUrl = null;
       let mediaType: "image" | "video" | "audio" | null = null;
 
@@ -86,7 +90,6 @@ function CreatePostContent() {
           mediaType = 'audio';
         }
       } catch (uploadError: any) {
-        // التعامل مع خطأ الإعدادات بشكل لبق
         toast({
           variant: "destructive",
           title: isRtl ? "خطأ في الرفع" : "Upload Error",
@@ -96,7 +99,6 @@ function CreatePostContent() {
         return;
       }
 
-      // 3. الحفظ في Firestore
       await addDoc(collection(db, "posts"), {
         content,
         mediaUrl: finalMediaUrl,
@@ -115,7 +117,9 @@ function CreatePostContent() {
         author: {
           name: user?.displayName || "User",
           handle: user?.email?.split('@')[0] || "user",
-          avatar: user?.photoURL || ""
+          avatar: user?.photoURL || "",
+          isVerified: user?.email === ADMIN_EMAIL || profile?.isVerified || profile?.role === 'admin',
+          role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
         },
         likesCount: 0,
         likedBy: [],

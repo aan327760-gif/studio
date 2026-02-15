@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, Search, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, X, StopCircle, MessageSquare } from "lucide-react";
+import { Home, Search, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, X, StopCircle, MessageSquare, ShieldCheck } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -17,8 +17,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from "firebase/firestore";
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, query, where, doc } from "firebase/firestore";
+
+const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export function AppSidebar() {
   const { isRtl } = useLanguage();
@@ -35,6 +37,11 @@ export function AppSidebar() {
   const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // جلب بيانات المستخدم لمعرفة الدور
+  const userRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
+  const { data: profile } = useDoc<any>(userRef);
+  const isAdmin = user?.email === ADMIN_EMAIL || profile?.role === 'admin';
 
   const unreadNotifsQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -55,10 +62,14 @@ export function AppSidebar() {
     },
   ];
 
+  // إضافة رابط الإدارة للمدير
+  if (isAdmin) {
+    navItems.splice(4, 0, { icon: ShieldCheck, href: "/admin", label: "Management" });
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // استخدام URL.createObjectURL بدلاً من Base64 للمعاينة لضمان السرعة في الهواتف
       const imageUrl = URL.createObjectURL(file);
       setIsSheetOpen(false);
       router.push(`/edit-image?image=${encodeURIComponent(imageUrl)}`);
@@ -170,7 +181,7 @@ export function AppSidebar() {
       <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
       <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
 
-      {navItems.map((item) => {
+      {navItems.map((item, idx) => {
         const isActive = pathname === item.href;
         
         if (item.special) {
@@ -221,7 +232,7 @@ export function AppSidebar() {
         }
 
         return (
-          <Link key={item.href} href={item.href} className="flex-1">
+          <Link key={idx} href={item.href} className="flex-1">
             <div className="flex flex-col items-center justify-center relative h-full active:scale-90 transition-transform">
               {item.isAvatar ? (
                 <Avatar className={cn("h-7 w-7 transition-all", isActive ? "ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-60")}>

@@ -8,7 +8,7 @@ import {
   signInWithEmailAndPassword, 
   updateProfile 
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Loader2, Mail, Lock, Phone, User as UserIcon } from "lucide-react";
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+
+const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function AuthPage() {
   const { isRtl } = useLanguage();
@@ -44,8 +46,15 @@ export default function AuthPage() {
         const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
         const user = userCredential.user;
         
-        // التحقق من وجود بيانات المستخدم في قاعدة البيانات
-        const userDoc = await getDoc(doc(db, "users", user.uid));
+        // التحقق وتحديث حالة الإدارة والتوثيق فوراً
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        
+        const statusUpdates = {
+          isVerified: user.email === ADMIN_EMAIL,
+          role: user.email === ADMIN_EMAIL ? "admin" : "user"
+        };
+
         if (!userDoc.exists()) {
           const newUserProfile = {
             uid: user.uid,
@@ -54,13 +63,14 @@ export default function AuthPage() {
             phoneNumber: null,
             photoURL: user.photoURL || "https://picsum.photos/seed/" + user.uid + "/200/200",
             createdAt: serverTimestamp(),
-            isPro: false,
+            isPro: user.email === ADMIN_EMAIL,
             followersCount: 0,
             followingCount: 0,
-            bio: ""
+            bio: "",
+            ...statusUpdates
           };
           
-          await setDoc(doc(db, "users", user.uid), newUserProfile).catch(async (err) => {
+          await setDoc(userRef, newUserProfile).catch(async (err) => {
             const permissionError = new FirestorePermissionError({
               path: `users/${user.uid}`,
               operation: 'create',
@@ -68,23 +78,26 @@ export default function AuthPage() {
             });
             errorEmitter.emit('permission-error', permissionError);
           });
+        } else {
+          // تحديث الصلاحيات إذا تغير الإيميل أو لأول مرة
+          await updateDoc(userRef, statusUpdates);
         }
 
         toast({
           title: isRtl ? "تم تسجيل الدخول" : "Logged In",
-          description: isRtl ? "مرحباً بك مجدداً في Unbound" : "Welcome back to Unbound",
+          description: user.email === ADMIN_EMAIL 
+            ? (isRtl ? "مرحباً أيها المدير!" : "Welcome, Admin!") 
+            : (isRtl ? "مرحباً بك مجدداً في Unbound" : "Welcome back to Unbound"),
         });
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
         const user = userCredential.user;
 
-        // تحديث الاسم في ملف التعريف الخاص بـ Auth
         await updateProfile(user, { 
           displayName: formData.displayName,
           photoURL: "https://picsum.photos/seed/" + user.uid + "/200/200"
         });
 
-        // حفظ بيانات المستخدم في Firestore
         const userProfileData = {
           uid: user.uid,
           displayName: formData.displayName,
@@ -92,7 +105,9 @@ export default function AuthPage() {
           phoneNumber: formData.phone || null,
           photoURL: "https://picsum.photos/seed/" + user.uid + "/200/200",
           createdAt: serverTimestamp(),
-          isPro: false,
+          isPro: formData.email === ADMIN_EMAIL,
+          isVerified: formData.email === ADMIN_EMAIL,
+          role: formData.email === ADMIN_EMAIL ? "admin" : "user",
           followersCount: 0,
           followingCount: 0,
           bio: "",

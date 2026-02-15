@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Heart, MessageCircle, MessageSquare, MoreHorizontal, Send, Loader2, X, Trash2, Mic } from "lucide-react";
+import { Heart, MessageCircle, MessageSquare, MoreHorizontal, Send, Loader2, X, Trash2, Mic, CheckCircle2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -24,6 +24,8 @@ interface PostCardProps {
     handle: string;
     avatar: string;
     uid?: string;
+    isVerified?: boolean;
+    role?: string;
   };
   content: string;
   image?: string;
@@ -141,7 +143,12 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
         <div className="flex-1 overflow-hidden">
           <Link href={`/profile/${postAuthorId || '#'}`}>
             <div className="flex flex-col">
-              <h3 className="font-bold text-sm truncate hover:underline">{author.name}</h3>
+              <div className="flex items-center gap-1">
+                <h3 className="font-bold text-sm truncate hover:underline">{author.name}</h3>
+                {(author.isVerified || author.role === 'admin') && (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[#1DA1F2] fill-[#1DA1F2] text-black" />
+                )}
+              </div>
               <span className="text-[10px] text-zinc-500">@{author.handle}</span>
             </div>
           </Link>

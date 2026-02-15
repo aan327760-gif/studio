@@ -16,7 +16,8 @@ import {
   FileText,
   MessageSquare,
   Share2,
-  Trash2
+  Trash2,
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -30,6 +31,8 @@ import { signOut } from "firebase/auth";
 import { toast } from "@/hooks/use-toast";
 import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
+
+const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function UserProfilePage() {
   const { uid } = useParams();
@@ -51,7 +54,7 @@ export default function UserProfilePage() {
   const { data: followDoc } = useDoc<any>(followRef);
   const isFollowing = !!followDoc;
 
-  // جلب منشورات المستخدم (التبويب الأول)
+  // جلب منشورات المستخدم
   const userPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
     return query(
@@ -61,9 +64,9 @@ export default function UserProfilePage() {
       limit(30)
     );
   }, [db, uid]);
-  const { data: userPosts, loading: postsLoading } = useCollection<any>(userPostsQuery);
+  const { data: userPosts = [], loading: postsLoading } = useCollection<any>(userPostsQuery);
 
-  // جلب المنشورات التي أعجب بها (تبويب الإعجابات)
+  // جلب المنشورات التي أعجب بها
   const likedPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
     return query(
@@ -73,9 +76,9 @@ export default function UserProfilePage() {
       limit(20)
     );
   }, [db, uid]);
-  const { data: likedPosts, loading: likedLoading } = useCollection<any>(likedPostsQuery);
+  const { data: likedPosts = [], loading: likedLoading } = useCollection<any>(likedPostsQuery);
 
-  // تصفية الوسائط من منشورات المستخدم (تبويب الوسائط)
+  // تصفية الوسائط
   const userMedia = userPosts.filter(p => p.mediaUrl);
 
   const handleFollow = async () => {
@@ -125,9 +128,10 @@ export default function UserProfilePage() {
     );
   }
 
+  const isProfileAdmin = profile?.email === ADMIN_EMAIL || profile?.role === 'admin';
+
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20 overflow-x-hidden">
-      {/* Banner & Header */}
       <div className="relative h-48 w-full">
         <div className="w-full h-full bg-zinc-900 overflow-hidden">
            {profile?.bannerURL ? (
@@ -142,6 +146,11 @@ export default function UserProfilePage() {
             <ArrowLeft className={isRtl ? "rotate-180" : ""} />
           </Button>
           <div className="flex gap-2">
+            {isOwnProfile && isProfileAdmin && (
+              <Button variant="ghost" size="icon" className="rounded-full bg-primary/20 backdrop-blur-md text-primary border border-primary/20" onClick={() => router.push('/admin')}>
+                <ShieldCheck className="h-5 w-5" />
+              </Button>
+            )}
             {isOwnProfile && (
               <Link href="/settings">
                 <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10">
@@ -156,7 +165,6 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {/* Profile Info */}
       <div className="px-4 relative -mt-14">
         <Avatar className="h-28 w-28 border-[6px] border-black shadow-2xl mb-4">
           <AvatarImage src={profile?.photoURL} />
@@ -169,9 +177,18 @@ export default function UserProfilePage() {
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <h2 className="text-2xl font-black tracking-tight">{profile?.displayName}</h2>
-              <CheckCircle2 className="h-5 w-5 text-primary fill-primary text-black" />
+              {(profile?.isVerified || isProfileAdmin) && (
+                <CheckCircle2 className="h-5 w-5 text-[#1DA1F2] fill-[#1DA1F2] text-black" />
+              )}
             </div>
-            <p className="text-zinc-500 text-sm font-medium">@{profile?.email?.split('@')[0] || "user"}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-zinc-500 text-sm font-medium">@{profile?.email?.split('@')[0] || "user"}</p>
+              {isProfileAdmin && (
+                <span className="bg-primary/10 text-primary text-[9px] font-black uppercase px-2 py-0.5 rounded-full border border-primary/20">
+                  {isRtl ? "الإدارة" : "Management"}
+                </span>
+              )}
+            </div>
           </div>
           
           {isOwnProfile ? (
@@ -224,19 +241,15 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="posts" className="mt-2 w-full">
         <TabsList className="w-full bg-black rounded-none h-14 p-0 border-b border-zinc-900 justify-around glass">
           <TabsTrigger value="posts" className="flex-1 px-4 h-full font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-white text-zinc-500 transition-all">
-            <FileText className="h-4 w-4 mr-2 hidden md:inline" />
             {isRtl ? "المنشورات" : "Posts"}
           </TabsTrigger>
           <TabsTrigger value="media" className="flex-1 px-4 h-full font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-white text-zinc-500 transition-all">
-            <Grid3X3 className="h-4 w-4 mr-2 hidden md:inline" />
             {isRtl ? "الوسائط" : "Media"}
           </TabsTrigger>
           <TabsTrigger value="likes" className="flex-1 px-4 h-full font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-white text-zinc-500 transition-all">
-            <Heart className="h-4 w-4 mr-2 hidden md:inline" />
             {isRtl ? "الإعجابات" : "Likes"}
           </TabsTrigger>
         </TabsList>
@@ -256,7 +269,9 @@ export default function UserProfilePage() {
                     name: profile.displayName,
                     handle: profile.email?.split('@')[0],
                     avatar: profile.photoURL,
-                    uid: profile.uid
+                    uid: profile.uid,
+                    isVerified: profile.isVerified || isProfileAdmin,
+                    role: profile.role
                   }}
                   content={post.content}
                   image={post.mediaUrl}
