@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, Archive } from "lucide-react";
@@ -50,7 +51,7 @@ export function AppSidebar() {
   }, [db, user]);
   const { data: unreadNotifs = [] } = useCollection<any>(unreadNotifsQuery);
 
-  // استعادة ترتيب الأيقونات السيادي: الرئيسية، الرسائل، إضافة، التنبيهات، الملف الشخصي
+  // استعادة الترتيب السيادي: الرئيسية، الرسائل، النشر، التنبيهات، الملف الشخصي
   const navItems = [
     { icon: Home, href: "/", label: "Home" },
     { icon: MessageSquare, href: "/messages", label: "Messages" },
@@ -123,7 +124,7 @@ export function AppSidebar() {
 
   return (
     <>
-      <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto glass border-t border-zinc-800 z-50 px-2 h-16 shadow-2xl flex justify-around items-center">
+      <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-black/90 backdrop-blur-xl border-t border-zinc-900 z-50 px-2 h-16 shadow-2xl flex justify-around items-center">
         <input type="file" accept="image/*" multiple className="hidden" ref={imageInputRef} onChange={handleImageChange} />
         <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
 

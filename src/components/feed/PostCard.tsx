@@ -31,7 +31,8 @@ import {
   orderBy, 
   limit, 
   deleteDoc,
-  increment
+  increment,
+  query
 } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -113,7 +114,8 @@ export const PostCard = memo(({
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
+    const shareUrl = `${window.location.origin}/post/${id}`;
+    navigator.clipboard.writeText(shareUrl);
     toast({ title: isRtl ? "تم نسخ الرابط السيادي" : "Sovereign link copied" });
   };
 
@@ -136,7 +138,7 @@ export const PostCard = memo(({
   const carouselImages = mediaUrls.length > 0 ? mediaUrls : (image ? [image] : []);
 
   return (
-    <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/30 cursor-pointer overflow-hidden" onClick={() => router.push(`/post/${id}`)}>
+    <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/30 cursor-pointer overflow-hidden mb-1" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-5 pb-3 flex flex-row items-center gap-4">
         <Link href={`/profile/${author?.uid || author?.id || '#'}`} onClick={(e) => e.stopPropagation()}>
           <Avatar className="h-11 w-11 border border-zinc-900 shadow-sm">
