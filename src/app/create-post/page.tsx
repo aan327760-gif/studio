@@ -101,7 +101,7 @@ function CreatePostContent() {
         author: {
           name: user?.displayName || "User",
           handle: user?.email?.split('@')[0] || "user",
-          avatar: user?.photoURL || "https://picsum.photos/seed/me/100/100"
+          avatar: user?.photoURL || ""
         },
         likesCount: 0,
         likedBy: [],

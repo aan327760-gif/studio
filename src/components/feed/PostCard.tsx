@@ -75,7 +75,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
           setIsLiked(likedBy.includes(user.uid));
         }
       }
-    }, (error) => {});
+    });
     return () => unsubscribe();
   }, [id, db, user]);
 

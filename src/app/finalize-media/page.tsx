@@ -117,8 +117,10 @@ function FinalizeMediaContent() {
 
     let x = ((clientX - rect.left) / rect.width) * 100;
     let y = ((clientY - rect.top) / rect.height) * 100;
-    x = Math.max(5, Math.min(95, x));
-    y = Math.max(5, Math.min(95, y));
+    
+    // Constraints: Keep element within visible bounds
+    x = Math.max(10, Math.min(90, x));
+    y = Math.max(10, Math.min(90, y));
 
     if (isDraggingText) {
       setTextPos({ x, y });
@@ -176,8 +178,8 @@ function FinalizeMediaContent() {
         {finalText && (
           <div 
             className={cn(
-              "absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing", 
-              isDraggingText && "scale-110",
+              "absolute z-30 pointer-events-auto cursor-grab active:cursor-grabbing transition-transform", 
+              isDraggingText && "scale-110 shadow-2xl",
               textEffect
             )}
             style={{ left: `${textPos.x}%`, top: `${textPos.y}%`, transform: 'translate(-50%, -50%)' }}
@@ -221,7 +223,7 @@ function FinalizeMediaContent() {
       </div>
 
       <header className="relative z-50 p-4 flex justify-between items-center">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-black/40 backdrop-blur-md">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-black/40 backdrop-blur-md text-white">
           <ArrowLeft className="h-7 w-7" />
         </Button>
       </header>
@@ -341,7 +343,6 @@ function FinalizeMediaContent() {
                     src={sticker.imageUrl} 
                     alt={sticker.description} 
                     className="w-full h-full object-contain" 
-                    data-ai-hint={sticker.imageHint}
                   />
                 </button>
               ))}
