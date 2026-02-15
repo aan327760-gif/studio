@@ -60,8 +60,11 @@
         "authorId": { "type": "string" },
         "authorName": { "type": "string" },
         "authorAvatar": { "type": "string" },
+        "authorHandle": { "type": "string" },
         "text": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "likesCount": { "type": "number" },
+        "likedBy": { "type": "array", "items": { "type": "string" } }
       }
     },
     "Notification": {

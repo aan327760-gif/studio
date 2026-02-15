@@ -46,7 +46,8 @@ import {
   query, 
   orderBy, 
   limit, 
-  deleteDoc 
+  deleteDoc,
+  increment
 } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -155,7 +156,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       authorAvatar: currentUserProfile?.photoURL || user.photoURL || "",
       authorHandle: user.email?.split('@')[0] || "user",
       text: newComment,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      likesCount: 0,
+      likedBy: []
     });
 
     if (author?.id !== user.uid && author?.uid !== user.uid) {
@@ -173,6 +176,24 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     }
 
     setNewComment("");
+  };
+
+  const handleCommentLike = async (commentId: string, likedBy: string[] = []) => {
+    if (!user || !id || isBanned) return;
+    const commentRef = doc(db, "posts", id, "comments", commentId);
+    const isCurrentlyLiked = likedBy.includes(user.uid);
+
+    if (isCurrentlyLiked) {
+      updateDoc(commentRef, { 
+        likedBy: arrayRemove(user.uid),
+        likesCount: increment(-1)
+      });
+    } else {
+      updateDoc(commentRef, { 
+        likedBy: arrayUnion(user.uid),
+        likesCount: increment(1)
+      });
+    }
   };
 
   const handleTranslateClick = (e: React.MouseEvent) => {
@@ -418,36 +439,40 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
               <ScrollArea className="flex-1">
                 <div className="p-4 space-y-8 pb-32">
-                  {comments.length > 0 ? comments.map((comment: any) => (
-                    <div key={comment.id} className="flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 relative group">
-                      <Avatar className="h-9 w-9 ring-1 ring-zinc-800 shrink-0">
-                        <AvatarImage src={comment.authorAvatar} />
-                        <AvatarFallback className="bg-zinc-900">{comment.authorName?.[0]}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-black text-zinc-300 uppercase tracking-tighter">@{comment.authorHandle}</span>
-                            <span className="text-[10px] text-zinc-500 font-bold">
-                              • {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' }) : ""}
-                            </span>
+                  {comments.length > 0 ? comments.map((comment: any) => {
+                    const isCommentLiked = user ? comment.likedBy?.includes(user.uid) : false;
+                    return (
+                      <div key={comment.id} className="flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 relative group">
+                        <Avatar className="h-9 w-9 ring-1 ring-zinc-800 shrink-0">
+                          <AvatarImage src={comment.authorAvatar} />
+                          <AvatarFallback className="bg-zinc-900">{comment.authorName?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-black text-zinc-300 uppercase tracking-tighter">@{comment.authorHandle}</span>
+                              <span className="text-[10px] text-zinc-500 font-bold">
+                                • {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleDateString(isRtl ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' }) : ""}
+                              </span>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity"><MoreVertical className="h-4 w-4" /></Button>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity"><MoreVertical className="h-4 w-4" /></Button>
-                        </div>
-                        <p className="text-[14px] text-zinc-100 leading-relaxed font-medium">{comment.text}</p>
-                        <div className="flex items-center gap-6 pt-3">
-                          <div className="flex items-center gap-1.5 text-zinc-500 group/btn cursor-pointer">
-                            <ThumbsUp className="h-4 w-4 group-hover/btn:text-white" />
-                          </div>
-                          <ThumbsDown className="h-4 w-4 text-zinc-500 hover:text-white cursor-pointer" />
-                          <div className="flex items-center gap-1.5 text-zinc-500 hover:text-white cursor-pointer">
-                             <MessageSquare className="h-4 w-4" />
-                             <span className="text-[10px] font-black">{isRtl ? "رد" : "Reply"}</span>
+                          <p className="text-[14px] text-zinc-100 leading-relaxed font-medium">{comment.text}</p>
+                          <div className="flex items-center gap-6 pt-3">
+                            <div className="flex items-center gap-1.5 text-zinc-500 group/btn cursor-pointer" onClick={() => handleCommentLike(comment.id, comment.likedBy)}>
+                              <ThumbsUp className={cn("h-4 w-4 transition-all", isCommentLiked ? "text-primary fill-primary scale-110" : "group-hover/btn:text-white")} />
+                              <span className={cn("text-[10px] font-black", isCommentLiked ? "text-primary" : "")}>{comment.likesCount || 0}</span>
+                            </div>
+                            <ThumbsDown className="h-4 w-4 text-zinc-500 hover:text-white cursor-pointer" />
+                            <div className="flex items-center gap-1.5 text-zinc-500 hover:text-white cursor-pointer">
+                               <MessageSquare className="h-4 w-4" />
+                               <span className="text-[10px] font-black">{isRtl ? "رد" : "Reply"}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )) : (
+                    );
+                  }) : (
                     <div className="py-24 text-center opacity-10 flex flex-col items-center gap-6">
                       <MessageCircle className="h-16 w-16" />
                       <p className="text-sm font-black uppercase tracking-widest">{isRtl ? "كن أول المعلقين" : "No comments yet"}</p>
