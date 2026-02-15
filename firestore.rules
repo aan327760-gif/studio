@@ -3,40 +3,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // وظيفة للتحقق من تسجيل الدخول
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // البريد الإلكتروني للمدير العام (السلطة العليا)
     function isSuperAdmin() {
       return isSignedIn() && request.auth.token.email == "adelbenmaza3@gmail.com";
     }
 
-    // وظيفة للتحقق من أن المستخدم لديه رتبة مشرف أو هو المدير العام
     function isAdmin() {
       let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return isSignedIn() && (isSuperAdmin() || (userDoc != null && userDoc.data.role == "admin"));
     }
 
-    // وظيفة للتحقق من أن المستخدم ليس محظوراً
     function isNotBanned() {
       let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return userDoc == null || !userDoc.data.has('isBannedUntil') || userDoc.data.isBannedUntil < request.time;
     }
 
-    // وظيفة للتحقق من ملكية الوثيقة
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // وظيفة للتحقق من وجود علاقة صداقة (متابعة متبادلة)
     function areFriends(u1, u2) {
       return exists(/databases/$(database)/documents/follows/$(u1)_$(u2)) && 
              exists(/databases/$(database)/documents/follows/$(u2)_$(u1));
     }
 
-    // قواعد المستخدمين
     match /users/{userId} {
       allow read: if true;
       allow create: if isSignedIn();
@@ -45,14 +38,12 @@ service cloud.firestore {
                     || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isBannedUntil', 'role', 'isVerified']));
     }
     
-    // قواعد المتابعة
     match /follows/{followId} {
       allow read: if true;
       allow create: if isSignedIn() && isNotBanned();
       allow delete: if isSignedIn() && (resource.data.followerId == request.auth.uid);
     }
     
-    // قواعد المنشورات
     match /posts/{postId} {
       allow read, list: if true;
       allow create: if isSignedIn() && isNotBanned();
@@ -68,20 +59,36 @@ service cloud.firestore {
         allow create: if isSignedIn() && isNotBanned();
         allow update: if isSignedIn() && isNotBanned() && (
                         isOwner(resource.data.authorId)
-                        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likesCount'])
+                        || (
+                          // السماح بالإعجاب لأي مواطن مع حماية باقي البيانات
+                          request.resource.data.authorId == resource.data.authorId &&
+                          request.resource.data.text == resource.data.text &&
+                          request.resource.data.diff(resource.data).affectedKeys().hasAny(['likedBy', 'likesCount'])
+                        )
                     );
         allow delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.authorId));
+
+        match /replies/{replyId} {
+          allow read: if true;
+          allow create: if isSignedIn() && isNotBanned();
+          allow update: if isSignedIn() && isNotBanned() && (
+                          isOwner(resource.data.authorId)
+                          || (
+                            request.resource.data.authorId == resource.data.authorId &&
+                            request.resource.data.diff(resource.data).affectedKeys().hasAny(['likedBy', 'likesCount'])
+                          )
+                      );
+          allow delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.authorId));
+        }
       }
     }
     
-    // قواعد التنبيهات
     match /notifications/{notificationId} {
       allow read, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (request.query.limit <= 50) && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn() && isNotBanned();
     }
     
-    // قواعد المجموعات (اللمة)
     match /groups/{groupId} {
       allow read, list: if isSignedIn() && (
         isAdmin() || 
@@ -98,7 +105,6 @@ service cloud.firestore {
       }
     }
 
-    // قواعد المراسلة الخاصة (Direct Conversations)
     match /direct_conversations/{chatId} {
       allow read: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
       allow write: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
@@ -110,7 +116,6 @@ service cloud.firestore {
       }
     }
 
-    // قواعد البلاغات
     match /reports/{reportId} {
       allow read, list: if isAdmin();
       allow create: if isSignedIn() && isNotBanned();
