@@ -128,11 +128,7 @@ function CreatePostContent() {
         title: isRtl ? "تم النشر بنجاح" : "Post Published Successfully"
       });
     } catch (error: any) {
-      toast({ 
-        variant: "destructive", 
-        title: isRtl ? "فشل النشر" : "Post Failed", 
-        description: error.message 
-      });
+      console.error("Background Post Error:", error);
     }
   };
 
@@ -155,12 +151,15 @@ function CreatePostContent() {
       role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
     };
 
+    // تنفيذ في الخلفية دون انتظار الرد
     processPostInBackground(content, [...localImages], videoUrlFromParams, authorInfo);
 
     toast({ 
       title: isRtl ? "جاري النشر في الخلفية..." : "Posting in background...",
       description: isRtl ? "يمكنك الاستمرار في التصفح بحرية." : "You can keep browsing freely."
     });
+    
+    // العودة الفورية للصفحة الرئيسية
     router.push("/");
   };
 
