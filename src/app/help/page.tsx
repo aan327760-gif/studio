@@ -16,7 +16,10 @@ import {
   Mic, 
   ShieldAlert,
   Globe,
-  Lock
+  Lock,
+  Bookmark,
+  Hash,
+  PenTool
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -47,21 +50,21 @@ export default function HelpCenterPage() {
       ]
     },
     {
-      title: isRtl ? "التوثيق والرتب" : "Verification & Roles",
+      title: isRtl ? "الخوارزمية والترتيب" : "Algorithm & Ranking",
       faqs: [
         {
-          question: isRtl ? "كيف أحصل على شارة التوثيق الزرقاء؟" : "How do I get the blue verification badge?",
+          question: isRtl ? "كيف تعمل الخوارزمية السيادية؟" : "How does the Sovereign Algorithm work?",
           answer: isRtl 
-            ? "شارة التوثيق (الروزيتا) تمنح للمواطنين الحقيقيين بعد التأكد من الهوية من قبل الإدارة لضمان بيئة خالية من الحسابات الوهمية." 
-            : "The verification badge (Rosette) is granted to real citizens after identity verification by the admin to ensure an environment free of fake accounts.",
-          icon: UserCheck
+            ? "خوارزميتنا شفافة وتعتمد على 'نقاط التأثير': الإعجاب يعطي المنشور (+10 نقاط)، التعليق (+15 نقطة)، والحفظ في الأرشيف (+20 نقطة). الأولوية للمحتوى النوعي الذي يلهم الناس لحفظه ومناقشته، مع مراعاة حداثة المنشور (عامل الزمن)." 
+            : "Our algorithm is transparent based on 'Impact Points': Like (+10), Comment (+15), and Archive/Save (+20). Priority is given to quality content that inspires people to save and discuss it, while considering post recency.",
+          icon: Zap
         },
         {
-          question: isRtl ? "ما هي القنوات الإعلامية (Pro)؟" : "What are Media Channels (Pro)?",
+          question: isRtl ? "هل يمكن لمواطن غير موثق تصدر الصفحة؟" : "Can unverified citizens trend?",
           answer: isRtl 
-            ? "هي حسابات مخصصة للمؤسسات الإخبارية والجهات الإعلامية. تتميز بنجمة ذهبية وأولوية في الظهور عبر 'الخوارزمية السيادية' لضمان وصول الأخبار الموثوقة للجميع." 
-            : "These are accounts dedicated to news organizations and media entities. They feature a golden star and priority visibility via the 'Sovereign Algorithm' to ensure trusted news reaches everyone.",
-          icon: Star
+            ? "نعم، بالتأكيد! رغم أن الموثقين يحصلون على دفعة تشجيعية، إلا أن قوة التفاعل (الحفظ والتعليق) لمواطن عادي يمكنها تجاوز أي رتبة أخرى إذا كان المحتوى قوياً ومؤثراً." 
+            : "Yes! While verified users get an initial boost, the engagement power (Saves & Comments) of an unverified citizen can surpass any rank if the content is impactful.",
+          icon: Hash
         }
       ]
     },
@@ -69,17 +72,24 @@ export default function HelpCenterPage() {
       title: isRtl ? "التفاعل والمحتوى" : "Interaction & Content",
       faqs: [
         {
-          question: isRtl ? "كيف تعمل الخوارزمية السيادية؟" : "How does the Sovereign Algorithm work?",
+          question: isRtl ? "لماذا يوجد حد للأحرف في التعليقات؟" : "Why is there a character limit?",
           answer: isRtl 
-            ? "خوارزميتنا شفافة: تعطي الأولوية للقنوات الإعلامية الموثقة، ثم للمواطنين الموثقين، مع مراعاة حداثة المنشور وتفاعل المجتمع معه. لا توجد تفضيلات مخفية." 
-            : "Our algorithm is transparent: it prioritizes verified media channels, then verified citizens, while considering post recency and community engagement. No hidden preferences.",
-          icon: Zap
+            ? "لضمان رقي الحوار وإيجازه، حددنا التعليقات بـ 100 حرف والسيرة الذاتية بـ 150 حرفاً. نحن نشجع على الأفكار المركزة والعميقة بعيداً عن الحشو." 
+            : "To ensure concise and elite dialogue, comments are limited to 100 chars and Bio to 150 chars. We encourage focused and deep thoughts.",
+          icon: PenTool
         },
         {
-          question: isRtl ? "ما هي أنواع الوسائط المسموح بنشرها؟" : "What media types can I post?",
+          question: isRtl ? "ما هو الأرشيف السيادي؟" : "What is the Sovereign Archive?",
           answer: isRtl 
-            ? "يمكنك نشر الصور، الفيديوهات (حتى 5 دقائق)، والرسائل الصوتية. نحن ندعم المحتوى عالي الجودة لضمان أفضل تجربة بصرية." 
-            : "You can post images, videos (up to 5 minutes), and voice messages. We support high-quality content to ensure the best visual experience.",
+            ? "يمكنك حفظ أي منشور للعودة إليه لاحقاً عبر أيقونة 'Bookmark'. المنشورات المحفوظة تظهر في تبويب خاص بملفك الشخصي لا يراه غيرك، مما يمنحك سيادة كاملة على مكتبتك المعرفية." 
+            : "You can save any post for later using the 'Bookmark' icon. Saved posts appear in a private tab on your profile that only you can see.",
+          icon: Bookmark
+        },
+        {
+          question: isRtl ? "من يمكنه تحميل الفيديوهات؟" : "Who can download videos?",
+          answer: isRtl 
+            ? "ميزة تحميل الفيديوهات هي امتياز سيادي مخصص حصرياً للمواطنين الموثقين (أصحاب الروزيتا) وللمسؤولين، لضمان حماية جهود المبدعين وتقدير النخبة." 
+            : "Video downloading is a sovereign privilege exclusively for verified citizens and admins, ensuring creators' protection and elite appreciation.",
           icon: Video
         }
       ]
@@ -95,30 +105,11 @@ export default function HelpCenterPage() {
           icon: MessageSquare
         }
       ]
-    },
-    {
-      title: isRtl ? "الأمان والرقابة" : "Safety & Moderation",
-      faqs: [
-        {
-          question: isRtl ? "كيف أبلغ عن محتوى مخالف؟" : "How do I report inappropriate content?",
-          answer: isRtl 
-            ? "من خلال القائمة الجانبية لأي منشور، يمكنك اختيار 'إبلاغ'. سيتم مراجعة البلاغ يدوياً من قبل فريق المشرفين لاتخاذ الإجراء اللازم." 
-            : "Through the side menu of any post, you can choose 'Report'. The report will be manually reviewed by the moderation team to take necessary action.",
-          icon: ShieldAlert
-        },
-        {
-          question: isRtl ? "ما الذي يؤدي إلى حظر الحساب؟" : "What leads to an account ban?",
-          answer: isRtl 
-            ? "نحن نحترم حرية التعبير، ولكن التحريض المباشر على العنف، الكراهية الصريحة، أو المحتوى غير القانوني يؤدي إلى حظر مؤقت أو دائم حسب قرار الإدارة." 
-            : "We respect freedom of expression, but direct incitement to violence, explicit hate, or illegal content leads to a temporary or permanent ban per admin decision.",
-          icon: Lock
-        }
-      ]
     }
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-900 pb-20">
+    <div className="min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-900 pb-20 selection:bg-primary/30">
       <header className="p-6 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-md z-50 flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900">
           <ArrowLeft className={isRtl ? "rotate-180" : ""} />

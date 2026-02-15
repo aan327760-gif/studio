@@ -16,7 +16,8 @@ import {
   Lock,
   MessageSquare,
   Star,
-  CheckCircle2
+  CheckCircle2,
+  PenTool
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -36,17 +37,25 @@ export default function CommunityGuidelinesPage() {
         : "Unbound believes that digital sovereignty begins with the individual. This charter aims to establish a regulatory framework that ensures freedom without compromising the dignity of others or social stability."
     },
     {
+      id: "concise",
+      icon: PenTool,
+      title: isRtl ? "2. بروتوكول الإيجاز والوقار" : "2. Concise Communication Protocol",
+      content: isRtl 
+        ? "للحفاظ على جودة المحتوى ومنع الحشو، تلتزم المنصة بحدود صارمة للأحرف:\n• التعليقات والردود: 100 حرف كحد أقصى.\n• السيرة الذاتية للمواطن: 150 حرفاً.\nنهدف من خلال ذلك إلى تشجيع لغة فكرية مكثفة وراقية تليق بنخبة مجتمعنا."
+        : "To maintain content quality and prevent filler, the platform enforces strict character limits:\n• Comments & Replies: Max 100 characters.\n• Citizen Bio: Max 150 characters.\nWe aim to encourage an intense and refined intellectual language."
+    },
+    {
       id: "safety",
       icon: AlertOctagon,
-      title: isRtl ? "2. السلامة والمحتوى المحظور" : "2. Safety & Prohibited Content",
+      title: isRtl ? "3. السلامة والمحتوى المحظور" : "3. Safety & Prohibited Content",
       content: isRtl 
-        ? "يُمنع منعاً باتاً نشر أو ترويج ما يلي: \n• التحريض على العنف أو الإرهاب بكافة أشكاله.\n• خطاب الكراهية القائم على العرق، الدين، أو الانتماء.\n• المحتوى الإباحي أو المخل بالآداب العامة.\n• التحرر من المسؤولية في نشر أخبار زائفة تهدف لزعزعة الأمن العام."
+        ? "يُمنع منعاً باتاً نشر أو ترويج ما يلي: \n• التحريض على العنف أو الإرهاب بكافة أشكاله.\n• خطاب الكراهية القائم على العرق، الدين، أو الانتماء.\n• المحتوى الإباحي أو المخل بالآداب العامة.\n• نشر أخبار زائفة تهدف لزعزعة الأمن العام."
         : "The following is strictly prohibited: \n• Incitement to violence or terrorism.\n• Hate speech based on race, religion, or affiliation.\n• Pornographic or indecent content.\n• Spreading fake news aimed at destabilizing public security."
     },
     {
       id: "privacy",
       icon: Lock,
-      title: isRtl ? "3. سيادة البيانات والخصوصية" : "3. Data Sovereignty & Privacy",
+      title: isRtl ? "4. سيادة البيانات والخصوصية" : "4. Data Sovereignty & Privacy",
       content: isRtl 
         ? "نحن نحترم خصوصيتك كحق مقدس. يُمنع 'التشهير' (Doxxing) أو نشر بيانات شخصية للغير دون إذن كتابي صريح. كما يُمنع استخدام أدوات التنقيب عن البيانات أو محاولة اختراق حسابات المواطنين الآخرين."
         : "We respect your privacy as a sacred right. Doxxing or publishing third-party personal data without explicit written permission is prohibited."
@@ -54,26 +63,18 @@ export default function CommunityGuidelinesPage() {
     {
       id: "media",
       icon: Star,
-      title: isRtl ? "4. معايير القنوات الإعلامية (Pro)" : "4. Media Channel Standards (Pro)",
+      title: isRtl ? "5. معايير القنوات الإعلامية (Pro)" : "5. Media Channel Standards (Pro)",
       content: isRtl 
-        ? "القنوات الإعلامية الموثقة بالنجمة الذهبية ملزمة بمعايير الشفافية والمصداقية. يجب ذكر المصادر عند نشر الأخبار العاجلة، ويُحظر استخدام ميزة 'الأولوية في الخوارزمية' لنشر محتوى تضليلي. الإخلال بهذه المعايير يؤدي لسحب رتبة Pro فوراً."
-        : "Verified Media Channels (Gold Star) are bound by standards of transparency and credibility. Sources must be cited for breaking news."
+        ? "القنوات الإعلامية الموثقة ملزمة بمعايير الشفافية والمصداقية. يجب ذكر المصادر عند نشر الأخبار العاجلة. الإخلال بهذه المعايير أو استغلال 'أولوية الظهور في الخوارزمية' لنشر التضليل يؤدي لسحب الرتبة فوراً."
+        : "Verified Media Channels are bound by standards of transparency and credibility. Sources must be cited. Misusing 'Algorithm Priority' for misinformation leads to immediate rank revocation."
     },
     {
       id: "legal",
       icon: Scale,
-      title: isRtl ? "5. الامتثال القانوني والإقليمي" : "5. Legal & Regional Compliance",
+      title: isRtl ? "6. الامتثال القانوني والإقليمي" : "6. Legal & Regional Compliance",
       content: isRtl 
-        ? "تخضع المنصة وكافة النزاعات الناشئة عنها لولاية القضاء الجزائري. نحن نلتزم بالاتفاقية العربية لمكافحة جرائم تقنية المعلومات الصادرة عن جامعة الدول العربية. أي محتوى ينتهك السيادة الوطنية للدول أو يدعو للفتنة سيتم التعامل معه كخرق جسيم."
+        ? "تخضع المنصة وكافة النزاعات الناشئة عنها لولاية القضاء الجزائري. نحن نلتزم بالاتفاقية العربية لمكافحة جرائم تقنية المعلومات. أي محتوى ينتهك السيادة الوطنية للدول سيتم التعامل معه كخرق جسيم للميثاق."
         : "The platform and all disputes arising from it are subject to Algerian jurisdiction. We adhere to the Arab Convention on Combating Information Technology Crimes."
-    },
-    {
-      id: "enforcement",
-      icon: Gavel,
-      title: isRtl ? "6. آلية التنفيذ والعقوبات" : "6. Enforcement & Sanctions",
-      content: isRtl 
-        ? "تعتمد المنصة نظام 'المراجعة البشرية السيادية'. العقوبات تشمل: \n1. التنبيه الرسمي.\n2. الحذف المباشر للمحتوى المخالف.\n3. التقييد المؤقت (Shadow Ban).\n4. الحظر الدائم وإدراج المعرف في القائمة السوداء السيادية."
-        : "The platform employs a 'Sovereign Human Review' system. Sanctions include warnings, content removal, restricted access, and permanent bans."
     }
   ];
 
@@ -87,7 +88,7 @@ export default function CommunityGuidelinesPage() {
           <h1 className="text-xl font-black tracking-tight">{isRtl ? "إرشادات المجتمع" : "Community Guidelines"}</h1>
         </div>
         <div className="px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary">
-           Sovereign Protocol v2.1
+           Sovereign Protocol v2.2
         </div>
       </header>
 
