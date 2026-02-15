@@ -28,11 +28,11 @@ import {
   Users,
   MessageSquare,
   AlertTriangle,
-  TrendingUp,
   Activity,
   Megaphone,
   BrainCircuit,
-  Star
+  Star,
+  Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -44,16 +44,6 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { 
-  AreaChart,
-  Area,
-  XAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer
-} from 'recharts';
 import { VerificationBadge } from "@/components/ui/verification-badge";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
@@ -84,9 +74,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     async function fetchStats() {
-      // التأكد تماماً من أن المستخدم مسؤول قبل طلب الإحصائيات لتجنب خطأ الصلاحيات
       if (!isAdmin || !db || !currentUserProfile) return;
-      
       try {
         const uCount = await getCountFromServer(collection(db, "users"));
         const pCount = await getCountFromServer(collection(db, "posts"));
@@ -188,18 +176,80 @@ export default function AdminDashboard() {
           ))}
         </section>
 
-        <Tabs defaultValue="reports" className="w-full">
+        <Tabs defaultValue="users" className="w-full">
           <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6">
-            <TabsTrigger value="reports" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
-              {isRtl ? "البلاغات" : "Reports"} {reports.length > 0 && <Badge className="ml-2 bg-red-500">{reports.length}</Badge>}
-            </TabsTrigger>
             <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
               {isRtl ? "الأعضاء" : "Members"}
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
+              {isRtl ? "البلاغات" : "Reports"} {reports.length > 0 && <Badge className="ml-2 bg-red-500">{reports.length}</Badge>}
             </TabsTrigger>
             <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
               {isRtl ? "بث عام" : "Broadcast"}
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="users" className="space-y-4">
+             <div className="relative mb-6">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
+                <Input 
+                  placeholder={isRtl ? "ابحث عن عضو..." : "Search member..."} 
+                  className="bg-zinc-950 border-zinc-900 rounded-2xl pl-12 h-14 text-sm font-bold"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+             </div>
+             {allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
+               <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-3xl">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-12 w-12 border border-zinc-800">
+                       <AvatarImage src={member.photoURL} />
+                       <AvatarFallback>{member.displayName?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                       <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-black">{member.displayName}</p>
+                          {member.isVerified && <VerificationBadge className="h-3.5 w-3.5" />}
+                          {member.isPro && <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />}
+                       </div>
+                       <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{member.email?.split('@')[0]}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                     {isSuperAdmin && (
+                       <div className="flex gap-1">
+                          {/* توثيق الهوية (Blue Rosette) */}
+                          <Button 
+                            variant="ghost" size="icon" 
+                            className={cn("h-10 w-10", member.isVerified ? "text-primary" : "text-zinc-800")}
+                            title={isRtl ? "توثيق هوية" : "Verify Citizen"}
+                            onClick={() => updateDoc(doc(db, "users", member.id), { isVerified: !member.isVerified })}
+                          >
+                            <VerificationBadge className="h-5 w-5" />
+                          </Button>
+                          {/* توثيق قناة إعلامية (Media Pro) */}
+                          <Button 
+                            variant="ghost" size="icon" 
+                            className={cn("h-10 w-10", member.isPro ? "text-yellow-500" : "text-zinc-800")}
+                            title={isRtl ? "توثيق قناة إعلامية" : "Verify Media Channel"}
+                            onClick={() => updateDoc(doc(db, "users", member.id), { isPro: !member.isPro })}
+                          >
+                            <Radio className="h-5 w-5" />
+                          </Button>
+                       </div>
+                     )}
+                     <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-700 hover:text-orange-500" onClick={() => {
+                        const banUntil = new Date();
+                        banUntil.setDate(banUntil.getDate() + 3);
+                        updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });
+                        toast({ title: "Banned for 3 days" });
+                     }}>
+                       <Ban className="h-5 w-5" />
+                     </Button>
+                  </div>
+               </div>
+             ))}
+          </TabsContent>
 
           <TabsContent value="reports" className="space-y-4">
              {reportsLoading ? (
@@ -239,55 +289,6 @@ export default function AdminDashboard() {
                  <p className="text-sm font-black uppercase tracking-widest">{isRtl ? "لا توجد بلاغات معلقة" : "No pending reports"}</p>
                </div>
              )}
-          </TabsContent>
-
-          <TabsContent value="users" className="space-y-4">
-             <div className="relative mb-6">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
-                <Input 
-                  placeholder={isRtl ? "ابحث عن عضو..." : "Search member..."} 
-                  className="bg-zinc-950 border-zinc-900 rounded-2xl pl-12 h-14 text-sm font-bold"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-             </div>
-             {allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
-               <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-3xl">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12 border border-zinc-800">
-                       <AvatarImage src={member.photoURL} />
-                       <AvatarFallback>{member.displayName?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                       <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-black">{member.displayName}</p>
-                          {member.isVerified && <VerificationBadge className="h-3.5 w-3.5" />}
-                          {member.isPro && <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />}
-                       </div>
-                       <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{member.email?.split('@')[0]}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                     {isSuperAdmin && (
-                       <Button 
-                         variant="ghost" size="icon" 
-                         className={cn("h-10 w-10", member.isVerified ? "text-primary" : "text-zinc-800")}
-                         onClick={() => updateDoc(doc(db, "users", member.id), { isVerified: !member.isVerified })}
-                       >
-                         <VerificationBadge className="h-5 w-5" />
-                       </Button>
-                     )}
-                     <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-700 hover:text-orange-500" onClick={() => {
-                        const banUntil = new Date();
-                        banUntil.setDate(banUntil.getDate() + 3);
-                        updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });
-                        toast({ title: "Banned for 3 days" });
-                     }}>
-                       <Ban className="h-5 w-5" />
-                     </Button>
-                  </div>
-               </div>
-             ))}
           </TabsContent>
 
           <TabsContent value="broadcast" className="space-y-6">

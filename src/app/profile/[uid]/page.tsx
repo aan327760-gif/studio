@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,7 +11,8 @@ import {
   Loader2,
   Settings,
   ShieldCheck,
-  Star
+  Star,
+  Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,6 +25,7 @@ import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc 
 import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { VerificationBadge } from "@/components/ui/verification-badge";
+import { Badge } from "@/components/ui/badge";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -87,7 +90,7 @@ export default function UserProfilePage() {
   const isProfileAdmin = profile?.role === "admin" || profile?.email === SUPER_ADMIN_EMAIL;
   const isVisitorAdmin = currentUserProfile?.role === "admin" || currentUser?.email === SUPER_ADMIN_EMAIL;
   const showCheckmark = profile?.isVerified || profile?.email === SUPER_ADMIN_EMAIL;
-  const isPro = profile?.isPro;
+  const isMediaChannel = profile?.isPro; // تم تخصيص الـ Pro للقنوات الإعلامية
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20 overflow-x-hidden">
@@ -119,10 +122,17 @@ export default function UserProfilePage() {
 
         <div className="flex justify-between items-start">
           <div className="space-y-1">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <h2 className="text-2xl font-black tracking-tight">{profile?.displayName}</h2>
               {showCheckmark && <VerificationBadge className="h-5 w-5" />}
-              {isPro && <Star className="h-5 w-5 fill-yellow-500 text-yellow-500" />}
+              {isMediaChannel && (
+                <div className="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-full">
+                   <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                   <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">
+                     {isRtl ? "قناة إعلامية" : "Media Channel"}
+                   </span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <p className="text-zinc-500 text-sm font-medium">@{profile?.email?.split('@')[0] || "user"}</p>
