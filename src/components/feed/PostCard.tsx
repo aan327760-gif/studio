@@ -69,6 +69,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// الحساب الرسمي للمدير العام
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 interface PostCardProps {
@@ -99,6 +100,7 @@ export const PostCard = memo(({
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   
+  // التحقق من السلطة المطلقة
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
   const [newComment, setNewComment] = useState("");
@@ -183,7 +185,6 @@ export const PostCard = memo(({
     addDoc(collection(db, "posts", id, "comments"), commentData);
     updateDoc(doc(db, "posts", id), { commentsCount: increment(1) });
     
-    // إرسال تنبيه لصاحب المنشور عند إضافة تعليق
     if (author?.uid !== user.uid) {
       addDoc(collection(db, "notifications"), {
         userId: author.uid,
@@ -237,7 +238,7 @@ export const PostCard = memo(({
                    <BookOpen className="h-4 w-4 mr-2" /> إيجاز (ي)
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsReportDialogOpen(true); }}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
-                {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف سيادي" : "Root Delete"}</DropdownMenuItem>}
+                {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف جذري" : "Root Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

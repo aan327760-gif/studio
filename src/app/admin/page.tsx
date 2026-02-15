@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, ResponsiveContainer } from "recharts";
 
+// الحساب الحصري للسيادة المطلقة
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function AdminDashboard() {
@@ -62,10 +63,11 @@ export default function AdminDashboard() {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
+  // التحقق الصارم من الهوية
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
   useEffect(() => {
-    if (!userLoading && !isSuper && user) {
+    if (!userLoading && !isSuper) {
       router.replace("/");
     }
   }, [user, userLoading, router, isSuper]);
@@ -109,6 +111,7 @@ export default function AdminDashboard() {
   };
 
   const handleActionOnReport = async (reportId: string, action: 'ignore' | 'delete' | 'ban', postId?: string, authorId?: string) => {
+    if (!isSuper) return;
     try {
       if (action === 'delete' && postId) {
         await deleteDoc(doc(db, "posts", postId));
@@ -125,11 +128,13 @@ export default function AdminDashboard() {
   };
 
   const handleToggleVerify = async (userId: string, current: boolean) => {
+    if (!isSuper) return;
     await updateDoc(doc(db, "users", userId), { isVerified: !current });
     toast({ title: isRtl ? "تم تحديث التوثيق" : "Verification Updated" });
   };
 
   const handleTogglePro = async (userId: string, current: boolean) => {
+    if (!isSuper) return;
     await updateDoc(doc(db, "users", userId), { isPro: !current });
     toast({ title: isRtl ? "تم تحديث رتبة الإعلام" : "Media Status Updated" });
   };

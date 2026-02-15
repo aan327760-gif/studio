@@ -14,6 +14,7 @@ service cloud.firestore {
               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isBannedUntil < request.time);
     }
 
+    // السلطة المطلقة حصرياً لهذا الإيميل
     function isSuperAdmin() {
       return isSignedIn() && request.auth.token.email == "adelbenmaza3@gmail.com";
     }

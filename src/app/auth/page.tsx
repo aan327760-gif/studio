@@ -27,10 +27,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/context/LanguageContext";
-import { Loader2, Mail, Lock, Phone, User as UserIcon } from "lucide-react";
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { Loader2 } from "lucide-react";
 
+// الحساب الرسمي للمدير العام (السلطة المطلقة)
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function AuthPage() {
@@ -57,14 +56,13 @@ export default function AuthPage() {
         const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
         const user = userCredential.user;
         
-        const userRef = doc(db, "users", user.uid);
-        
         // التوثيق التلقائي للمدير العام الحصري عند الدخول
         if (user.email === SUPER_ADMIN_EMAIL) {
+          const userRef = doc(db, "users", user.uid);
           await updateDoc(userRef, {
             isVerified: true,
             isPro: true,
-            role: "admin" // رتبة داخلية اختيارية، القوة الفعلية في الإيميل
+            role: "admin"
           });
         }
 
@@ -101,7 +99,7 @@ export default function AuthPage() {
           language: isRtl ? "ar" : "en"
         };
 
-        // بروتوكول المتابعة التلقائية للمدير العام (حصري)
+        // بروتوكول المتابعة التلقائية للمدير العام عند تسجيل أي مواطن جديد
         if (!isSuper) {
           try {
             const adminQuery = query(collection(db, "users"), where("email", "==", SUPER_ADMIN_EMAIL), limit(1));

@@ -30,6 +30,7 @@ import { doc } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 
+// الحساب الحصري للسيادة المطلقة
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function SettingsPage() {
@@ -42,6 +43,7 @@ export default function SettingsPage() {
   const profileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(profileRef);
 
+  // التحقق الحصري
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
   const handleSignOut = async () => {
@@ -72,7 +74,7 @@ export default function SettingsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <h2 className="font-black text-lg truncate">{user?.displayName}</h2>
-                  {profile?.isVerified && <VerificationBadge className="h-4 w-4" />}
+                  {(profile?.isVerified || isSuper) && <VerificationBadge className="h-4 w-4" />}
                   {profile?.isPro && (
                     <div className="flex items-center gap-0.5 bg-yellow-500/10 border border-yellow-500/20 px-1.5 py-0.5 rounded-full">
                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
