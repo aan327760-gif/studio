@@ -21,19 +21,16 @@ import {
   Loader2,
   Search,
   Ban,
-  Clock,
   ShieldCheck,
   Flag,
   CheckCircle,
-  Trash2,
   Users,
   MessageSquare,
   AlertTriangle,
   TrendingUp,
   Activity,
   Megaphone,
-  BrainCircuit,
-  Wand2
+  BrainCircuit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -56,7 +53,6 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { VerificationBadge } from "@/components/ui/verification-badge";
-import { analyzeReportAI } from "@/ai/flows/content-moderation-assistant";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -72,7 +68,6 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
-  const [aiAnalyzing, setAiAnalyzing] = useState<string | null>(null);
   const [stats, setStats] = useState({ users: 0, posts: 0, groups: 0, reports: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -148,29 +143,6 @@ export default function AdminDashboard() {
       toast({ variant: "destructive", title: "Error" });
     } finally {
       setIsBroadcasting(false);
-    }
-  };
-
-  const handleAnalyzeAI = async (report: any) => {
-    setAiAnalyzing(report.id);
-    try {
-      const postRef = doc(db, "posts", report.targetId);
-      const postSnap = await getCountFromServer(query(collection(db, "posts"), where("__name__", "==", report.targetId)));
-      // محاكاة جلب نص المنشور (في تطبيق حقيقي سنجلبه بـ getDoc)
-      const result = await analyzeReportAI({ 
-        postContent: "محتوى المنشور المبلغ عنه", 
-        reason: report.reason 
-      });
-      
-      toast({
-        title: isRtl ? "تحليل الذكاء الاصطناعي" : "AI Analysis",
-        description: result.recommendation,
-        duration: 10000
-      });
-    } catch (error) {
-      toast({ variant: "destructive", title: "AI Error" });
-    } finally {
-      setAiAnalyzing(null);
     }
   };
 
@@ -261,7 +233,7 @@ export default function AdminDashboard() {
             <CardHeader>
               <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-green-500" />
-                {isRtl ? "تحليل الذكاء" : "AI Health"}
+                {isRtl ? "حالة النظام" : "System Health"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -273,7 +245,7 @@ export default function AdminDashboard() {
                   <div className="h-full bg-green-500 w-[99%]" />
                </div>
                <p className="text-[9px] text-zinc-600 font-bold uppercase leading-relaxed">
-                  {isRtl ? "الذكاء الاصطناعي يقوم بفحص كل منشور وتصنيفه تلقائياً لضمان سلامة المجتمع." : "AI scans every post and categorizes it automatically to ensure society safety."}
+                  {isRtl ? "يتم فحص المحتوى يدوياً بواسطة المشرفين لضمان سلامة المجتمع." : "Content is reviewed manually by moderators to ensure society safety."}
                </p>
             </CardContent>
           </Card>
@@ -306,16 +278,6 @@ export default function AdminDashboard() {
                           <p className="text-xs text-zinc-500 font-bold mt-1">السبب: {report.reason}</p>
                         </div>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="rounded-full border-primary/20 bg-primary/5 text-primary text-[10px] font-black h-8 gap-2"
-                        onClick={() => handleAnalyzeAI(report)}
-                        disabled={aiAnalyzing === report.id}
-                      >
-                        {aiAnalyzing === report.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BrainCircuit className="h-3.5 w-3.5" />}
-                        {isRtl ? "تحليل ذكي" : "AI Analyze"}
-                      </Button>
                     </div>
                     <div className="flex gap-2">
                        <Button size="sm" variant="ghost" className="flex-1 rounded-xl border border-zinc-800 font-black h-11" onClick={() => updateDoc(doc(db, "reports", report.id), { status: "resolved" })}>

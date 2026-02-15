@@ -1,23 +1,18 @@
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
-import { X, Mic, Loader2, Sparkles, Globe, Lock, Ban, Wand2, ImagePlus } from "lucide-react";
+import { useState, Suspense } from "react";
+import { X, Loader2, Globe, Lock, Ban } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
-import { moderateContent } from "@/ai/flows/content-moderation-assistant";
-import { enhancePostText } from "@/ai/flows/creative-assistant";
-import { generateSovereignImage } from "@/ai/flows/image-generator";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, doc } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -44,48 +39,13 @@ function CreatePostContent() {
   
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  
-  const [isImageGenOpen, setIsImageGenOpen] = useState(false);
-  const [imagePrompt, setImagePrompt] = useState("");
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
   const isBanned = profile?.isBannedUntil && profile.isBannedUntil.toDate() > new Date();
 
-  const [localImageUrl, setLocalImageUrl] = useState<string | null>(searchParams.get("image"));
+  const localImageUrl = searchParams.get("image");
   const videoUrl = searchParams.get("video");
   const audioUrl = searchParams.get("audio");
   const filterClass = searchParams.get("filter") || "filter-none";
-  
-  const handleAiEnhance = async () => {
-    if (!content.trim()) return;
-    setIsAiLoading(true);
-    try {
-      const result = await enhancePostText({ text: content, tone: 'sovereign' });
-      setContent(result.enhancedText);
-      toast({ title: isRtl ? "تم تحسين النص ذكياً" : "AI Enhanced Text" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "AI Error" });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
-  const handleGenerateImage = async () => {
-    if (!imagePrompt.trim()) return;
-    setIsAiLoading(true);
-    try {
-      const result = await generateSovereignImage({ prompt: imagePrompt });
-      setGeneratedImageUrl(result.imageUrl);
-      setLocalImageUrl(result.imageUrl);
-      setIsImageGenOpen(false);
-      toast({ title: isRtl ? "تم توليد الصورة" : "Image Generated" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Generation Failed" });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
 
   const handleSubmit = async () => {
     if (isBanned) {
@@ -101,18 +61,6 @@ function CreatePostContent() {
 
     setIsSubmitting(true);
     try {
-      const moderationResult = await moderateContent({ text: content || "Media Post" });
-      
-      if (!moderationResult.isAppropriate) {
-        toast({
-          title: isRtl ? "محتوى غير لائق" : "Inappropriate Content",
-          description: moderationResult.reasoning,
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
       let finalMediaUrl = null;
       let mediaType: "image" | "video" | "audio" | null = null;
 
@@ -209,82 +157,22 @@ function CreatePostContent() {
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-4">
-            <div className="relative">
-              <Textarea 
-                placeholder={isRtl ? "ماذا يدور في ذهنك؟" : "What's on your mind?"} 
-                className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[140px] placeholder:text-zinc-700" 
-                value={content} 
-                onChange={(e) => setContent(e.target.value)} 
-                disabled={isBanned || isAiLoading}
-              />
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="absolute bottom-0 right-0 rounded-full h-8 gap-1.5 text-primary bg-primary/10 border border-primary/20"
-                onClick={handleAiEnhance}
-                disabled={isAiLoading || !content.trim()}
-              >
-                {isAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-                <span className="text-[10px] font-black uppercase tracking-widest">{isRtl ? "تحسين ذكي" : "AI Enhance"}</span>
-              </Button>
-            </div>
+            <Textarea 
+              placeholder={isRtl ? "ماذا يدور في ذهنك؟" : "What's on your mind?"} 
+              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[140px] placeholder:text-zinc-700" 
+              value={content} 
+              onChange={(e) => setContent(e.target.value)} 
+              disabled={isBanned}
+            />
 
             {localImageUrl && (
               <div className="relative group rounded-2xl overflow-hidden border border-zinc-800">
                 <img src={localImageUrl} alt="Preview" className={cn("w-full h-auto", filterClass)} />
-                <Button 
-                  variant="destructive" 
-                  size="icon" 
-                  className="absolute top-2 right-2 rounded-full h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => setLocalImageUrl(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             )}
           </div>
         </div>
       </main>
-
-      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-zinc-900 max-w-md mx-auto z-30">
-        <div className="flex gap-2">
-          <Button 
-            variant="ghost" 
-            className="flex-1 rounded-2xl h-12 bg-zinc-900 border border-zinc-800 gap-2 text-zinc-400 hover:text-white"
-            onClick={() => setIsImageGenOpen(true)}
-            disabled={isAiLoading}
-          >
-            <ImagePlus className="h-5 w-5" />
-            <span className="text-xs font-bold">{isRtl ? "توليد صورة بالذكاء" : "AI Image Gen"}</span>
-          </Button>
-        </div>
-      </footer>
-
-      <Dialog open={isImageGenOpen} onOpenChange={setIsImageGenOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-white rounded-[2rem] w-[90%] max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-center font-black">{isRtl ? "توليد صورة سيادية" : "Sovereign AI Art"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <Input 
-              placeholder={isRtl ? "صف ما تتخيله..." : "Describe what you imagine..."} 
-              className="bg-zinc-900 border-none rounded-xl h-12"
-              value={imagePrompt}
-              onChange={(e) => setImagePrompt(e.target.value)}
-            />
-            <Button 
-              className="w-full bg-white text-black hover:bg-zinc-200 font-black h-12 rounded-xl"
-              onClick={handleGenerateImage}
-              disabled={isAiLoading || !imagePrompt.trim()}
-            >
-              {isAiLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (isRtl ? "توليد الآن" : "Generate Now")}
-            </Button>
-            <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest px-4 leading-relaxed">
-              {isRtl ? "سيقوم الذكاء الاصطناعي بتحويل وصفك إلى لوحة فنية فريدة لمنشورك" : "AI will transform your description into unique art for your post"}
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
