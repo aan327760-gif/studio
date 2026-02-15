@@ -25,7 +25,6 @@ import {
   AlertTriangle,
   Megaphone,
   Star,
-  CheckCircle,
   ShieldAlert,
   ShieldCheck,
   Github,
@@ -33,9 +32,7 @@ import {
   Lock,
   Globe,
   ExternalLink,
-  Zap,
-  MoreVertical,
-  X
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -62,7 +59,6 @@ export default function AdminDashboard() {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
-  // GitHub Sync State
   const [repoUrl, setRepoUrl] = useState("");
   const [githubToken, setGithubToken] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
@@ -91,14 +87,14 @@ export default function AdminDashboard() {
         batch.set(notifRef, {
           userId: member.id,
           type: "system",
-          fromUserName: "UNBOUND COMMAND",
+          fromUserName: "SOVEREIGN COMMAND",
           message: broadcastMessage,
           read: false,
           createdAt: serverTimestamp()
         });
       });
       await batch.commit();
-      toast({ title: isRtl ? "تم إرسال البيان السيادي" : "Sovereign Proclamation Sent" });
+      toast({ title: isRtl ? "تم بث البيان الرسمي" : "Sovereign Proclamation Broadcasted" });
       setBroadcastMessage("");
     } catch (error) {
       toast({ variant: "destructive", title: "Broadcast Failed" });
@@ -115,9 +111,9 @@ export default function AdminDashboard() {
     setIsSyncing(true);
     const result = await syncToGitHub(repoUrl, githubToken);
     if (result.success) {
-      toast({ title: isRtl ? "تمت المزامنة مع GitHub بنجاح" : "GitHub Sync Successful" });
+      toast({ title: isRtl ? "تمت المزامنة بنجاح" : "Sync Successful" });
     } else {
-      toast({ variant: "destructive", title: "GitHub Sync Failed", description: result.error });
+      toast({ variant: "destructive", title: "Sync Failed", description: result.error });
     }
     setIsSyncing(false);
   };
@@ -139,10 +135,10 @@ export default function AdminDashboard() {
   if (!isSuper) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-900 pb-24 selection:bg-primary/30">
+    <div className="min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-900 pb-24">
       <header className="p-6 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900 h-10 w-10">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full h-10 w-10">
             <ArrowLeft className={cn("h-5 w-5", isRtl ? "rotate-180" : "")} />
           </Button>
           <div>
@@ -150,19 +146,17 @@ export default function AdminDashboard() {
             <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black tracking-widest mt-0.5">ROOT ACCESS</Badge>
           </div>
         </div>
-        <div className="h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-           <ShieldAlert className="h-5 w-5 text-primary" />
-        </div>
+        <div className="h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center"><ShieldAlert className="h-5 w-5 text-primary" /></div>
       </header>
 
       <main className="p-4 space-y-8">
         <div className="grid grid-cols-2 gap-3">
-           <Card className="bg-zinc-950 border-zinc-900 shadow-xl p-4 flex flex-col items-center gap-2">
+           <Card className="bg-zinc-950 border-zinc-900 p-4 flex flex-col items-center gap-2">
               <Users className="h-5 w-5 text-blue-500" />
               <span className="text-[9px] font-black text-zinc-500 uppercase">{isRtl ? "المواطنين" : "Citizens"}</span>
               <span className="text-xl font-black">{allUsers.length}</span>
            </Card>
-           <Card className="bg-zinc-950 border-zinc-900 shadow-xl p-4 flex flex-col items-center gap-2">
+           <Card className="bg-zinc-950 border-zinc-900 p-4 flex flex-col items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-500" />
               <span className="text-[9px] font-black text-zinc-500 uppercase">{isRtl ? "التهديدات" : "Threats"}</span>
               <span className="text-xl font-black">{reports.length}</span>
@@ -170,10 +164,10 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6 overflow-x-auto no-scrollbar">
-            <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">{isRtl ? "الهويات" : "Identity"}</TabsTrigger>
-            <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">{isRtl ? "البث" : "Broadcast"}</TabsTrigger>
-            <TabsTrigger value="deploy" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">{isRtl ? "النشر" : "Deploy"}</TabsTrigger>
+          <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6">
+            <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "الهويات" : "Identity"}</TabsTrigger>
+            <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "البث" : "Broadcast"}</TabsTrigger>
+            <TabsTrigger value="deploy" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "النشر" : "Deploy"}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -184,7 +178,7 @@ export default function AdminDashboard() {
              <div className="space-y-3">
                {usersLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div> : 
                 allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
-                 <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem] hover:border-zinc-800 transition-all shadow-lg">
+                 <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem] hover:border-zinc-800 transition-all">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-12 w-12 border border-zinc-800">
                          <AvatarImage src={member.photoURL} />
@@ -221,49 +215,29 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="deploy" className="space-y-6">
-             <Card className="bg-zinc-950 border-zinc-900 border-2 border-primary/10 rounded-[2.5rem] p-6 shadow-2xl overflow-hidden relative">
+             <Card className="bg-zinc-950 border-zinc-900 border-2 border-primary/10 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-6 opacity-5"><Github className="h-24 w-24" /></div>
                 <div className="flex items-center gap-3 mb-6">
                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10"><Github className="h-5 w-5 text-white" /></div>
                    <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "المزامنة والنشر السيادي" : "Sovereign Deploy"}</h3>
                 </div>
-                
                 <div className="space-y-5">
                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 px-1"><Globe className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">{isRtl ? "رابط GitHub" : "GitHub Repo"}</span></div>
+                      <div className="flex items-center gap-2 px-1"><Globe className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">GitHub Repo</span></div>
                       <Input placeholder="https://github.com/user/unbound-os.git" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
                    </div>
-                   
                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 px-1"><Lock className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">{isRtl ? "رمز الوصول (PAT)" : "Personal Access Token"}</span></div>
+                      <div className="flex items-center gap-2 px-1"><Lock className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">PAT Token</span></div>
                       <Input type="password" placeholder="ghp_xxxxxxxxxxxx" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} />
                    </div>
-
-                   <Button 
-                     className="w-full h-14 rounded-2xl bg-white text-black hover:bg-zinc-200 font-black text-lg gap-3 shadow-xl active:scale-95 transition-all"
-                     disabled={isSyncing || !repoUrl || !githubToken}
-                     onClick={handleGitHubSync}
-                   >
+                   <Button className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg gap-3 shadow-xl active:scale-95 transition-all" disabled={isSyncing || !repoUrl || !githubToken} onClick={handleGitHubSync}>
                      {isSyncing ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Rocket className="h-5 w-5" /> {isRtl ? "رفع الكود إلى GitHub" : "Push to GitHub"}</>}
                    </Button>
-
                    <div className="h-[1px] bg-zinc-900 my-4" />
-
                    <div className="space-y-4">
-                      <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-blue-500" /><h4 className="font-black text-xs uppercase tracking-widest">{isRtl ? "خطوة Vercel النهائية" : "Final Vercel Step"}</h4></div>
-                      <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
-                         {isRtl 
-                           ? "بمجرد رفع الكود إلى GitHub، اذهب إلى Vercel واربط المستودع. تأكد من إضافة كافة مفاتيح البيئة (Environment Variables) من ملف .env ليعمل التطبيق." 
-                           : "Once pushed to GitHub, go to Vercel and link the repo. Don't forget to add all .env variables to Vercel project settings."}
-                      </p>
-                      <Button 
-                        variant="outline" 
-                        className="w-full h-12 rounded-xl border-zinc-800 hover:bg-zinc-900 font-bold gap-2 text-xs"
-                        onClick={() => window.open('https://vercel.com/new', '_blank')}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        {isRtl ? "فتح Vercel الآن" : "Open Vercel Now"}
-                      </Button>
+                      <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-blue-500" /><h4 className="font-black text-xs uppercase tracking-widest">Final Vercel Step</h4></div>
+                      <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">{isRtl ? "بمجرد رفع الكود إلى GitHub، اذهب إلى Vercel واربط المستودع." : "Once pushed to GitHub, go to Vercel and link the repo."}</p>
+                      <Button variant="outline" className="w-full h-12 rounded-xl border-zinc-800 hover:bg-zinc-900 font-bold gap-2 text-xs" onClick={() => window.open('https://vercel.com/new', '_blank')}><ExternalLink className="h-4 w-4" /> {isRtl ? "فتح Vercel الآن" : "Open Vercel Now"}</Button>
                    </div>
                 </div>
              </Card>

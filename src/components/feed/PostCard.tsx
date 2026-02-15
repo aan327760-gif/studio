@@ -2,7 +2,6 @@
 "use client";
 
 import { 
-  Heart, 
   MessageCircle, 
   MoreHorizontal, 
   Trash2, 
@@ -13,13 +12,12 @@ import {
   Bookmark,
   X,
   Loader2,
-  Reply,
   CornerDownLeft,
   ThumbsUp,
   ThumbsDown,
   Info,
-  ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Star
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -167,6 +165,12 @@ export const PostCard = memo(({
               <div className="flex items-center gap-1.5">
                 <h3 className="font-black text-[15px] truncate tracking-tight">{author?.name || author?.displayName}</h3>
                 {(author?.isVerified || author?.email === SUPER_ADMIN_EMAIL) && <VerificationBadge className="h-4 w-4" />}
+                {author?.isPro && (
+                  <div className="flex items-center gap-0.5 bg-yellow-500/10 border border-yellow-500/20 px-1 rounded-full">
+                    <Star className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500" />
+                    <span className="text-[7px] font-black text-yellow-500 uppercase">PRO</span>
+                  </div>
+                )}
               </div>
               <span className="text-[10px] text-zinc-600 font-bold uppercase">@{author?.handle || author?.email?.split('@')[0]}</span>
             </div>
@@ -226,8 +230,8 @@ export const PostCard = memo(({
         <div className="px-5 py-4 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 group cursor-pointer" onClick={handleLike}>
-              <Heart className={cn("h-5 w-5 transition-all duration-300 active:scale-150", isLiked ? "fill-red-500 text-red-500" : "text-zinc-700")} />
-              <span className={cn("text-xs font-black", isLiked ? "text-red-500" : "text-zinc-700")}>{likes}</span>
+              <ThumbsUp className={cn("h-5 w-5 transition-all", isLiked ? "fill-white text-white" : "text-zinc-700")} />
+              <span className={cn("text-xs font-black", isLiked ? "text-white" : "text-zinc-700")}>{likes}</span>
             </div>
             
             <Sheet>
@@ -247,24 +251,8 @@ export const PostCard = memo(({
                     </div>
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <Button 
-                      onClick={() => setSortType('top')}
-                      className={cn(
-                        "h-8 px-4 rounded-lg text-xs font-bold transition-all",
-                        sortType === 'top' ? "bg-white text-black" : "bg-zinc-900 text-white hover:bg-zinc-800"
-                      )}
-                    >
-                      {isRtl ? "الأهم" : "Top"}
-                    </Button>
-                    <Button 
-                      onClick={() => setSortType('latest')}
-                      className={cn(
-                        "h-8 px-4 rounded-lg text-xs font-bold transition-all",
-                        sortType === 'latest' ? "bg-white text-black" : "bg-zinc-900 text-white hover:bg-zinc-800"
-                      )}
-                    >
-                      {isRtl ? "أحدث التعليقات" : "Newest"}
-                    </Button>
+                    <Button onClick={() => setSortType('top')} className={cn("h-8 px-4 rounded-lg text-xs font-bold transition-all", sortType === 'top' ? "bg-white text-black" : "bg-zinc-900 text-white hover:bg-zinc-800")}>{isRtl ? "الأهم" : "Top"}</Button>
+                    <Button onClick={() => setSortType('latest')} className={cn("h-8 px-4 rounded-lg text-xs font-bold transition-all", sortType === 'latest' ? "bg-white text-black" : "bg-zinc-900 text-white hover:bg-zinc-800")}>{isRtl ? "أحدث التعليقات" : "Newest"}</Button>
                   </div>
                 </SheetHeader>
 
@@ -272,7 +260,7 @@ export const PostCard = memo(({
 
                 <div className="p-3 pb-8 border-t border-zinc-900 bg-black sticky bottom-0">
                   {replyTo && (
-                    <div className="flex items-center justify-between bg-zinc-900 p-2 px-4 rounded-t-xl border-x border-t border-zinc-800 animate-in slide-in-from-bottom-2">
+                    <div className="flex items-center justify-between bg-zinc-900 p-2 px-4 rounded-t-xl border-x border-t border-zinc-800">
                       <div className="flex items-center gap-2">
                         <CornerDownLeft className="h-3 w-3 text-zinc-400" />
                         <span className="text-[10px] font-bold text-zinc-400 uppercase">الرد على @{replyTo.handle}</span>
@@ -283,17 +271,8 @@ export const PostCard = memo(({
                   <div className="flex gap-3 items-center">
                     <Avatar className="h-9 w-9"><AvatarImage src={user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
                     <div className="flex-1 flex items-center bg-zinc-900 rounded-full pl-4 pr-1 py-1">
-                      <Input 
-                        placeholder={isRtl ? "إضافة تعليق..." : "Add a comment..."} 
-                        className="bg-transparent border-none h-8 text-sm focus-visible:ring-0 shadow-none p-0 placeholder:text-zinc-500" 
-                        value={newComment} 
-                        onChange={(e) => setNewComment(e.target.value)} 
-                        maxLength={100} 
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} 
-                      />
-                      <Button size="icon" className="rounded-full h-8 w-8 bg-transparent hover:bg-zinc-800 text-white" onClick={handleAddComment} disabled={!newComment.trim()}>
-                        <Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} />
-                      </Button>
+                      <Input placeholder={isRtl ? "إضافة تعليق..." : "Add a comment..."} className="bg-transparent border-none h-8 text-sm focus-visible:ring-0 shadow-none p-0" value={newComment} onChange={(e) => setNewComment(e.target.value)} maxLength={100} onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
+                      <Button size="icon" className="rounded-full h-8 w-8 bg-transparent text-white" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
                     </div>
                   </div>
                 </div>
@@ -304,7 +283,7 @@ export const PostCard = memo(({
           </div>
 
           <div className="flex items-center gap-2 group cursor-pointer" onClick={handleSave}>
-            <Bookmark className={cn("h-5 w-5 transition-all duration-300 active:scale-125", isSaved ? "fill-primary text-primary" : "text-zinc-700")} />
+            <Bookmark className={cn("h-5 w-5 transition-all", isSaved ? "fill-primary text-primary" : "text-zinc-700")} />
             {saves > 0 && <span className={cn("text-xs font-black", isSaved ? "text-primary" : "text-zinc-700")}>{saves}</span>}
           </div>
         </div>
@@ -315,24 +294,19 @@ export const PostCard = memo(({
 
 PostCard.displayName = "PostCard";
 
-function CommentsList({ postId, isRtl, sortType, onReply }: { postId: string, isRtl: boolean, sortType: 'top' | 'latest', onReply: (c: any) => void }) {
+function CommentsList({ postId, isRtl, sortType, onReply }: any) {
   const db = useFirestore();
   const { user } = useUser();
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
   const commentsQuery = useMemoFirebase(() => {
     const orderField = sortType === 'top' ? 'likesCount' : 'createdAt';
-    return query(
-      collection(db, "posts", postId, "comments"), 
-      orderBy(orderField, "desc"), 
-      limit(100)
-    );
+    return query(collection(db, "posts", postId, "comments"), orderBy(orderField, "desc"), limit(100));
   }, [db, postId, sortType]);
 
   const { data: rawComments = [] } = useCollection<any>(commentsQuery);
 
-  // تنظيم الردود تحت التعليقات الأساسية
-  const organizedComments = useMemo(() => {
+  const organized = useMemo(() => {
     const main = rawComments.filter(c => !c.parentId);
     const replies = rawComments.filter(c => c.parentId);
     return { main, replies };
@@ -345,133 +319,85 @@ function CommentsList({ postId, isRtl, sortType, onReply }: { postId: string, is
     updateDoc(commentRef, isLiked ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) } : { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    if (confirm(isRtl ? "حذف التعليق؟" : "Delete comment?")) {
-      await deleteDoc(doc(db, "posts", postId, "comments", commentId));
-      updateDoc(doc(db, "posts", postId), { commentsCount: increment(-1) });
-    }
-  };
-
   const formatTime = (createdAt: any) => {
     if (!createdAt) return "";
     const date = createdAt.toDate ? createdAt.toDate() : new Date();
     const diff = (new Date().getTime() - date.getTime()) / 1000;
-    if (diff < 60) return isRtl ? "الآن" : "Just now";
-    if (diff < 3600) return `${Math.floor(diff/60)} ${isRtl ? "دقيقة" : "m"}`;
-    if (diff < 86400) return `${Math.floor(diff/3600)} ${isRtl ? "ساعة" : "h"}`;
+    if (diff < 60) return isRtl ? "الآن" : "now";
+    if (diff < 3600) return `${Math.floor(diff/60)}m`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}h`;
     return date.toLocaleDateString();
   };
 
   return (
     <ScrollArea className="flex-1 px-4 py-2">
-      {organizedComments.main.length > 0 ? organizedComments.main.map((comment: any) => (
-        <div key={comment.id} className="mb-6 animate-in fade-in group">
+      {organized.main.length > 0 ? organized.main.map((comment: any) => (
+        <div key={comment.id} className="mb-6 group">
           <div className="flex gap-3">
-            <Avatar className="h-9 w-9 shrink-0"><AvatarImage src={comment.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
+            <Avatar className="h-9 w-9"><AvatarImage src={comment.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[11px] font-bold text-zinc-400">@{comment.authorHandle}</span>
-                  <span className="text-[10px] text-zinc-600">• {formatTime(comment.createdAt)}</span>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                   <MoreHorizontal className="h-4 w-4 text-zinc-600" />
-                </button>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[11px] font-bold text-zinc-400">@{comment.authorHandle}</span>
+                <span className="text-[10px] text-zinc-600">• {formatTime(comment.createdAt)}</span>
               </div>
               <p className="text-[14px] text-zinc-100 leading-relaxed mb-2">{comment.text}</p>
-              
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-1.5">
-                  <button onClick={() => handleLikeComment(comment.id, comment.likedBy)} className="text-zinc-400 hover:text-white transition-all active:scale-125">
-                    <ThumbsUp className={cn("h-4 w-4", (comment.likedBy || []).includes(user?.uid) && "fill-white text-white")} />
-                  </button>
+                  <button onClick={() => handleLikeComment(comment.id, comment.likedBy)}><ThumbsUp className={cn("h-4 w-4", (comment.likedBy || []).includes(user?.uid) && "fill-white text-white")} /></button>
                   <span className="text-[11px] font-bold text-zinc-500">{comment.likesCount || 0}</span>
-                  <button className="text-zinc-400 hover:text-white transition-all ml-2">
-                    <ThumbsDown className="h-4 w-4" />
-                  </button>
+                  <button><ThumbsDown className="h-4 w-4 text-zinc-400" /></button>
                 </div>
-                <button onClick={() => onReply({ id: comment.id, handle: comment.authorHandle })} className="text-zinc-400 hover:text-white">
-                  <MessageCircle className="h-4 w-4" />
-                </button>
+                <button onClick={() => onReply({ id: comment.id, handle: comment.authorHandle })} className="text-[11px] font-bold text-zinc-500">Reply</button>
                 {(isSuper || user?.uid === comment.authorId) && (
-                  <button onClick={() => handleDeleteComment(comment.id)} className="text-zinc-700 hover:text-red-500 ml-auto">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  <button onClick={() => deleteDoc(doc(db, "posts", postId, "comments", comment.id))} className="text-zinc-700 ml-auto"><Trash2 className="h-3.5 w-3.5" /></button>
                 )}
               </div>
-
-              {/* نظام الردود المتداخلة (YouTube Style) */}
-              <ReplyThread 
-                commentId={comment.id} 
-                allReplies={organizedComments.replies} 
-                isRtl={isRtl} 
-                onReply={onReply} 
-                onLike={handleLikeComment} 
-                onDelete={handleDeleteComment}
-                formatTime={formatTime}
-                user={user}
-                isSuper={isSuper}
-              />
+              <ReplyThread commentId={comment.id} allReplies={organized.replies} isRtl={isRtl} onReply={onReply} onLike={handleLikeComment} formatTime={formatTime} user={user} isSuper={isSuper} postId={postId} db={db} />
             </div>
           </div>
         </div>
       )) : (
-        <div className="py-20 text-center opacity-20"><MessageCircle className="h-12 w-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا توجد نقاشات بعد" : "No comments yet"}</p></div>
+        <div className="py-20 text-center opacity-20"><MessageCircle className="h-12 w-12 mx-auto mb-4" /><p className="text-xs font-black uppercase">{isRtl ? "لا توجد نقاشات" : "No comments"}</p></div>
       )}
     </ScrollArea>
   );
 }
 
-function ReplyThread({ commentId, allReplies, isRtl, onReply, onLike, onDelete, formatTime, user, isSuper }: any) {
+function ReplyThread({ commentId, allReplies, isRtl, onReply, onLike, onDelete, formatTime, user, isSuper, postId, db }: any) {
   const [showReplies, setShowReplies] = useState(false);
   const replies = allReplies.filter((r: any) => r.parentId === commentId);
-
   if (replies.length === 0) return null;
 
   return (
     <div className="mt-2">
       {!showReplies ? (
-        <button 
-          onClick={() => setShowReplies(true)}
-          className="flex items-center gap-2 text-primary font-bold text-[12px] hover:underline"
-        >
-          <ChevronRight className={cn("h-4 w-4", isRtl ? "rotate-180" : "", showReplies && "rotate-90")} />
-          {replies.length} {isRtl ? "ردود" : "replies"}
+        <button onClick={() => setShowReplies(true)} className="flex items-center gap-2 text-primary font-bold text-[12px]">
+          <ChevronRight className={cn("h-4 w-4", isRtl && "rotate-180")} /> {replies.length} {isRtl ? "ردود" : "replies"}
         </button>
       ) : (
-        <div className={cn("mt-4 space-y-4 relative", isRtl ? "mr-2 pr-4 border-r border-zinc-800" : "ml-2 pl-4 border-l border-zinc-800")}>
+        <div className={cn("mt-4 space-y-4 border-l border-zinc-800 pl-4", isRtl && "border-l-0 border-r pr-4")}>
           {replies.map((reply: any) => (
-            <div key={reply.id} className="group">
+            <div key={reply.id}>
               <div className="flex gap-3">
                 <Avatar className="h-6 w-6"><AvatarImage src={reply.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[10px] font-bold text-zinc-400">@{reply.authorHandle}</span>
                     <span className="text-[9px] text-zinc-600">• {formatTime(reply.createdAt)}</span>
                   </div>
                   <p className="text-[13px] text-zinc-200 leading-relaxed mb-2">{reply.text}</p>
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => onLike(reply.id, reply.likedBy)} className="text-zinc-400 active:scale-125">
-                        <ThumbsUp className={cn("h-3.5 w-3.5", (reply.likedBy || []).includes(user?.uid) && "fill-white text-white")} />
-                      </button>
-                      <span className="text-[10px] text-zinc-500">{reply.likesCount || 0}</span>
-                    </div>
-                    <button onClick={() => onReply({ id: reply.id, handle: reply.authorHandle })} className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase">{isRtl ? "رد" : "Reply"}</button>
+                    <button onClick={() => onLike(reply.id, reply.likedBy)}><ThumbsUp className={cn("h-3.5 w-3.5", (reply.likedBy || []).includes(user?.uid) && "fill-white text-white")} /></button>
+                    <button onClick={() => onReply({ id: reply.id, handle: reply.authorHandle })} className="text-[10px] font-bold text-zinc-500 uppercase">Reply</button>
                     {(isSuper || user?.uid === reply.authorId) && (
-                      <button onClick={() => onDelete(reply.id)} className="text-zinc-800 hover:text-red-500"><Trash2 className="h-3 w-3" /></button>
+                      <button onClick={() => deleteDoc(doc(db, "posts", postId, "comments", reply.id))} className="text-zinc-800 ml-auto"><Trash2 className="h-3 w-3" /></button>
                     )}
                   </div>
                 </div>
               </div>
             </div>
           ))}
-          <button 
-            onClick={() => setShowReplies(false)}
-            className="text-[11px] font-bold text-zinc-500 hover:text-white block pt-2"
-          >
-            {isRtl ? "إخفاء الردود" : "Hide replies"}
-          </button>
+          <button onClick={() => setShowReplies(false)} className="text-[11px] font-bold text-zinc-500 block pt-2">{isRtl ? "إخفاء الردود" : "Hide"}</button>
         </div>
       )}
     </div>

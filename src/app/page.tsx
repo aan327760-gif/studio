@@ -19,7 +19,7 @@ export default function Home() {
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
-  // خوارزمية الاكتشاف السيادية (المحرك الرئيسي)
+  // خوارزمية الاكتشاف السيادية النخبوية
   const discoverPostsQuery = useMemoFirebase(() => {
     return query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(100));
   }, [db]);
@@ -34,18 +34,18 @@ export default function Home() {
         const author = post.author || {};
         
         // 1. وزن رتبة المواطن (Sovereign Rank Weight)
-        if (author.isPro) score += 1000;
-        if (author.isVerified || author.role === 'admin' || author.email === ADMIN_EMAIL) score += 500;
+        if (author.isPro) score += 1000; // رتبة الإعلام السيادي
+        if (author.isVerified || author.role === 'admin' || author.email === ADMIN_EMAIL) score += 500; // رتبة التوثيق
         
         // 2. وزن التفاعل البشري (Engagement Weight)
         score += (post.likesCount || 0) * 10;
         score += (post.commentsCount || 0) * 15; 
         score += (post.savesCount || 0) * 20;    
         
-        // 3. وزن التوقيت (Time Decay Weight)
+        // 3. وزن التوقيت (Time Decay)
         const postTime = post.createdAt?.seconds ? post.createdAt.seconds * 1000 : Date.now();
         const hoursPassed = (Date.now() - postTime) / (1000 * 60 * 60);
-        score -= hoursPassed * 25; // فقدان 25 نقطة كل ساعة لضمان تجدد المحتوى
+        score -= hoursPassed * 25; // ضمان تجدد المحتوى دورياً
         
         return score;
       };
@@ -53,7 +53,6 @@ export default function Home() {
     }).slice(0, 30);
   }, [rawDiscoverPosts]);
 
-  // استعلام تنبيهات النظام الرسمية
   const systemAlertQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(
@@ -70,7 +69,7 @@ export default function Home() {
     ).slice(0, 1);
   }, [rawSystemAlerts]);
 
-  // استعلام المتابعة لرؤية أفكار الأصدقاء
+  // متابعات المواطن لرؤية أفكار الأصدقاء
   const followsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(collection(db, "follows"), where("followerId", "==", currentUser.uid), limit(100));
@@ -98,7 +97,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
       <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-zinc-900">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 rotate-3">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg rotate-3">
                <span className="text-white font-black text-xl italic leading-none">U</span>
           </div>
           <div className="flex flex-col">
@@ -109,28 +108,23 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        <Link href="/explore">
-          <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full h-10 w-10">
-            <Search className="h-6 w-6" />
-          </Button>
-        </Link>
+        <Link href="/explore"><Button variant="ghost" size="icon" className="text-zinc-400 rounded-full h-10 w-10"><Search className="h-6 w-6" /></Button></Link>
       </header>
 
       {systemAlerts.length > 0 && (
-        <div className="p-3 bg-primary/5 border-b border-primary/20 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="p-3 bg-primary/5 border-b border-primary/20">
            <div className="flex items-center gap-3 bg-zinc-950/50 p-3 rounded-2xl ring-1 ring-primary/20">
               <Megaphone className="h-4 w-4 text-primary shrink-0 animate-bounce" />
               <p className="text-[11px] font-bold text-zinc-200 line-clamp-1">{systemAlerts[0].message}</p>
-              <Link href="/notifications" className="ml-auto text-[10px] font-black text-primary uppercase tracking-widest">{isRtl ? "عرض" : "View"}</Link>
+              <Link href="/notifications" className="ml-auto text-[10px] font-black text-primary uppercase">{isRtl ? "عرض" : "View"}</Link>
            </div>
         </div>
       )}
 
       <Tabs defaultValue="discover" className="w-full">
         <TabsList className="w-full bg-black h-12 rounded-none p-0 border-b border-zinc-900 sticky top-[64px] z-40 backdrop-blur-md">
-          <TabsTrigger value="discover" className="flex-1 h-full rounded-none text-zinc-500 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary transition-all">{isRtl ? "اكتشف" : "Discover"}</TabsTrigger>
-          <TabsTrigger value="following" className="flex-1 h-full rounded-none text-zinc-500 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary transition-all">{isRtl ? "متابعة" : "Following"}</TabsTrigger>
+          <TabsTrigger value="discover" className="flex-1 h-full rounded-none text-zinc-500 font-black text-[10px] uppercase data-[state=active]:border-primary transition-all">{isRtl ? "اكتشف" : "Discover"}</TabsTrigger>
+          <TabsTrigger value="following" className="flex-1 h-full rounded-none text-zinc-500 font-black text-[10px] uppercase data-[state=active]:border-primary transition-all">{isRtl ? "متابعة" : "Following"}</TabsTrigger>
         </TabsList>
 
         <main className="pb-32">
@@ -138,21 +132,7 @@ export default function Home() {
             {discoverLoading ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" /></div>
             ) : discoverPosts.map((post: any) => (
-              <PostCard 
-                key={post.id} 
-                id={post.id} 
-                author={post.author} 
-                content={post.content} 
-                image={post.mediaUrl} 
-                mediaUrls={post.mediaUrls} 
-                mediaType={post.mediaType} 
-                likes={post.likesCount || 0} 
-                saves={post.savesCount || 0} 
-                likedBy={post.likedBy} 
-                savedBy={post.savedBy}
-                commentsCount={post.commentsCount}
-                time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
-              />
+              <PostCard key={post.id} id={post.id} author={post.author} content={post.content} image={post.mediaUrl} mediaUrls={post.mediaUrls} mediaType={post.mediaType} likes={post.likesCount || 0} saves={post.savesCount || 0} likedBy={post.likedBy} savedBy={post.savedBy} commentsCount={post.commentsCount} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />
             ))}
           </TabsContent>
           
@@ -161,29 +141,13 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center py-20"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" /></div>
             ) : followingPosts.length > 0 ? (
               followingPosts.map((post: any) => (
-                <PostCard 
-                  key={post.id} 
-                  id={post.id} 
-                  author={post.author} 
-                  content={post.content} 
-                  image={post.mediaUrl} 
-                  mediaUrls={post.mediaUrls} 
-                  mediaType={post.mediaType} 
-                  likes={post.likesCount || 0} 
-                  saves={post.savesCount || 0} 
-                  likedBy={post.likedBy} 
-                  savedBy={post.savedBy}
-                  commentsCount={post.commentsCount}
-                  time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
-                />
+                <PostCard key={post.id} id={post.id} author={post.author} content={post.content} image={post.mediaUrl} mediaUrls={post.mediaUrls} mediaType={post.mediaType} likes={post.likesCount || 0} saves={post.savesCount || 0} likedBy={post.likedBy} savedBy={post.savedBy} commentsCount={post.commentsCount} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />
               ))
             ) : (
               <div className="py-40 text-center opacity-20 flex flex-col items-center gap-6">
                 <UserPlus className="h-16 w-16" />
-                <p className="text-sm font-black uppercase tracking-widest">{isRtl ? "تابع المواطنين لرؤية أفكارهم" : "Follow citizens to see insights"}</p>
-                <Link href="/explore">
-                  <Button className="rounded-full bg-white text-black font-black">{isRtl ? "اكتشف الآن" : "Discover Now"}</Button>
-                </Link>
+                <p className="text-sm font-black uppercase">{isRtl ? "تابع المواطنين لرؤية أفكارهم" : "Follow citizens to see insights"}</p>
+                <Link href="/explore"><Button className="rounded-full bg-white text-black font-black">{isRtl ? "اكتشف الآن" : "Discover Now"}</Button></Link>
               </div>
             )}
           </TabsContent>
