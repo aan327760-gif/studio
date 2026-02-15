@@ -61,7 +61,7 @@ export default function Home() {
 
   const followsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
-    return query(collection(db, "follows"), where("followerId", "==", currentUser.uid));
+    return query(collection(db, "follows"), where("followerId", "==", currentUser.uid), limit(100));
   }, [db, currentUser]);
   const { data: userFollows = [] } = useCollection<any>(followsQuery);
 
@@ -71,7 +71,8 @@ export default function Home() {
   const followingPostsQuery = useMemoFirebase(() => {
     const ids = JSON.parse(followingIdsString);
     if (!currentUser || ids.length === 0) return null;
-    return query(collection(db, "posts"), where("authorId", "in", ids.slice(0, 10)));
+    // Firestore supports 'in' with up to 30 items
+    return query(collection(db, "posts"), where("authorId", "in", ids.slice(0, 30)));
   }, [db, currentUser, followingIdsString]);
   
   const { data: rawFollowingPosts = [], loading: followingLoading } = useCollection<any>(followingPostsQuery);
@@ -147,23 +148,33 @@ export default function Home() {
           <TabsContent value="following" className="m-0">
             {followingLoading ? (
               <div className="flex flex-col items-center justify-center py-20"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" /></div>
-            ) : followingPosts.map((post: any) => (
-              <PostCard 
-                key={post.id} 
-                id={post.id} 
-                author={post.author} 
-                content={post.content} 
-                image={post.mediaUrl} 
-                mediaUrls={post.mediaUrls} 
-                mediaType={post.mediaType} 
-                likes={post.likesCount || 0} 
-                saves={post.savesCount || 0} 
-                likedBy={post.likedBy} 
-                savedBy={post.savedBy}
-                commentsCount={post.commentsCount}
-                time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
-              />
-            ))}
+            ) : followingPosts.length > 0 ? (
+              followingPosts.map((post: any) => (
+                <PostCard 
+                  key={post.id} 
+                  id={post.id} 
+                  author={post.author} 
+                  content={post.content} 
+                  image={post.mediaUrl} 
+                  mediaUrls={post.mediaUrls} 
+                  mediaType={post.mediaType} 
+                  likes={post.likesCount || 0} 
+                  saves={post.savesCount || 0} 
+                  likedBy={post.likedBy} 
+                  savedBy={post.savedBy}
+                  commentsCount={post.commentsCount}
+                  time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
+                />
+              ))
+            ) : (
+              <div className="py-40 text-center opacity-20 flex flex-col items-center gap-6">
+                <UserPlus className="h-16 w-16" />
+                <p className="text-sm font-black uppercase tracking-widest">{isRtl ? "تابع المواطنين لرؤية أفكارهم" : "Follow citizens to see insights"}</p>
+                <Link href="/explore">
+                  <Button className="rounded-full bg-white text-black font-black">{isRtl ? "اكتشف الآن" : "Discover Now"}</Button>
+                </Link>
+              </div>
+            )}
           </TabsContent>
         </main>
       </Tabs>

@@ -15,7 +15,9 @@ import {
   MessageSquare,
   Lock,
   Info,
-  Bookmark
+  Bookmark,
+  Users,
+  UserPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,11 +27,13 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import Link from "next/link";
 import { PostCard } from "@/components/feed/PostCard";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc, getDocs } from "firebase/firestore";
+import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc, getDocs, getDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -61,6 +65,10 @@ export default function UserProfilePage() {
 
   const isFriend = isFollowing && followsMe;
 
+  // Lists state
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [showFollowing, setShowFollowing] = useState(false);
+
   const userPostsQuery = useMemoFirebase(() => {
     if (!uid) return null;
     return query(collection(db, "posts"), where("authorId", "==", uid), limit(30));
@@ -73,7 +81,6 @@ export default function UserProfilePage() {
   }, [db, uid]);
   const { data: likedPosts = [], loading: likedLoading } = useCollection<any>(likedPostsQuery);
 
-  // استعلام المنشورات المحفوظة
   const savedPostsQuery = useMemoFirebase(() => {
     if (!uid || !isOwnProfile) return null;
     return query(collection(db, "posts"), where("savedBy", "array-contains", uid), limit(30));
@@ -113,9 +120,8 @@ export default function UserProfilePage() {
       const chatId = participants.join("_");
       const chatRef = doc(db, "direct_conversations", chatId);
       
-      const chatSnap = await getDocs(query(collection(db, "direct_conversations"), where("participants", "==", participants)));
-      
-      if (chatSnap.empty) {
+      const snap = await getDoc(chatRef);
+      if (!snap.exists()) {
         await setDoc(chatRef, {
           participants,
           updatedAt: serverTimestamp(),
@@ -220,15 +226,6 @@ export default function UserProfilePage() {
           {profile?.bio || (isRtl ? "لا توجد سيرة ذاتية.." : "No bio yet.")}
         </div>
 
-        {!isOwnProfile && !isFriend && isFollowing && (
-          <div className="mt-4 p-3 bg-zinc-900/50 rounded-2xl border border-zinc-800 flex items-center gap-3">
-             <Info className="h-4 w-4 text-zinc-500" />
-             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tight">
-               {isRtl ? "المراسلة ستفتح بمجرد أن يتابعك هذا المواطن" : "Messaging opens once this citizen follows you back"}
-             </p>
-          </div>
-        )}
-
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500 font-bold uppercase tracking-widest">
            {profile?.location && (
              <div className="flex items-center gap-1.5">
@@ -243,9 +240,18 @@ export default function UserProfilePage() {
         </div>
 
         <div className="mt-6 flex gap-6 border-y border-zinc-900 py-4">
-          <div className="flex flex-col items-center flex-1"><span className="font-black text-lg text-white">{profile?.followingCount || 0}</span><span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "يتابع" : "Following"}</span></div>
-          <div className="flex flex-col items-center flex-1 border-x border-zinc-900"><span className="font-black text-lg text-white">{profile?.followersCount || 0}</span><span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "متابع" : "Followers"}</span></div>
-          <div className="flex flex-col items-center flex-1"><span className="font-black text-lg text-white">{userPosts.length}</span><span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "منشور" : "Posts"}</span></div>
+          <button onClick={() => setShowFollowing(true)} className="flex flex-col items-center flex-1 active:scale-95 transition-transform">
+            <span className="font-black text-lg text-white">{profile?.followingCount || 0}</span>
+            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "يتابع" : "Following"}</span>
+          </button>
+          <button onClick={() => setShowFollowers(true)} className="flex flex-col items-center flex-1 border-x border-zinc-900 active:scale-95 transition-transform">
+            <span className="font-black text-lg text-white">{profile?.followersCount || 0}</span>
+            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "متابع" : "Followers"}</span>
+          </button>
+          <div className="flex flex-col items-center flex-1">
+            <span className="font-black text-lg text-white">{userPosts.length}</span>
+            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">{isRtl ? "منشور" : "Posts"}</span>
+          </div>
         </div>
       </div>
 
@@ -259,7 +265,7 @@ export default function UserProfilePage() {
 
         <TabsContent value="posts" className="m-0">
           {postsLoading ? <div className="flex justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" /></div> : userPosts.length > 0 ? (
-            <div className="flex flex-col">{userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0], uid: uid, id: uid}} content={post.content} image={post.mediaUrl} mediaUrls={post.mediaUrls} mediaType={post.mediaType} likes={post.likesCount || 0} saves={post.savesCount || 0} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}</div>
+            <div className="flex flex-col">{userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0], uid: uid, id: uid}} content={post.content} image={post.mediaUrl} mediaUrls={post.mediaUrls} mediaType={post.mediaType} likes={post.likesCount || 0} saves={post.savesCount || 0} likedBy={post.likedBy} savedBy={post.savedBy} commentsCount={post.commentsCount} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}</div>
           ) : <div className="p-20 text-center text-zinc-500 font-bold">{isRtl ? "لا منشورات" : "No posts"}</div>}
         </TabsContent>
 
@@ -292,6 +298,9 @@ export default function UserProfilePage() {
                     mediaType={post.mediaType} 
                     likes={post.likesCount || 0} 
                     saves={post.savesCount || 0}
+                    likedBy={post.likedBy}
+                    savedBy={post.savedBy}
+                    commentsCount={post.commentsCount}
                     time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
                   />
                 ))}
@@ -321,6 +330,9 @@ export default function UserProfilePage() {
                   mediaType={post.mediaType} 
                   likes={post.likesCount || 0} 
                   saves={post.savesCount || 0}
+                  likedBy={post.likedBy}
+                  savedBy={post.savedBy}
+                  commentsCount={post.commentsCount}
                   time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
                 />
               ))}
@@ -333,7 +345,99 @@ export default function UserProfilePage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Followers/Following Dialogs */}
+      <FollowListDialog 
+        open={showFollowers} 
+        onOpenChange={setShowFollowers} 
+        userId={uid as string} 
+        type="followers" 
+        isRtl={isRtl} 
+      />
+      <FollowListDialog 
+        open={showFollowing} 
+        onOpenChange={setShowFollowing} 
+        userId={uid as string} 
+        type="following" 
+        isRtl={isRtl} 
+      />
+
       <AppSidebar />
     </div>
+  );
+}
+
+function FollowListDialog({ open, onOpenChange, userId, type, isRtl }: any) {
+  const db = useFirestore();
+  const field = type === 'followers' ? 'followingId' : 'followerId';
+  const targetField = type === 'followers' ? 'followerId' : 'followingId';
+  
+  const queryRef = useMemoFirebase(() => {
+    return query(collection(db, "follows"), where(field, "==", userId), limit(50));
+  }, [db, userId, field]);
+  
+  const { data: followDocs = [], loading } = useCollection<any>(queryRef);
+  const [users, setUsers] = useState<any[]>([]);
+  const [fetching, setFetching] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (followDocs.length === 0) {
+        setUsers([]);
+        return;
+      }
+      setFetching(true);
+      const results = [];
+      for (const docSnap of followDocs) {
+        const uId = docSnap[targetField];
+        const uDoc = await getDoc(doc(db, "users", uId));
+        if (uDoc.exists()) results.push({ ...uDoc.data(), id: uDoc.id });
+      }
+      setUsers(results);
+      setFetching(false);
+    };
+    if (open) fetchUsers();
+  }, [open, followDocs, db, targetField]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-zinc-950 border-zinc-900 text-white max-w-[90%] rounded-[2.5rem] p-0 overflow-hidden h-[60vh] flex flex-col">
+        <DialogHeader className="p-6 border-b border-zinc-900">
+          <DialogTitle className="text-center font-black uppercase tracking-widest text-sm">
+            {type === 'followers' ? (isRtl ? "المتابعون" : "Followers") : (isRtl ? "يتابع" : "Following")}
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="flex-1 p-4">
+          {loading || fetching ? (
+            <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-20" /></div>
+          ) : users.length > 0 ? (
+            <div className="space-y-4">
+              {users.map((u) => (
+                <Link key={u.id} href={`/profile/${u.id}`} onClick={() => onOpenChange(false)}>
+                  <div className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl transition-all">
+                    <Avatar className="h-10 w-10 ring-1 ring-zinc-800">
+                      <AvatarImage src={u.photoURL} />
+                      <AvatarFallback>{u.displayName?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-black truncate">{u.displayName}</p>
+                        {u.isVerified && <VerificationBadge className="h-3.5 w-3.5" />}
+                      </div>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">@{u.email?.split('@')[0]}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="py-20 text-center opacity-20 flex flex-col items-center gap-4">
+               <Users className="h-12 w-12" />
+               <p className="text-xs font-black uppercase tracking-widest">{isRtl ? "القائمة فارغة" : "List is empty"}</p>
+            </div>
+          )}
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   );
 }
