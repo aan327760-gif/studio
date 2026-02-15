@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,7 +9,8 @@ import {
   MapPin, 
   Loader2,
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -87,6 +87,7 @@ export default function UserProfilePage() {
   const isProfileAdmin = profile?.role === "admin" || profile?.email === SUPER_ADMIN_EMAIL;
   const isVisitorAdmin = currentUserProfile?.role === "admin" || currentUser?.email === SUPER_ADMIN_EMAIL;
   const showCheckmark = profile?.isVerified || profile?.email === SUPER_ADMIN_EMAIL;
+  const isPro = profile?.isPro;
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20 overflow-x-hidden">
@@ -121,6 +122,7 @@ export default function UserProfilePage() {
             <div className="flex items-center gap-1.5">
               <h2 className="text-2xl font-black tracking-tight">{profile?.displayName}</h2>
               {showCheckmark && <VerificationBadge className="h-5 w-5" />}
+              {isPro && <Star className="h-5 w-5 fill-yellow-500 text-yellow-500" />}
             </div>
             <div className="flex items-center gap-2">
               <p className="text-zinc-500 text-sm font-medium">@{profile?.email?.split('@')[0] || "user"}</p>

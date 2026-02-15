@@ -1,10 +1,9 @@
-
 "use client";
 
 import { useEffect } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
-import { Heart, UserPlus, MessageSquare, Repeat2, Settings, Loader2, Trash2, BellOff, Info } from "lucide-react";
+import { Heart, UserPlus, MessageSquare, Repeat2, Settings, Loader2, Trash2, BellOff, Info, Star } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebas
 import { collection, query, where, orderBy, limit, doc, deleteDoc, writeBatch } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export default function NotificationsPage() {
   const { isRtl } = useLanguage();

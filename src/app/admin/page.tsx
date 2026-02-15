@@ -30,7 +30,9 @@ import {
   TrendingUp,
   Activity,
   Megaphone,
-  BrainCircuit
+  BrainCircuit,
+  Star,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -125,6 +127,7 @@ export default function AdminDashboard() {
     setIsBroadcasting(true);
     try {
       const batch = writeBatch(db);
+      // إرسال لآخر 50 مستخدم مسجل مؤقتاً (بسبب حدود الباتش)
       allUsers.slice(0, 50).forEach((member: any) => {
         const notifRef = doc(collection(db, "notifications"));
         batch.set(notifRef, {
@@ -157,6 +160,23 @@ export default function AdminDashboard() {
     if (!isSuperAdmin) return;
     updateDoc(doc(db, "users", userId), { isVerified: !currentStatus });
     toast({ title: isRtl ? "تم تحديث التوثيق" : "Verification updated" });
+  };
+
+  const handleTogglePro = async (userId: string, currentStatus: boolean) => {
+    if (!isSuperAdmin) return;
+    updateDoc(doc(db, "users", userId), { isPro: !currentStatus });
+    toast({ title: isRtl ? "تم تحديث حالة Pro" : "Pro status updated" });
+  };
+
+  const handleResolveReport = async (reportId: string, action: 'ignore' | 'delete') => {
+    if (action === 'delete') {
+      const report = reports.find((r: any) => r.id === reportId);
+      if (report?.targetId) {
+        await deleteDoc(doc(db, "posts", report.targetId));
+      }
+    }
+    await updateDoc(doc(db, "reports", reportId), { status: "resolved" });
+    toast({ title: isRtl ? "تمت معالجة البلاغ" : "Report resolved" });
   };
 
   if (userLoading || (!isAdmin && !userLoading)) {
@@ -280,10 +300,10 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                       <Button size="sm" variant="ghost" className="flex-1 rounded-xl border border-zinc-800 font-black h-11" onClick={() => updateDoc(doc(db, "reports", report.id), { status: "resolved" })}>
+                       <Button size="sm" variant="ghost" className="flex-1 rounded-xl border border-zinc-800 font-black h-11" onClick={() => handleResolveReport(report.id, 'ignore')}>
                          {isRtl ? "تجاهل" : "Ignore"}
                        </Button>
-                       <Button size="sm" className="flex-1 rounded-xl bg-red-500 text-white font-black h-11" onClick={() => deleteDoc(doc(db, "posts", report.targetId))}>
+                       <Button size="sm" className="flex-1 rounded-xl bg-red-500 text-white font-black h-11" onClick={() => handleResolveReport(report.id, 'delete')}>
                          {isRtl ? "حذف المحتوى" : "Delete Content"}
                        </Button>
                     </div>
@@ -318,20 +338,31 @@ export default function AdminDashboard() {
                        <div className="flex items-center gap-1.5">
                           <p className="text-sm font-black">{member.displayName}</p>
                           {member.isVerified && <VerificationBadge className="h-3.5 w-3.5" />}
+                          {member.isPro && <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />}
                        </div>
                        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{member.email?.split('@')[0]}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
                      {isSuperAdmin && (
-                       <Button 
-                         variant="ghost" 
-                         size="icon" 
-                         className={cn("h-10 w-10", member.isVerified ? "text-primary" : "text-zinc-800")}
-                         onClick={() => handleToggleVerification(member.id, !!member.isVerified)}
-                       >
-                         <VerificationBadge className="h-5 w-5" />
-                       </Button>
+                       <>
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           className={cn("h-10 w-10", member.isVerified ? "text-primary" : "text-zinc-800")}
+                           onClick={() => handleToggleVerification(member.id, !!member.isVerified)}
+                         >
+                           <VerificationBadge className="h-5 w-5" />
+                         </Button>
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           className={cn("h-10 w-10", member.isPro ? "text-yellow-500" : "text-zinc-800")}
+                           onClick={() => handleTogglePro(member.id, !!member.isPro)}
+                         >
+                           <Star className="h-5 w-5 fill-current" />
+                         </Button>
+                       </>
                      )}
                      <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-700 hover:text-orange-500" onClick={() => handleBanUser(member.id)}>
                        <Ban className="h-5 w-5" />
