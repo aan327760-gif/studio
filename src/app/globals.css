@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,117 +36,48 @@
     @apply bg-background text-foreground selection:bg-primary/30;
     font-family: 'Inter', sans-serif;
     -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
+}
+
+/* تحسين الأداء: تقليل استهلاك الأنيميشن */
+.glass {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
 }
 
 /* --- Text Effects --- */
 
-/* 1. Flame Effect */
 .effect-flame {
-  text-shadow: 0 0 4px #fff, 0 -2px 4px #ff3, 2px -4px 6px #fd3, -2px -6px 11px #f80, 2px -8px 15px #f40;
-  animation: flame-flicker 1.5s infinite alternate;
-}
-@keyframes flame-flicker {
-  0% { text-shadow: 0 0 4px #fff, 0 -2px 4px #ff3, 2px -4px 6px #fd3, -2px -6px 11px #f80, 2px -8px 15px #f40; }
-  100% { text-shadow: 0 0 4px #fff, 0 -3px 5px #ff3, 3px -5px 8px #fd3, -3px -7px 13px #f80, 3px -10px 18px #f40; }
+  text-shadow: 0 0 4px #f40;
 }
 
-/* 2. Lightning Effect */
-.effect-lightning {
-  position: relative;
-  overflow: hidden;
-}
-.effect-lightning::after {
-  content: "";
-  position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-  animation: lightning-strike 3s infinite;
-}
-@keyframes lightning-strike {
-  0%, 90% { left: -100%; opacity: 0; }
-  92% { left: 100%; opacity: 1; }
-  95% { left: 100%; opacity: 0; }
-}
-
-/* 3. Sparkle Effect */
 .effect-sparkle {
   background: linear-gradient(90deg, #fff, #ffd700, #fff);
-  background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: sparkle-move 2s linear infinite;
-}
-@keyframes sparkle-move {
-  to { background-position: 200% center; }
 }
 
-/* 4. Glass Effect */
-.effect-glass {
-  background: rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* 5. Cinematic Entrance */
 .effect-cinematic {
-  animation: cinematic-in 1.2s cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: cinematic-in 0.8s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 @keyframes cinematic-in {
-  0% { letter-spacing: 1em; transform: translateY(20px) scale(1.1); opacity: 0; filter: blur(10px); }
-  100% { letter-spacing: normal; transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
-/* 6. Rainbow Gradient */
-.effect-rainbow {
-  background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff);
-  background-size: 400% 400%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: rainbow-anim 5s ease infinite;
-}
-@keyframes rainbow-anim {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* 7. Golden Glow */
-.effect-gold {
-  color: #ffd700;
-  text-shadow: 0 0 10px #ffcc00, 0 0 20px #ff9900;
-  animation: gold-glow 2s infinite alternate;
-}
-@keyframes gold-glow {
-  from { text-shadow: 0 0 5px #ffcc00, 0 0 10px #ff9900; }
-  to { text-shadow: 0 0 20px #ffcc00, 0 0 40px #ffaa00, 0 0 60px #ffd700; }
-}
-
-/* 8. Dark Neon */
-.effect-neon {
-  color: #fff;
-  text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #000, 0 0 30px #000;
-  filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.5));
-  animation: neon-pulse 1.5s infinite;
-}
-@keyframes neon-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-}
-
-/* Custom Scrollbar for a cleaner look */
+/* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   @apply bg-transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-zinc-800 rounded-full;
+  @apply bg-zinc-900 rounded-full;
 }
 
-/* No scrollbar utility */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

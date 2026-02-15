@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { 
   doc, 
@@ -47,6 +47,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,7 +77,8 @@ interface PostCardProps {
   allowComments?: boolean;
 }
 
-export function PostCard({ id, author, content, image, mediaUrls = [], mediaType, likes: initialLikes = 0, saves: initialSaves = 0, time, allowComments = true }: PostCardProps) {
+// استخدام memo لمنع إعادة الرندرة غير الضرورية
+export const PostCard = memo(({ id, author, content, image, mediaUrls = [], mediaType, likes: initialLikes = 0, saves: initialSaves = 0, time, allowComments = true }: PostCardProps) => {
   const { isRtl } = useLanguage();
   const { user } = useUser();
   const db = useFirestore();
@@ -105,7 +107,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
 
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
-    return query(collection(db, "posts", id, "comments"), orderBy("createdAt", "desc"), limit(50));
+    return query(collection(db, "posts", id, "comments"), orderBy("createdAt", "desc"), limit(20));
   }, [db, id]);
   const { data: comments = [] } = useCollection<any>(commentsQuery);
 
@@ -226,10 +228,10 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
   const carouselImages = mediaUrls.length > 0 ? mediaUrls : (image ? [image] : []);
 
   return (
-    <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/40 cursor-pointer active:bg-zinc-950/40 transition-colors" onClick={() => router.push(`/post/${id}`)}>
+    <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/20 cursor-pointer active:bg-zinc-950/40 transition-colors" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-5 pb-3 flex flex-row items-center space-y-0 gap-4">
         <Link href={`/profile/${author?.uid || author?.id || '#'}`} onClick={(e) => e.stopPropagation()}>
-          <Avatar className="h-11 w-11 ring-1 ring-zinc-800">
+          <Avatar className="h-11 w-11 ring-1 ring-zinc-900 shadow-sm">
             <AvatarImage src={author?.avatar || author?.photoURL} />
             <AvatarFallback className="bg-zinc-900">{author?.name?.[0] || author?.displayName?.[0]}</AvatarFallback>
           </Avatar>
@@ -245,8 +247,8 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
               <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{author?.handle || author?.email?.split('@')[0]}</span>
             </div>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-700 hover:text-white rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl shadow-2xl p-2">
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:text-white rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl shadow-xl p-2">
                 {mediaType === 'video' && <DropdownMenuItem onClick={handleDownloadVideo} className="rounded-xl m-1 h-11 font-black text-xs uppercase cursor-pointer"><Download className="h-4 w-4 mr-2" /> {isRtl ? "تحميل" : "Download"}</DropdownMenuItem>}
                 <DropdownMenuItem className="text-orange-500 rounded-xl m-1 h-11 font-black text-xs uppercase cursor-pointer"><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
                 {isAdmin && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl m-1 h-11 font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف" : "Delete"}</DropdownMenuItem>}
@@ -277,20 +279,33 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
 
         {carouselImages.length > 0 && (
           <div className="mb-4">
-            {/* تصميم Edge-to-Edge: الحاوية بلا هوامش ولا زوايا منحنية */}
-            <div className="relative overflow-hidden bg-black group w-full border-y border-zinc-900/20">
+            <div className="relative overflow-hidden bg-black group w-full">
               {mediaType === 'video' ? (
                 <div className="relative w-full flex items-center justify-center bg-black">
-                  <video ref={videoRef} src={carouselImages[0]} className="w-full h-auto object-contain" onClick={toggleMedia} playsInline loop />
-                  {!isPlaying && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="h-16 w-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center"><Play className="h-8 w-8 text-white fill-white" /></div></div>}
+                  <video 
+                    ref={videoRef} 
+                    src={carouselImages[0]} 
+                    className="w-full h-auto object-contain max-h-[75vh]" 
+                    onClick={toggleMedia} 
+                    playsInline 
+                    loop 
+                    preload="metadata" // تحسين: لا تحمل الفيديو بالكامل فوراً
+                  />
+                  {!isPlaying && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="h-16 w-16 rounded-full bg-black/20 backdrop-blur-sm border border-white/10 flex items-center justify-center">
+                        <Play className="h-8 w-8 text-white fill-white" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : mediaType === 'audio' ? (
-                <div className="p-6 bg-zinc-900/50 flex flex-col gap-4">
+                <div className="p-6 bg-zinc-900/30 flex flex-col gap-4 border-y border-zinc-900/50">
                   <audio ref={audioRef} src={carouselImages[0]} className="hidden" onEnded={() => setIsPlaying(false)} />
                   <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-primary text-white" onClick={() => { if(audioRef.current) isPlaying ? audioRef.current.pause() : audioRef.current.play(); setIsPlaying(!isPlaying); }}>{isPlaying ? <Pause className="h-6 w-6 fill-white" /> : <Play className="h-6 w-6 fill-white" />}</Button>
                     <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div className={cn("h-full bg-primary transition-all duration-300", isPlaying ? "w-full" : "w-0")} /></div>
-                    <Volume2 className="h-5 w-5 text-zinc-600" />
+                    <Volume2 className="h-5 w-5 text-zinc-700" />
                   </div>
                 </div>
               ) : (
@@ -298,7 +313,13 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
                   <CarouselContent>
                     {carouselImages.map((url, idx) => (
                       <CarouselItem key={idx} className="flex justify-center items-center bg-black">
-                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto object-contain" />
+                        <img 
+                          src={url} 
+                          alt={`Media ${idx}`} 
+                          className="w-full h-auto object-contain max-h-[75vh]" 
+                          loading="lazy" // تحسين: تحميل الصور عند الحاجة فقط
+                          decoding="async"
+                        />
                       </CarouselItem>
                     ))}
                   </CarouselContent>
@@ -315,25 +336,24 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
           </div>
         )}
 
-        {/* تذييل المنشور: الحفاظ على هوامش الأيقونات داخل منظور المستخدم */}
-        <div className="px-5 py-4 flex items-center justify-between border-t border-zinc-900/20" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 py-4 flex items-center justify-between border-t border-zinc-900/10" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 group cursor-pointer active:scale-90" onClick={handleLike}>
-              <div className={cn("p-2 rounded-full", isLiked ? "bg-red-500/10" : "group-hover:bg-red-500/5")}><Heart className={cn("h-5 w-5", isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-600")} /></div>
-              <span className={cn("text-xs font-black", isLiked ? "text-red-500" : "text-zinc-600")}>{likesCount}</span>
+              <div className={cn("p-2 rounded-full", isLiked ? "bg-red-500/5" : "group-hover:bg-red-500/5")}><Heart className={cn("h-5 w-5", isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-700")} /></div>
+              <span className={cn("text-xs font-black", isLiked ? "text-red-500" : "text-zinc-700")}>{likesCount}</span>
             </div>
             
             <Sheet>
               <SheetTrigger asChild>
                 <div className="flex items-center gap-2 group cursor-pointer active:scale-90">
-                  <div className="p-2 rounded-full group-hover:bg-primary/5"><MessageCircle className="h-5 w-5 text-zinc-600" /></div>
-                  <span className="text-xs font-black text-zinc-600">{comments.length}</span>
+                  <div className="p-2 rounded-full group-hover:bg-primary/5"><MessageCircle className="h-5 w-5 text-zinc-700" /></div>
+                  <span className="text-xs font-black text-zinc-700">{comments.length}</span>
                 </div>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 flex flex-col outline-none">
+              <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 flex flex-col outline-none shadow-2xl">
                 <SheetHeader className="p-4 border-b border-zinc-900">
                   <div className="flex items-center justify-between">
-                    <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-400 rounded-full"><X className="h-5 w-5" /></Button></SheetClose>
+                    <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-500 rounded-full"><X className="h-5 w-5" /></Button></SheetClose>
                     <SheetTitle className="text-white font-black text-lg uppercase">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
                     <div className="w-10" />
                   </div>
@@ -364,16 +384,18 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
           </div>
 
           <div className="flex items-center gap-2 group cursor-pointer active:scale-90" onClick={handleSave}>
-            <div className={cn("p-2 rounded-full", isSaved ? "bg-primary/10" : "group-hover:bg-primary/5")}>
-              <Bookmark className={cn("h-5 w-5", isSaved ? "fill-primary text-primary scale-110" : "text-zinc-600")} />
+            <div className={cn("p-2 rounded-full", isSaved ? "bg-primary/5" : "group-hover:bg-primary/5")}>
+              <Bookmark className={cn("h-5 w-5", isSaved ? "fill-primary text-primary scale-110" : "text-zinc-700")} />
             </div>
-            {savesCount > 0 && <span className={cn("text-xs font-black", isSaved ? "text-primary" : "text-zinc-600")}>{savesCount}</span>}
+            {savesCount > 0 && <span className={cn("text-xs font-black", isSaved ? "text-primary" : "text-zinc-700")}>{savesCount}</span>}
           </div>
         </div>
       </CardContent>
     </Card>
   );
-}
+});
+
+PostCard.displayName = "PostCard";
 
 function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
   const db = useFirestore();
@@ -391,18 +413,18 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
         <Avatar className="h-9 w-9 shrink-0"><AvatarImage src={comment.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-black text-zinc-300 uppercase">@{comment.authorHandle}</span>
+            <span className="text-xs font-black text-zinc-400 uppercase">@{comment.authorHandle}</span>
           </div>
-          <p className="text-[14px] text-zinc-100 leading-relaxed">{comment.text}</p>
+          <p className="text-[14px] text-zinc-200 leading-relaxed">{comment.text}</p>
           <div className="flex items-center gap-6 pt-3">
-            <div className="flex items-center gap-1.5 text-zinc-500 cursor-pointer" onClick={() => {
+            <div className="flex items-center gap-1.5 text-zinc-600 cursor-pointer" onClick={() => {
               const ref = doc(db, "posts", postId, "comments", comment.id);
               updateDoc(ref, isCommentLiked ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) } : { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
             }}>
               <ThumbsUp className={cn("h-4 w-4", isCommentLiked && "text-primary fill-primary")} />
               <span className="text-[10px] font-black">{comment.likesCount || 0}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-zinc-500 cursor-pointer" onClick={() => setIsReplying(!isReplying)}>
+            <div className="flex items-center gap-1.5 text-zinc-600 cursor-pointer" onClick={() => setIsReplying(!isReplying)}>
               <MessageSquare className="h-4 w-4" />
               <span className="text-[10px] font-black">{isRtl ? "رد" : "Reply"}</span>
             </div>
@@ -434,8 +456,8 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
                 <div key={reply.id} className="mt-4 flex gap-3 border-l border-zinc-900 pl-4">
                   <Avatar className="h-7 w-7"><AvatarImage src={reply.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
                   <div className="flex-1 space-y-1">
-                    <span className="text-[11px] font-black text-zinc-400 uppercase">@{reply.authorHandle}</span>
-                    <p className="text-[13px] text-zinc-200 leading-relaxed">{reply.text}</p>
+                    <span className="text-[11px] font-black text-zinc-500 uppercase">@{reply.authorHandle}</span>
+                    <p className="text-[13px] text-zinc-300 leading-relaxed">{reply.text}</p>
                   </div>
                 </div>
               ))}
