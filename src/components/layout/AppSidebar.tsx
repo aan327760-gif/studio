@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, Bookmark } from "lucide-react";
+import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, Archive } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -50,9 +50,10 @@ export function AppSidebar() {
   }, [db, user]);
   const { data: unreadNotifs = [] } = useCollection<any>(unreadNotifsQuery);
 
+  // استعادة ترتيب الأيقونات السيادي: الرئيسية، الرسائل، إضافة، التنبيهات، الملف الشخصي
   const navItems = [
     { icon: Home, href: "/", label: "Home" },
-    { icon: Bookmark, href: "/bookmarks", label: "Archive" },
+    { icon: MessageSquare, href: "/messages", label: "Messages" },
     { icon: Plus, href: "#", label: "Add", special: true },
     { icon: Bell, href: "/notifications", label: "Notifications", hasBadge: unreadNotifs.length > 0 },
     { 
@@ -110,21 +111,12 @@ export function AppSidebar() {
       }
     },
     { 
-      icon: Mic, 
-      label: isRtl ? "صوت" : "Voice", 
-      color: "bg-purple-500",
+      icon: Archive, 
+      label: isRtl ? "الأرشيف" : "Archive", 
+      color: "bg-zinc-700",
       onClick: () => {
         setIsSheetOpen(false);
-        if (profile?.isVerified || profile?.isPro || user?.email === ADMIN_EMAIL) {
-          setIsProclamationOpen(true);
-        } else {
-          toast({
-            title: isRtl ? "امتياز سيادي محدود" : "Sovereign Privilege",
-            description: isRtl 
-              ? "عذراً، ميزة الساحة الصوتية متاحة حصرياً للمواطنين الموثقين والقنوات الإعلامية." 
-              : "Sorry, the Acoustic Arena is exclusively available to verified citizens and media channels."
-          });
-        }
+        router.push("/bookmarks");
       }
     },
   ];
@@ -204,27 +196,21 @@ export function AppSidebar() {
                  <Mic className="h-8 w-8 sm:h-10 sm:w-10 text-purple-500 animate-pulse" />
               </div>
               <DialogTitle className="text-center font-black text-xl sm:text-2xl tracking-tighter uppercase">
-                {isRtl ? "البيان التقني: الساحة الصوتية السيادية" : "Sovereign Acoustic Arena"}
+                {isRtl ? "الساحة الصوتية السيادية" : "Sovereign Acoustic Arena"}
               </DialogTitle>
               <DialogDescription className="text-zinc-400 text-center font-medium leading-relaxed text-sm sm:text-[15px]">
                 {isRtl 
-                  ? "إن هذه المساحة ليست مجرد أداة لتسجيل الأصوات، بل هي صرح إبستيمي (معرفي) صُمم ليكون منبراً للنخبة الفكرية، الأكاديميين، والمبدعين. نهدف من خلال 'الساحة الصوتية' إلى توفير بيئة رصينة تحتضن المحاضرات العلمية التخصصية، السجالات السياسية العميقة، والأعمال الموسيقية ذات الرسالة الهادفة. هنا، تصبح الكلمة المنطوقة وثيقة سيادية مسجلة، تعكس الرقي الحضاري لمجتمع 'بلا قيود'."
-                  : "This space is not merely a recording tool, but an epistemic bastion designed as a forum for intellectual elites, academics, and creators. Through the 'Acoustic Arena', we aim to provide a formal environment for specialized scientific lectures, profound political discourse, and purposeful musical works. Here, the spoken word becomes a registered sovereign document, reflecting the societal depth of Unbound OS."}
+                  ? "مساحة رصينة تحتضن المحاضرات العلمية، السجالات السياسية العميقة، والأعمال الهادفة."
+                  : "A formal environment for scientific lectures, profound political discourse, and purposeful works."}
               </DialogDescription>
             </DialogHeader>
-            <div className="mt-8 flex flex-col items-center gap-4 pb-4">
-               <div className="h-[1px] w-24 bg-zinc-800" />
-               <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">
-                  Unbound Academic Core • v1.0.4
-               </p>
-            </div>
           </ScrollArea>
           <div className="p-6 pt-0 mt-auto border-t border-white/5 bg-zinc-950/80 backdrop-blur-md">
             <Button 
               className="w-full bg-white text-black hover:bg-zinc-200 font-black rounded-2xl h-14 shadow-xl active:scale-95 transition-transform" 
               onClick={() => setIsProclamationOpen(false)}
             >
-              {isRtl ? "إقرار بالموافقة" : "Acknowledge & Close"}
+              {isRtl ? "إغلاق" : "Close"}
             </Button>
           </div>
         </DialogContent>
