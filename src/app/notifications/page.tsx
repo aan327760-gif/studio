@@ -115,7 +115,7 @@ export default function NotificationsPage() {
               </div>
             ) : notifications.length > 0 ? (
               <div className="flex flex-col">
-                {notifications.map((notif) => (
+                {notifications.filter(n => n.type !== 'system').map((notif) => (
                   <div key={notif.id} className={cn(
                     "flex items-start gap-4 p-5 border-b border-zinc-900/40 hover:bg-white/[0.02] transition-all relative group",
                     !notif.read && "bg-primary/[0.03]"
@@ -126,19 +126,15 @@ export default function NotificationsPage() {
                     </div>
                     <div className="flex-1 min-w-0 space-y-1.5">
                       <div className="flex items-center gap-2">
-                        {notif.type !== 'system' && (
-                          <Avatar className="h-7 w-7 border border-zinc-800">
-                            <AvatarImage src={notif.fromUserAvatar} />
-                            <AvatarFallback>{notif.fromUserName?.[0]}</AvatarFallback>
-                          </Avatar>
-                        )}
+                        <Avatar className="h-7 w-7 border border-zinc-800">
+                          <AvatarImage src={notif.fromUserAvatar} />
+                          <AvatarFallback>{notif.fromUserName?.[0]}</AvatarFallback>
+                        </Avatar>
                         <p className="text-sm font-bold truncate">
-                          {notif.type === 'system' ? (
-                            <span className="text-primary font-black uppercase tracking-widest text-[10px]">SOVEREIGN COMMAND</span>
-                          ) : notif.fromUserName}
+                          {notif.fromUserName}
                         </p>
                       </div>
-                      <p className={cn("text-sm leading-relaxed", notif.type === 'system' ? "font-black text-zinc-100" : "text-zinc-400 font-medium")}>
+                      <p className="text-sm text-zinc-400 font-medium leading-relaxed">
                          {notif.message}
                       </p>
                       <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest">

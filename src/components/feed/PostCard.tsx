@@ -106,11 +106,30 @@ export const PostCard = memo(({
   const isLongContent = content?.length > truncationLimit;
   const displayContent = isExpanded ? content : content?.slice(0, truncationLimit) + (isLongContent ? "..." : "");
 
-  const handleLike = (e: React.MouseEvent) => {
+  const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id) return;
     const postRef = doc(db, "posts", id);
-    updateDoc(postRef, isLiked ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) } : { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
+    
+    if (isLiked) {
+      updateDoc(postRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
+    } else {
+      updateDoc(postRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
+      
+      // إرسال تنبيه لصاحب المنشور
+      if (author?.uid !== user.uid) {
+        addDoc(collection(db, "notifications"), {
+          userId: author.uid,
+          type: "like",
+          fromUserId: user.uid,
+          fromUserName: user.displayName,
+          fromUserAvatar: user.photoURL,
+          message: isRtl ? "أعجب برؤيتك" : "liked your insight",
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    }
   };
 
   const handleSave = (e: React.MouseEvent) => {
@@ -144,6 +163,36 @@ export const PostCard = memo(({
 
     addDoc(collection(db, "posts", id, "comments"), commentData);
     updateDoc(doc(db, "posts", id), { commentsCount: increment(1) });
+
+    // تنبيهات التعليق والرد
+    if (replyTo) {
+      if (replyTo.authorId !== user.uid) {
+        addDoc(collection(db, "notifications"), {
+          userId: replyTo.authorId,
+          type: "comment",
+          fromUserId: user.uid,
+          fromUserName: user.displayName,
+          fromUserAvatar: user.photoURL,
+          message: isRtl ? "رد على رؤيتك" : "replied to your comment",
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    } else {
+      if (author?.uid !== user.uid) {
+        addDoc(collection(db, "notifications"), {
+          userId: author.uid,
+          type: "comment",
+          fromUserId: user.uid,
+          fromUserName: user.displayName,
+          fromUserAvatar: user.photoURL,
+          message: isRtl ? "أضاف رؤية جديدة على منشورك" : "commented on your post",
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    }
+
     setNewComment("");
     setReplyTo(null);
   };
@@ -312,11 +361,30 @@ function CommentsList({ postId, isRtl, sortType, onReply }: any) {
     return { main, replies };
   }, [rawComments]);
 
-  const handleLikeComment = (commentId: string, likedBy: string[]) => {
+  const handleLikeComment = (comment: any) => {
     if (!user) return;
-    const isLiked = (likedBy || []).includes(user.uid);
-    const commentRef = doc(db, "posts", postId, "comments", commentId);
-    updateDoc(commentRef, isLiked ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) } : { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
+    const isLiked = (comment.likedBy || []).includes(user.uid);
+    const commentRef = doc(db, "posts", postId, "comments", comment.id);
+    
+    if (isLiked) {
+      updateDoc(commentRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
+    } else {
+      updateDoc(commentRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
+      
+      // تنبيه إعجاب على تعليق
+      if (comment.authorId !== user.uid) {
+        addDoc(collection(db, "notifications"), {
+          userId: comment.authorId,
+          type: "like",
+          fromUserId: user.uid,
+          fromUserName: user.displayName,
+          fromUserAvatar: user.photoURL,
+          message: isRtl ? "أعجب بتعليقك" : "liked your comment",
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
+    }
   };
 
   const formatTime = (createdAt: any) => {
@@ -343,11 +411,11 @@ function CommentsList({ postId, isRtl, sortType, onReply }: any) {
               <p className="text-[14px] text-zinc-100 leading-relaxed mb-2">{comment.text}</p>
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-1.5">
-                  <button onClick={() => handleLikeComment(comment.id, comment.likedBy)}><ThumbsUp className={cn("h-4 w-4", (comment.likedBy || []).includes(user?.uid) && "fill-white text-white")} /></button>
+                  <button onClick={() => handleLikeComment(comment)}><ThumbsUp className={cn("h-4 w-4", (comment.likedBy || []).includes(user?.uid) && "fill-white text-white")} /></button>
                   <span className="text-[11px] font-bold text-zinc-500">{comment.likesCount || 0}</span>
                   <button><ThumbsDown className="h-4 w-4 text-zinc-400" /></button>
                 </div>
-                <button onClick={() => onReply({ id: comment.id, handle: comment.authorHandle })} className="text-[11px] font-bold text-zinc-500">Reply</button>
+                <button onClick={() => onReply({ id: comment.id, handle: comment.authorHandle, authorId: comment.authorId })} className="text-[11px] font-bold text-zinc-500">Reply</button>
                 {(isSuper || user?.uid === comment.authorId) && (
                   <button onClick={() => deleteDoc(doc(db, "posts", postId, "comments", comment.id))} className="text-zinc-700 ml-auto"><Trash2 className="h-3.5 w-3.5" /></button>
                 )}
@@ -387,8 +455,8 @@ function ReplyThread({ commentId, allReplies, isRtl, onReply, onLike, formatTime
                   </div>
                   <p className="text-[13px] text-zinc-200 leading-relaxed mb-2">{reply.text}</p>
                   <div className="flex items-center gap-4">
-                    <button onClick={() => onLike(reply.id, reply.likedBy)}><ThumbsUp className={cn("h-3.5 w-3.5", (reply.likedBy || []).includes(user?.uid) && "fill-white text-white")} /></button>
-                    <button onClick={() => onReply({ id: reply.id, handle: reply.authorHandle })} className="text-[10px] font-bold text-zinc-500 uppercase">Reply</button>
+                    <button onClick={() => onLike(reply)}><ThumbsUp className={cn("h-3.5 w-3.5", (reply.likedBy || []).includes(user?.uid) && "fill-white text-white")} /></button>
+                    <button onClick={() => onReply({ id: reply.parentId, handle: reply.authorHandle, authorId: reply.authorId })} className="text-[10px] font-bold text-zinc-500 uppercase">Reply</button>
                     {(isSuper || user?.uid === reply.authorId) && (
                       <button onClick={() => deleteDoc(doc(db, "posts", postId, "comments", reply.id))} className="text-zinc-800 ml-auto"><Trash2 className="h-3 w-3" /></button>
                     )}
