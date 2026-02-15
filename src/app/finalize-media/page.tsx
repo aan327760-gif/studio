@@ -65,6 +65,10 @@ function FinalizeMediaContent() {
   const imageUrl = searchParams.get("image");
   const videoUrl = searchParams.get("video");
   const filterClass = searchParams.get("filter") || "filter-none";
+  const rotation = parseInt(searchParams.get("rotation") || "0");
+  const brightness = parseInt(searchParams.get("brightness") || "100");
+  const contrast = parseInt(searchParams.get("contrast") || "100");
+  const isMuted = searchParams.get("muted") === "true";
 
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
   const [isStickerDialogOpen, setIsStickerDialogOpen] = useState(false);
@@ -87,6 +91,10 @@ function FinalizeMediaContent() {
     if (imageUrl) params.set("image", imageUrl);
     if (videoUrl) params.set("video", videoUrl);
     if (filterClass) params.set("filter", filterClass);
+    params.set("rotation", rotation.toString());
+    params.set("brightness", brightness.toString());
+    params.set("contrast", contrast.toString());
+    params.set("muted", isMuted.toString());
     
     if (finalText) {
       params.set("textOverlay", finalText);
@@ -170,8 +178,28 @@ function FinalizeMediaContent() {
       onClick={() => setActiveStickerId(null)}
     >
       <div className="absolute inset-0 z-0">
-        {imageUrl && <img src={imageUrl} alt="Finalize" className={cn("w-full h-full object-cover", filterClass)} />}
-        {videoUrl && <video src={videoUrl} className="w-full h-full object-cover" autoPlay muted loop playsInline />}
+        {imageUrl && (
+          <img 
+            src={imageUrl} 
+            alt="Finalize" 
+            className={cn("w-full h-full object-cover", filterClass)} 
+            style={{ 
+              transform: `rotate(${rotation}deg)`,
+              filter: `brightness(${brightness}%) contrast(${contrast}%) ${filterClass === 'filter-none' ? '' : filterClass === 'grayscale' ? 'grayscale(1)' : filterClass === 'sepia' ? 'sepia(1)' : ''}`
+            }}
+          />
+        )}
+        {videoUrl && (
+          <video 
+            src={videoUrl} 
+            className="w-full h-full object-cover" 
+            style={{ transform: `rotate(${rotation}deg)` }}
+            autoPlay 
+            muted={isMuted} 
+            loop 
+            playsInline 
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/40" />
       </div>
 
@@ -233,7 +261,7 @@ function FinalizeMediaContent() {
         {[
           { icon: Type, label: isRtl ? "الكتابة" : "Text", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
           { icon: StickerIcon, label: isRtl ? "الملصقات" : "Stickers", onClick: () => setIsStickerDialogOpen(true), active: stickers.length > 0 },
-          { icon: Layers, label: isRtl ? "الفلاتر" : "Filters", onClick: () => router.back(), active: filterClass !== "filter-none" },
+          { icon: Layers, label: isRtl ? "الفلاتر" : "Filters", onClick: () => router.back(), active: filterClass !== "filter-none" || rotation !== 0 },
         ].map((action) => (
           <div key={action.label} className="flex items-center gap-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); action.onClick(); }}>
             <div className={cn("h-12 w-12 flex items-center justify-center rounded-2xl backdrop-blur-md border border-white/20 shadow-2xl transition-all", action.active ? "bg-primary border-primary scale-110" : "bg-black/50")}>

@@ -50,7 +50,6 @@ function CreatePostContent() {
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // New Settings
   const [privacy, setPrivacy] = useState("public");
   const [allowComments, setAllowComments] = useState(true);
 
@@ -61,6 +60,10 @@ function CreatePostContent() {
   const videoUrl = searchParams.get("video");
   const audioUrl = searchParams.get("audio");
   const filterClass = searchParams.get("filter") || "filter-none";
+  const rotation = searchParams.get("rotation") || "0";
+  const brightness = searchParams.get("brightness") || "100";
+  const contrast = searchParams.get("contrast") || "100";
+  const isMuted = searchParams.get("muted") === "true";
   const textOverlay = searchParams.get("textOverlay");
   const textColor = searchParams.get("textColor");
   const textBg = searchParams.get("textBg") === "true";
@@ -72,11 +75,7 @@ function CreatePostContent() {
 
   const handleSubmit = async () => {
     if (isBanned) {
-      toast({
-        variant: "destructive",
-        title: isRtl ? "أنت محظور" : "Account Restricted",
-        description: isRtl ? "تم إيقاف صلاحية النشر مؤقتاً لحسابك." : "Your privileges are restricted."
-      });
+      toast({ variant: "destructive", title: isRtl ? "أنت محظور" : "Account Restricted" });
       return;
     }
 
@@ -103,6 +102,10 @@ function CreatePostContent() {
 
       const mediaSettings = {
         filter: filterClass,
+        rotation,
+        brightness,
+        contrast,
+        muted: isMuted,
         textOverlay,
         textColor,
         textBg,
@@ -133,18 +136,10 @@ function CreatePostContent() {
         allowComments
       });
 
-      toast({
-        title: isRtl ? "تم النشر بنجاح" : "Post Live",
-        description: isRtl ? "لقد تمت مشاركة فكرتك بنجاح." : "Your thought has been shared.",
-      });
-      
+      toast({ title: isRtl ? "تم النشر بنجاح" : "Post Live" });
       router.push("/");
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to create post.",
-      });
+      toast({ variant: "destructive", title: "Error", description: error.message });
     } finally {
       setIsSubmitting(false);
     }
@@ -157,84 +152,60 @@ function CreatePostContent() {
         <Button 
           onClick={handleSubmit} 
           disabled={isSubmitting || isBanned || (!content.trim() && !localImageUrl && !videoUrl && !audioUrl)} 
-          className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200 shadow-xl transition-all active:scale-95 disabled:opacity-20"
+          className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200"
         >
           {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Post")}
         </Button>
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-32 custom-scrollbar">
-        {isBanned && (
-          <div className="p-4">
-            <Alert variant="destructive" className="bg-red-950/20 border-red-900">
-              <Ban className="h-4 w-4" />
-              <AlertTitle>{isRtl ? "تنبيه الحظر" : "Account Restriction"}</AlertTitle>
-              <AlertDescription>أنت محظور من النشر حالياً.</AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-        <div className="p-4 flex gap-4">
+      <main className="flex-1 overflow-y-auto pb-32 custom-scrollbar p-4">
+        <div className="flex gap-4">
           <Avatar className="h-11 w-11 border border-zinc-800">
             <AvatarImage src={user?.photoURL || ""} />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-6">
             <Textarea 
-              placeholder={isRtl ? "ماذا يدور في ذهنك؟" : "What's on your mind?"} 
-              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[120px] placeholder:text-zinc-700" 
+              placeholder={isRtl ? "أضف تعليقاً على هذا العمل..." : "Add a caption..."} 
+              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[80px]" 
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
-              disabled={isBanned}
             />
 
-            {localImageUrl && (
-              <div className="relative group rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900/50">
-                <img src={localImageUrl} alt="Preview" className={cn("w-full h-auto", filterClass)} />
-                {/* Visual indicator of stickers/text presence */}
-                {(textOverlay || stickers.length > 0) && (
-                  <div className="absolute top-3 left-3 bg-primary/80 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-2">
-                    <ShieldCheck className="h-3 w-3" />
-                    {isRtl ? "تعديلات سينمائية نشطة" : "Cinema edits active"}
-                  </div>
+            {(localImageUrl || videoUrl) && (
+              <div className="relative group rounded-[2rem] overflow-hidden border border-zinc-800 bg-zinc-900/50 aspect-square flex items-center justify-center">
+                {localImageUrl ? (
+                  <img 
+                    src={localImageUrl} 
+                    alt="Preview" 
+                    className={cn("w-full h-full object-cover transition-all", filterClass)} 
+                    style={{ transform: `rotate(${rotation}deg)`, filter: `brightness(${brightness}%) contrast(${contrast}%) ${filterClass === 'filter-none' ? '' : filterClass === 'grayscale' ? 'grayscale(1)' : ''}` }}
+                  />
+                ) : (
+                  <video src={videoUrl!} className="w-full h-full object-cover" style={{ transform: `rotate(${rotation}deg)` }} muted={isMuted} loop autoPlay playsInline />
                 )}
+                <div className="absolute top-3 right-3 bg-primary px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                   {isRtl ? "تمت المعالجة" : "Processed"}
+                </div>
               </div>
             )}
 
             <div className="space-y-6 pt-6 border-t border-zinc-900">
-               <h3 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em]">{isRtl ? "إعدادات المنشور" : "Post Settings"}</h3>
-               
                <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl">
                   <div className="flex items-center gap-3">
-                     <div className="h-10 w-10 rounded-xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
-                        {privacy === 'public' ? <Globe className="h-5 w-5 text-zinc-400" /> : <Users className="h-5 w-5 text-primary" />}
-                     </div>
-                     <div className="flex flex-col">
-                        <span className="text-sm font-bold">{isRtl ? "من يرى هذا؟" : "Who can see this?"}</span>
-                        <span className="text-[10px] text-zinc-500 font-bold uppercase">{privacy === 'public' ? (isRtl ? "الجميع" : "Public") : (isRtl ? "المتابعون" : "Followers")}</span>
-                     </div>
+                     <Globe className="h-5 w-5 text-zinc-400" />
+                     <span className="text-sm font-bold">{isRtl ? "الجمهور" : "Audience"}</span>
                   </div>
                   <Select value={privacy} onValueChange={setPrivacy}>
-                    <SelectTrigger className="w-[100px] bg-zinc-900 border-zinc-800 rounded-lg h-9 text-xs font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="w-[100px] bg-zinc-900 border-none h-8 text-xs font-bold"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
-                      <SelectItem value="public">{isRtl ? "العامة" : "Public"}</SelectItem>
-                      <SelectItem value="followers">{isRtl ? "المتابعون" : "Followers"}</SelectItem>
+                      <SelectItem value="public">{isRtl ? "عام" : "Public"}</SelectItem>
+                      <SelectItem value="followers">{isRtl ? "متابعون" : "Followers"}</SelectItem>
                     </SelectContent>
                   </Select>
                </div>
-
                <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl">
-                  <div className="flex items-center gap-3">
-                     <div className="h-10 w-10 rounded-xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
-                        <MessageSquare className="h-5 w-5 text-zinc-400" />
-                     </div>
-                     <div className="flex flex-col">
-                        <span className="text-sm font-bold">{isRtl ? "السماح بالتعليقات" : "Allow Comments"}</span>
-                        <span className="text-[10px] text-zinc-500 font-bold uppercase">{allowComments ? (isRtl ? "مفتوح" : "Enabled") : (isRtl ? "مغلق" : "Disabled")}</span>
-                     </div>
-                  </div>
+                  <span className="text-sm font-bold">{isRtl ? "السماح بالتعليق" : "Allow Comments"}</span>
                   <Switch checked={allowComments} onCheckedChange={setAllowComments} />
                </div>
             </div>

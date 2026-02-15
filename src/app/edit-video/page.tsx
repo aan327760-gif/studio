@@ -2,24 +2,29 @@
 "use client";
 
 import { useState, useRef, Suspense, useEffect } from "react";
-import { X, Play, Check, RotateCw, Scissors, Trash2, Columns2, Square, AlertCircle } from "lucide-react";
+import { X, Play, Check, RotateCw, Volume2, VolumeX, Scissors, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/context/LanguageContext";
+import { Slider } from "@/components/ui/slider";
 
 function VideoEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isRtl } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
+  
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [isTooLong, setIsTooLong] = useState(false);
-  const videoUrl = searchParams.get("video");
+  const [rotation, setRotation] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [trimRange, setTrimRange] = useState([0, 100]); // Percentage
 
+  const videoUrl = searchParams.get("video");
   const MAX_DURATION = 300;
 
   useEffect(() => {
@@ -32,7 +37,7 @@ function VideoEditorContent() {
           toast({
             variant: "destructive",
             title: isRtl ? "فيديو طويل جداً" : "Video too long",
-            description: isRtl ? "عذراً يا زعيم، الفيديوهات يجب ألا تتجاوز 5 دقائق." : "Sorry, videos must not exceed 5 minutes.",
+            description: isRtl ? "الحد الأقصى هو 5 دقائق للسيادة الرقمية." : "Max duration is 5 minutes.",
           });
         }
       };
@@ -41,32 +46,28 @@ function VideoEditorContent() {
 
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
+      if (isPlaying) videoRef.current.pause();
+      else videoRef.current.play();
       setIsPlaying(!isPlaying);
     }
   };
 
-  const handleDone = () => {
-    if (isTooLong) {
-      toast({
-        variant: "destructive",
-        title: isRtl ? "خطأ في المدة" : "Duration Error",
-        description: isRtl ? "يرجى اختيار فيديو أقصر من 5 دقائق للمتابعة." : "Please select a shorter video.",
-      });
-      return;
-    }
-    router.push(`/finalize-media?video=${encodeURIComponent(videoUrl || "")}`);
+  const handleRotate = () => {
+    setRotation((prev) => (prev + 90) % 360);
   };
 
-  const handleUnderDev = () => {
-    toast({
-      title: isRtl ? "قيد التطوير" : "Under Development",
-      description: isRtl ? "هذه الأداة ستتوفر قريباً في التحديث القادم." : "This tool will be available in the next update.",
-    });
+  const handleDone = () => {
+    if (isTooLong) {
+      toast({ variant: "destructive", title: isRtl ? "خطأ في المدة" : "Duration Error" });
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set("video", videoUrl || "");
+    params.set("rotation", rotation.toString());
+    params.set("muted", isMuted.toString());
+    params.set("trimStart", ((trimRange[0] / 100) * duration).toFixed(2));
+    params.set("trimEnd", ((trimRange[1] / 100) * duration).toFixed(2));
+    router.push(`/finalize-media?${params.toString()}`);
   };
 
   const formatTime = (seconds: number) => {
@@ -76,112 +77,69 @@ function VideoEditorContent() {
   };
 
   if (!videoUrl) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-black text-white">
-        <p>No video selected</p>
-      </div>
-    );
+    return <div className="h-screen bg-black flex items-center justify-center text-white">No video</div>;
   }
 
   return (
     <div className="flex flex-col h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
-      <div className="relative flex-1 bg-zinc-900 flex items-center justify-center">
+      <div className="relative flex-1 bg-zinc-950 flex items-center justify-center overflow-hidden">
         <video 
           ref={videoRef}
           src={videoUrl} 
-          className="w-full h-full object-contain"
-          onEnded={() => setIsPlaying(false)}
+          className="w-full h-full object-contain transition-transform duration-500"
+          style={{ transform: `rotate(${rotation}deg)` }}
+          muted={isMuted}
           playsInline
+          onEnded={() => setIsPlaying(false)}
         />
         
-        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => router.back()}
-            className="rounded-full text-white hover:bg-white/10"
-          >
-            <X className="h-7 w-7" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={togglePlay}
-            className="rounded-full text-white bg-black/20 backdrop-blur-sm"
-          >
-            <Play className={cn("h-8 w-8 fill-white", isPlaying && "opacity-0")} />
-          </Button>
-
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleDone}
-            disabled={isTooLong}
-            className={cn("rounded-full text-white hover:bg-white/10", isTooLong && "opacity-20")}
-          >
-            <Check className="h-7 w-7" />
-          </Button>
-        </div>
-
-        {isTooLong && (
-          <div className="absolute bottom-20 left-4 right-4 z-20">
-            <Alert variant="destructive" className="bg-red-950/90 border-red-500 backdrop-blur-md">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>{isRtl ? "الفيديو طويل جداً" : "Video too long"}</AlertTitle>
-              <AlertDescription>
-                {isRtl ? `مدة هذا الفيديو (${formatTime(duration)}) تتجاوز الحد المسموح به.` : `Duration (${formatTime(duration)}) exceeds limit.`}
-              </AlertDescription>
-            </Alert>
+        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/80 to-transparent">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-black/20"><X className="h-6 w-6" /></Button>
+          <div className="flex gap-2">
+             <Button variant="ghost" size="icon" onClick={() => setIsMuted(!isMuted)} className="rounded-full bg-black/20">
+                {isMuted ? <VolumeX className="h-5 w-5 text-red-500" /> : <Volume2 className="h-5 w-5" />}
+             </Button>
+             <Button variant="ghost" size="icon" onClick={handleRotate} className="rounded-full bg-black/20">
+                <RotateCw className="h-5 w-5" />
+             </Button>
           </div>
-        )}
-
-        <div className="absolute bottom-4 right-4 z-10">
-          <Button variant="ghost" size="icon" className="text-white bg-black/40 rounded-lg h-10 w-10" onClick={handleUnderDev}>
-            <Square className="h-5 w-5" />
-          </Button>
+          <Button variant="ghost" size="icon" onClick={handleDone} disabled={isTooLong} className="text-primary font-black"><Check className="h-7 w-7" /></Button>
         </div>
+
+        {!isPlaying && (
+          <Button variant="ghost" size="icon" onClick={togglePlay} className="absolute inset-0 m-auto h-20 w-20 rounded-full bg-primary/20 backdrop-blur-md border border-primary/30">
+            <Play className="h-10 w-10 fill-white ml-1" />
+          </Button>
+        )}
       </div>
 
-      <div className="bg-black py-8 px-4 border-t border-zinc-900">
-        <div className="flex justify-around items-center mb-8">
-          <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={handleUnderDev}>
-            <RotateCw className="h-6 w-6 text-white group-hover:text-primary transition-colors" />
-            <span className="text-[10px] text-zinc-400">{isRtl ? "تدوير" : "Rotate"}</span>
-          </div>
-          <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={handleUnderDev}>
-            <Columns2 className="h-6 w-6 text-white group-hover:text-primary transition-colors" />
-            <span className="text-[10px] text-zinc-400">{isRtl ? "تقسيم" : "Split"}</span>
-          </div>
-          <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={handleUnderDev}>
-            <Scissors className="h-6 w-6 text-white group-hover:text-primary transition-colors" />
-            <span className="text-[10px] text-zinc-400">{isRtl ? "قص" : "Trim"}</span>
-          </div>
-          <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => router.back()}>
-            <Trash2 className="h-6 w-6 text-red-500 group-hover:text-red-400 transition-colors" />
-            <span className="text-[10px] text-zinc-400">{isRtl ? "حذف" : "Delete"}</span>
-          </div>
+      <div className="bg-zinc-950 p-6 border-t border-zinc-900 space-y-8">
+        <div className="space-y-4">
+           <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500">
+              <span>{formatTime((trimRange[0] / 100) * duration)}</span>
+              <span className={isTooLong ? "text-red-500" : "text-primary"}>{isTooLong ? "Limit Exceeded" : formatTime(duration)}</span>
+              <span>{formatTime((trimRange[1] / 100) * duration)}</span>
+           </div>
+           <Slider 
+             value={trimRange} 
+             min={0} max={100} step={1} 
+             onValueChange={setTrimRange} 
+             className="py-4"
+           />
+           <p className="text-center text-[9px] font-black text-zinc-700 uppercase tracking-[0.3em]">
+              {isRtl ? "اسحب لتحديد المقطع المختار" : "Slide to select duration"}
+           </p>
         </div>
 
-        <div className="relative mt-4">
-          <div className="flex justify-between text-[10px] text-zinc-500 mb-2 font-mono uppercase tracking-widest">
-            <span>0:00.0</span>
-            <span className={isTooLong ? "text-red-500 font-bold" : ""}>{formatTime(duration)}</span>
-          </div>
-          <div className={cn(
-            "h-12 bg-zinc-900 rounded-lg border-2 flex items-center px-1 relative overflow-hidden transition-colors",
-            isTooLong ? "border-red-500" : "border-white"
-          )}>
-            <div className={cn("absolute left-0 w-1 h-full z-10 rounded-l-md", isTooLong ? "bg-red-500" : "bg-white")} />
-            <div className="flex gap-0.5 opacity-20 h-full w-full">
-               {Array.from({ length: 40 }).map((_, i) => (
-                 <div key={i} className="flex-1 bg-zinc-600 h-full" />
-               ))}
-            </div>
-          </div>
-          <div className="flex justify-center mt-2">
-             <div className={cn("w-0.5 h-4", isTooLong ? "bg-red-500" : "bg-white")} />
-          </div>
+        <div className="flex justify-around items-center">
+           <div className="flex flex-col items-center gap-2 group cursor-pointer opacity-40">
+              <Scissors className="h-5 w-5" />
+              <span className="text-[8px] font-black uppercase">{isRtl ? "قص" : "Trim"}</span>
+           </div>
+           <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => router.back()}>
+              <Trash2 className="h-5 w-5 text-red-500" />
+              <span className="text-[8px] font-black uppercase text-red-500">{isRtl ? "حذف" : "Discard"}</span>
+           </div>
         </div>
       </div>
     </div>
@@ -190,7 +148,7 @@ function VideoEditorContent() {
 
 export default function EditVideoPage() {
   return (
-    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white">جاري تحميل المحرر...</div>}>
+    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white">Loading Editor...</div>}>
       <VideoEditorContent />
     </Suspense>
   );
