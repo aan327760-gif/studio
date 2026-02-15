@@ -13,7 +13,8 @@ import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import { useMemo } from "react";
 
 /**
- * الخوارزمية السيادية - Sovereign Algorithm
+ * الخوارزمية السيادية - Sovereign Algorithm v2
+ * تدخل التعليقات والحفظ كعوامل قوة أساسية.
  */
 export default function Home() {
   const { isRtl } = useLanguage();
@@ -32,12 +33,21 @@ export default function Home() {
       const getScore = (post: any) => {
         let score = 0;
         const author = post.author || {};
+        
+        // 1. سلطة الهوية
         if (author.isPro) score += 1000;
         if (author.isVerified) score += 500;
+        
+        // 2. قوة التفاعل (الإعجاب والحوار والحفظ)
         score += (post.likesCount || 0) * 10;
+        score += (post.commentsCount || 0) * 15; // النقاش يعطي قيمة أعلى
+        score += (post.savesCount || 0) * 20;    // الحفظ يعكس أعلى مستويات الاهتمام
+        
+        // 3. عامل الزمن (تدهور القيمة مع الوقت)
         const postTime = post.createdAt?.seconds ? post.createdAt.seconds * 1000 : Date.now();
         const hoursPassed = (Date.now() - postTime) / (1000 * 60 * 60);
-        score -= hoursPassed * 20;
+        score -= hoursPassed * 20; 
+        
         return score;
       };
       return getScore(b) - getScore(a);
@@ -151,8 +161,10 @@ export default function Home() {
                     author={post.author}
                     content={post.content}
                     image={post.mediaUrl}
+                    mediaUrls={post.mediaUrls}
                     mediaType={post.mediaType}
                     likes={post.likesCount || 0}
+                    saves={post.savesCount || 0}
                     time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
                     mediaSettings={post.mediaSettings}
                   />
@@ -202,8 +214,10 @@ export default function Home() {
                     author={post.author}
                     content={post.content}
                     image={post.mediaUrl}
+                    mediaUrls={post.mediaUrls}
                     mediaType={post.mediaType}
                     likes={post.likesCount || 0}
+                    saves={post.savesCount || 0}
                     time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
                     mediaSettings={post.mediaSettings}
                   />

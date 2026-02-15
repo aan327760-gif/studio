@@ -16,7 +16,8 @@ import {
   Star,
   Download,
   Loader2,
-  Send
+  Send,
+  Bookmark
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -68,14 +69,16 @@ interface PostCardProps {
   image?: string;
   mediaUrls?: string[];
   mediaType?: "image" | "video" | "audio" | "album";
-  likes: number;
+  likes?: number;
+  saves?: number;
+  commentsCount?: number;
   time: string;
   mediaSettings?: any;
   privacy?: string;
   allowComments?: boolean;
 }
 
-export function PostCard({ id, author, content, image, mediaUrls = [], mediaType, likes: initialLikes, time, allowComments = true }: PostCardProps) {
+export function PostCard({ id, author, content, image, mediaUrls = [], mediaType, likes: initialLikes = 0, saves: initialSaves = 0, time, allowComments = true }: PostCardProps) {
   const { isRtl } = useLanguage();
   const { user } = useUser();
   const db = useFirestore();
@@ -89,7 +92,9 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
   const isAdmin = currentUserProfile?.role === "admin" || user?.email === "adelbenmaza3@gmail.com";
 
   const [likesCount, setLikesCount] = useState(initialLikes);
+  const [savesCount, setSavesCount] = useState(initialSaves);
   const [isLiked, setIsLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -113,8 +118,13 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
       if (docSnap.exists()) {
         const data = docSnap.data();
         const likedBy = data.likedBy || [];
+        const savedBy = data.savedBy || [];
         setLikesCount(likedBy.length);
-        if (user) setIsLiked(likedBy.includes(user.uid));
+        setSavesCount(savedBy.length);
+        if (user) {
+          setIsLiked(likedBy.includes(user.uid));
+          setIsSaved(savedBy.includes(user.uid));
+        }
       }
     });
     return () => unsubscribe();
@@ -133,10 +143,26 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
     });
   };
 
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user || !id || isBanned) return;
+    const postRef = doc(db, "posts", id);
+    const updateData = isSaved 
+      ? { savedBy: arrayRemove(user.uid), savesCount: increment(-1) }
+      : { savedBy: arrayUnion(user.uid), savesCount: increment(1) };
+
+    updateDoc(postRef, updateData).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: postRef.path, operation: 'update', requestResourceData: updateData }));
+    });
+    
+    toast({ title: isSaved ? (isRtl ? "تمت الإزالة من الأرشيف" : "Removed from Archive") : (isRtl ? "تم الحفظ في الأرشيف" : "Saved to Archive") });
+  };
+
   const handleAddComment = () => {
     if (isBanned || !newComment.trim() || !user || !id || !allowComments) return;
     if (newComment.length > 100) return;
     
+    const postRef = doc(db, "posts", id);
     const commentData = {
       authorId: user.uid,
       authorName: currentUserProfile?.displayName || user.displayName || "User",
@@ -148,9 +174,13 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
       likedBy: []
     };
 
+    // إضافة التعليق وتحديث عداد التعليقات في المنشور للخوارزمية
     addDoc(collection(db, "posts", id, "comments"), commentData).catch(async (err) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `posts/${id}/comments`, operation: 'create', requestResourceData: commentData }));
     });
+    
+    updateDoc(postRef, { commentsCount: increment(1) });
+    
     setNewComment("");
   };
 
@@ -287,50 +317,59 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
           </div>
         )}
 
-        <div className="px-5 py-4 flex items-center gap-8 border-t border-zinc-900/20" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2 group cursor-pointer active:scale-90" onClick={handleLike}>
-            <div className={cn("p-2 rounded-full", isLiked ? "bg-red-500/10" : "group-hover:bg-red-500/5")}><Heart className={cn("h-5 w-5", isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-600")} /></div>
-            <span className={cn("text-xs font-black", isLiked ? "text-red-500" : "text-zinc-600")}>{likesCount}</span>
-          </div>
-          
-          <Sheet>
-            <SheetTrigger asChild>
-              <div className="flex items-center gap-2 group cursor-pointer active:scale-90">
-                <div className="p-2 rounded-full group-hover:bg-primary/5"><MessageCircle className="h-5 w-5 text-zinc-600" /></div>
-                <span className="text-xs font-black text-zinc-600">{comments.length}</span>
-              </div>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 flex flex-col outline-none">
-              <SheetHeader className="p-4 border-b border-zinc-900">
-                <div className="flex items-center justify-between">
-                  <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-400 rounded-full"><X className="h-5 w-5" /></Button></SheetClose>
-                  <SheetTitle className="text-white font-black text-lg uppercase">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
-                  <div className="w-10" />
+        <div className="px-5 py-4 flex items-center justify-between border-t border-zinc-900/20" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2 group cursor-pointer active:scale-90" onClick={handleLike}>
+              <div className={cn("p-2 rounded-full", isLiked ? "bg-red-500/10" : "group-hover:bg-red-500/5")}><Heart className={cn("h-5 w-5", isLiked ? "fill-red-500 text-red-500 scale-110" : "text-zinc-600")} /></div>
+              <span className={cn("text-xs font-black", isLiked ? "text-red-500" : "text-zinc-600")}>{likesCount}</span>
+            </div>
+            
+            <Sheet>
+              <SheetTrigger asChild>
+                <div className="flex items-center gap-2 group cursor-pointer active:scale-90">
+                  <div className="p-2 rounded-full group-hover:bg-primary/5"><MessageCircle className="h-5 w-5 text-zinc-600" /></div>
+                  <span className="text-xs font-black text-zinc-600">{comments.length}</span>
                 </div>
-              </SheetHeader>
-              <ScrollArea className="flex-1">
-                <div className="p-4 space-y-8 pb-32">
-                  {comments.map((comment: any) => <CommentItem key={comment.id} comment={comment} postId={id} isRtl={isRtl} user={user} isBanned={isBanned} />)}
-                </div>
-              </ScrollArea>
-              <div className="p-4 pb-8 border-t border-zinc-900 bg-black/90">
-                <div className="flex gap-3 items-center">
-                  <Avatar className="h-10 w-10"><AvatarImage src={currentUserProfile?.photoURL || user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
-                  <div className="flex-1 flex items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800">
-                    <Input 
-                      placeholder={isRtl ? "إضافة تعليق (100 حرف)..." : "Add a comment (100 chars)..."} 
-                      className="bg-transparent border-none h-10 text-sm focus-visible:ring-0" 
-                      value={newComment} 
-                      onChange={(e) => setNewComment(e.target.value)} 
-                      maxLength={100}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} 
-                    />
-                    <Button size="icon" className="rounded-full h-10 w-10 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 flex flex-col outline-none">
+                <SheetHeader className="p-4 border-b border-zinc-900">
+                  <div className="flex items-center justify-between">
+                    <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-400 rounded-full"><X className="h-5 w-5" /></Button></SheetClose>
+                    <SheetTitle className="text-white font-black text-lg uppercase">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
+                    <div className="w-10" />
+                  </div>
+                </SheetHeader>
+                <ScrollArea className="flex-1">
+                  <div className="p-4 space-y-8 pb-32">
+                    {comments.map((comment: any) => <CommentItem key={comment.id} comment={comment} postId={id} isRtl={isRtl} user={user} isBanned={isBanned} />)}
+                  </div>
+                </ScrollArea>
+                <div className="p-4 pb-8 border-t border-zinc-900 bg-black/90">
+                  <div className="flex gap-3 items-center">
+                    <Avatar className="h-10 w-10"><AvatarImage src={currentUserProfile?.photoURL || user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
+                    <div className="flex-1 flex items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800">
+                      <Input 
+                        placeholder={isRtl ? "إضافة تعليق (100 حرف)..." : "Add a comment (100 chars)..."} 
+                        className="bg-transparent border-none h-10 text-sm focus-visible:ring-0" 
+                        value={newComment} 
+                        onChange={(e) => setNewComment(e.target.value)} 
+                        maxLength={100}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} 
+                      />
+                      <Button size="icon" className="rounded-full h-10 w-10 bg-primary" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          <div className="flex items-center gap-2 group cursor-pointer active:scale-90" onClick={handleSave}>
+            <div className={cn("p-2 rounded-full", isSaved ? "bg-primary/10" : "group-hover:bg-primary/5")}>
+              <Bookmark className={cn("h-5 w-5", isSaved ? "fill-primary text-primary scale-110" : "text-zinc-600")} />
+            </div>
+            {savesCount > 0 && <span className={cn("text-xs font-black", isSaved ? "text-primary" : "text-zinc-600")}>{savesCount}</span>}
+          </div>
         </div>
       </CardContent>
     </Card>

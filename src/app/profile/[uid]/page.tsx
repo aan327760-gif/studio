@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
@@ -14,7 +14,8 @@ import {
   MapPin,
   MessageSquare,
   Lock,
-  Info
+  Info,
+  Bookmark
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,13 +49,11 @@ export default function UserProfilePage() {
   const currentUserRef = useMemoFirebase(() => currentUser ? doc(db, "users", currentUser.uid) : null, [db, currentUser]);
   const { data: currentUserProfile } = useDoc<any>(currentUserRef);
 
-  // فحص المتابعة: هل أنا أتابعه؟
   const followId = currentUser && uid ? `${currentUser.uid}_${uid}` : null;
   const followRef = useMemoFirebase(() => (followId && !isOwnProfile) ? doc(db, "follows", followId) : null, [db, followId, isOwnProfile]);
   const { data: followDoc } = useDoc<any>(followRef);
   const isFollowing = !!followDoc;
 
-  // فحص المتابعة العكسية: هل هو يتابعني؟
   const reverseFollowId = currentUser && uid ? `${uid}_${currentUser.uid}` : null;
   const reverseFollowRef = useMemoFirebase(() => (reverseFollowId && !isOwnProfile) ? doc(db, "follows", reverseFollowId) : null, [db, reverseFollowId, isOwnProfile]);
   const { data: reverseFollowDoc } = useDoc<any>(reverseFollowRef);
@@ -73,6 +72,13 @@ export default function UserProfilePage() {
     return query(collection(db, "posts"), where("likedBy", "array-contains", uid), limit(30));
   }, [db, uid]);
   const { data: likedPosts = [], loading: likedLoading } = useCollection<any>(likedPostsQuery);
+
+  // استعلام المنشورات المحفوظة
+  const savedPostsQuery = useMemoFirebase(() => {
+    if (!uid || !isOwnProfile) return null;
+    return query(collection(db, "posts"), where("savedBy", "array-contains", uid), limit(30));
+  }, [db, uid, isOwnProfile]);
+  const { data: savedPosts = [], loading: savedLoading } = useCollection<any>(savedPostsQuery);
 
   const handleFollow = async () => {
     if (!currentUser || !uid || isOwnProfile || !followRef) return;
@@ -247,12 +253,13 @@ export default function UserProfilePage() {
         <TabsList className="w-full bg-black rounded-none h-14 p-0 border-b border-zinc-900 justify-around glass">
           <TabsTrigger value="posts" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "المنشورات" : "Posts"}</TabsTrigger>
           <TabsTrigger value="media" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "الوسائط" : "Media"}</TabsTrigger>
+          {isOwnProfile && <TabsTrigger value="saved" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "الأرشيف" : "Archive"}</TabsTrigger>}
           <TabsTrigger value="likes" className="flex-1 font-black text-[10px] uppercase tracking-widest border-b-2 border-transparent data-[state=active]:border-primary">{isRtl ? "الإعجابات" : "Likes"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="posts" className="m-0">
           {postsLoading ? <div className="flex justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" /></div> : userPosts.length > 0 ? (
-            <div className="flex flex-col">{userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0], uid: uid, id: uid}} content={post.content} image={post.mediaUrl} mediaType={post.mediaType} likes={post.likesCount || 0} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}</div>
+            <div className="flex flex-col">{userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0], uid: uid, id: uid}} content={post.content} image={post.mediaUrl} mediaUrls={post.mediaUrls} mediaType={post.mediaType} likes={post.likesCount || 0} saves={post.savesCount || 0} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}</div>
           ) : <div className="p-20 text-center text-zinc-500 font-bold">{isRtl ? "لا منشورات" : "No posts"}</div>}
         </TabsContent>
 
@@ -268,6 +275,36 @@ export default function UserProfilePage() {
           </div>
         </TabsContent>
 
+        {isOwnProfile && (
+          <TabsContent value="saved" className="m-0">
+            {savedLoading ? (
+              <div className="flex justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" /></div>
+            ) : savedPosts.length > 0 ? (
+              <div className="flex flex-col">
+                {savedPosts.map((post: any) => (
+                  <PostCard 
+                    key={post.id} 
+                    id={post.id} 
+                    author={post.author} 
+                    content={post.content} 
+                    image={post.mediaUrl} 
+                    mediaUrls={post.mediaUrls}
+                    mediaType={post.mediaType} 
+                    likes={post.likesCount || 0} 
+                    saves={post.savesCount || 0}
+                    time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-20 text-center flex flex-col items-center gap-4 opacity-20">
+                <Bookmark className="h-12 w-12" />
+                <p className="text-sm font-bold">{isRtl ? "الأرشيف فارغ" : "Archive is empty"}</p>
+              </div>
+            )}
+          </TabsContent>
+        )}
+
         <TabsContent value="likes" className="m-0">
           {likedLoading ? (
             <div className="flex justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" /></div>
@@ -280,8 +317,10 @@ export default function UserProfilePage() {
                   author={post.author} 
                   content={post.content} 
                   image={post.mediaUrl} 
+                  mediaUrls={post.mediaUrls}
                   mediaType={post.mediaType} 
                   likes={post.likesCount || 0} 
+                  saves={post.savesCount || 0}
                   time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
                 />
               ))}

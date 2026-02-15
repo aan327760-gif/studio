@@ -36,6 +36,9 @@
         "mediaType": { "type": "string", "enum": ["image", "video", "audio", "album"] },
         "likesCount": { "type": "number" },
         "likedBy": { "type": "array", "items": { "type": "string" } },
+        "savesCount": { "type": "number" },
+        "savedBy": { "type": "array", "items": { "type": "string" } },
+        "commentsCount": { "type": "number" },
         "privacy": { "type": "string", "enum": ["public", "followers"] },
         "allowComments": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }

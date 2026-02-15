@@ -37,6 +37,7 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read, list: if true;
       allow create: if isSignedIn() && isNotBanned();
+      // السماح بتحديث المنشور للإعجاب والحفظ والتعليق
       allow update: if isAdmin() || (isSignedIn() && isNotBanned());
       allow delete: if isAdmin() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       
