@@ -229,8 +229,8 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
         </div>
 
         {carouselImages.length > 0 && (
-          <div className="px-5 mb-4">
-            <div className="relative rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-950 shadow-2xl group w-full">
+          <div className="w-full mb-4">
+            <div className="relative overflow-hidden bg-zinc-950 shadow-2xl group w-full">
               {mediaType === 'video' ? (
                 <div className="relative aspect-video bg-black">
                   <video ref={videoRef} src={carouselImages[0]} className="w-full h-full object-contain" onClick={toggleMedia} />
@@ -250,7 +250,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
                   <CarouselContent>
                     {carouselImages.map((url, idx) => (
                       <CarouselItem key={idx} className="flex justify-center items-center">
-                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto max-h-[500px] object-cover aspect-[4/5] md:aspect-square" />
+                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto max-h-[600px] object-cover aspect-[4/5] md:aspect-square" />
                       </CarouselItem>
                     ))}
                   </CarouselContent>

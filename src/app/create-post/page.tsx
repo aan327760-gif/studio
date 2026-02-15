@@ -171,7 +171,7 @@ function CreatePostContent() {
               onChange={(e) => setContent(e.target.value)} 
             />
 
-            {/* شريط معاينة الصور - تم ضبط الاحتواء للهاتف */}
+            {/* شريط معاينة الصور المحدث لاحتواء الهاتف */}
             {localImages.length > 0 && (
               <div className="w-full overflow-hidden mb-6">
                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x max-w-full">
