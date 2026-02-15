@@ -29,7 +29,8 @@ import {
   Megaphone,
   Star,
   Radio,
-  CheckCircle
+  CheckCircle,
+  ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -45,9 +46,6 @@ import { VerificationBadge } from "@/components/ui/verification-badge";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
-/**
- * مركز القيادة - تم نزع ميزات التحليل الآلي ليبقى القرار للمدير العام فقط.
- */
 export default function AdminDashboard() {
   const { user, loading: userLoading } = useUser();
   const { isRtl } = useLanguage();
@@ -105,19 +103,20 @@ export default function AdminDashboard() {
     setIsBroadcasting(true);
     try {
       const batch = writeBatch(db);
-      allUsers.slice(0, 50).forEach((member: any) => {
+      // بث لأول 100 مستخدم (MVP Limit)
+      allUsers.slice(0, 100).forEach((member: any) => {
         const notifRef = doc(collection(db, "notifications"));
         batch.set(notifRef, {
           userId: member.id,
           type: "system",
-          fromUserName: "UNBOUND ADMIN",
+          fromUserName: "UNBOUND COMMAND",
           message: broadcastMessage,
           read: false,
           createdAt: serverTimestamp()
         });
       });
       await batch.commit();
-      toast({ title: isRtl ? "تم إرسال البث بنجاح" : "Broadcast sent" });
+      toast({ title: isRtl ? "تم إرسال البث بنجاح" : "Command broadcast sent" });
       setBroadcastMessage("");
     } catch (error) {
       toast({ variant: "destructive", title: "Error" });
@@ -130,43 +129,46 @@ export default function AdminDashboard() {
     return (
       <div className="h-screen bg-black flex flex-col items-center justify-center gap-4 text-white">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-widest">{isRtl ? "جاري التحقق من الصلاحيات..." : "Verifying Permissions..."}</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em]">{isRtl ? "جاري التحقق من الصلاحيات..." : "Authenticating Command..."}</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-black text-white max-w-5xl mx-auto border-x border-zinc-900 pb-20">
-      <header className="p-6 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+      <header className="p-8 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900 h-12 w-12 border border-zinc-800">
             <ArrowLeft className={cn("h-6 w-6", isRtl ? "rotate-180" : "")} />
           </Button>
           <div>
-            <h1 className="text-2xl font-black tracking-tighter">{isRtl ? "مركز القيادة" : "Command Center"}</h1>
-            <Badge className="bg-primary/20 text-primary border-primary/20 text-[8px] font-black uppercase tracking-widest">
-              {isSuperAdmin ? "SOVEREIGN ADMIN" : "MODERATOR"}
+            <h1 className="text-3xl font-black tracking-tighter">{isRtl ? "مركز القيادة" : "Sovereign Command"}</h1>
+            <Badge className="bg-primary/20 text-primary border-primary/20 text-[9px] font-black uppercase tracking-widest mt-1">
+              {isSuperAdmin ? "ROOT ADMINISTRATOR" : "SYSTEM MODERATOR"}
             </Badge>
           </div>
         </div>
+        <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+           <ShieldAlert className="h-6 w-6 text-primary" />
+        </div>
       </header>
 
-      <main className="p-6 space-y-8">
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <main className="p-6 space-y-10">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { label: isRtl ? "المواطنين" : "Citizens", value: stats.users, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-            { label: isRtl ? "الأفكار" : "Insights", value: stats.posts, icon: Activity, color: "text-green-500", bg: "bg-green-500/10" },
-            { label: isRtl ? "اللمة" : "Lamma", value: stats.groups, icon: MessageSquare, color: "text-purple-500", bg: "bg-purple-500/10" },
+            { label: isRtl ? "الأفكار" : "Insights", value: stats.posts, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+            { label: isRtl ? "اللمة" : "Communities", value: stats.groups, icon: MessageSquare, color: "text-purple-500", bg: "bg-purple-500/10" },
             { label: isRtl ? "التهديدات" : "Threats", value: stats.reports, icon: AlertTriangle, color: "text-red-500", bg: "bg-red-500/10" },
           ].map((stat, i) => (
-            <Card key={i} className="bg-zinc-950 border-zinc-900">
-              <CardContent className="p-6">
-                <div className={cn("p-2 rounded-lg inline-flex mb-4", stat.bg)}>
-                  <stat.icon className={cn("h-5 w-5", stat.color)} />
+            <Card key={i} className="bg-zinc-950 border-zinc-900 shadow-2xl relative overflow-hidden group">
+              <CardContent className="p-8">
+                <div className={cn("p-3 rounded-2xl inline-flex mb-6 group-hover:scale-110 transition-transform", stat.bg)}>
+                  <stat.icon className={cn("h-6 w-6", stat.color)} />
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{stat.label}</p>
-                <h3 className="text-2xl font-black mt-1">
-                  {statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : stat.value.toLocaleString()}
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">{stat.label}</p>
+                <h3 className="text-3xl font-black">
+                  {statsLoading ? <Loader2 className="h-6 w-6 animate-spin opacity-20" /> : stat.value.toLocaleString()}
                 </h3>
               </CardContent>
             </Card>
@@ -174,139 +176,154 @@ export default function AdminDashboard() {
         </section>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6">
-            <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
-              {isRtl ? "الأعضاء" : "Members"}
+          <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-16 p-1.5 rounded-[2rem] mb-10 shadow-xl">
+            <TabsTrigger value="users" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:shadow-lg">
+              {isRtl ? "إدارة المواطنين" : "Citizen Management"}
             </TabsTrigger>
-            <TabsTrigger value="reports" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
-              {isRtl ? "البلاغات" : "Reports"} {reports.length > 0 && <Badge className="ml-2 bg-red-500">{reports.length}</Badge>}
+            <TabsTrigger value="reports" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:shadow-lg">
+              {isRtl ? "البلاغات" : "Threat Reports"} {reports.length > 0 && <Badge className="ml-2 bg-red-600 border-none h-5 px-1.5 text-[10px]">{reports.length}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
-              {isRtl ? "بث عام" : "Broadcast"}
+            <TabsTrigger value="broadcast" className="flex-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:shadow-lg">
+              {isRtl ? "بيان رسمي" : "Proclamation"}
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="space-y-4">
-             <div className="relative mb-6">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600" />
+          <TabsContent value="users" className="space-y-6">
+             <div className="relative mb-8">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600" />
                 <Input 
-                  placeholder={isRtl ? "ابحث عن عضو..." : "Search member..."} 
-                  className="bg-zinc-950 border-zinc-900 rounded-2xl pl-12 h-14 text-sm font-bold"
+                  placeholder={isRtl ? "ابحث عن هوية..." : "Search citizen identity..."} 
+                  className="bg-zinc-950 border-zinc-900 rounded-[1.5rem] pl-14 h-16 text-sm font-bold shadow-inner"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
              </div>
-             {allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
-               <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-3xl">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12 border border-zinc-800">
-                       <AvatarImage src={member.photoURL} />
-                       <AvatarFallback>{member.displayName?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                       <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-black">{member.displayName}</p>
-                          {member.isVerified && <VerificationBadge className="h-3.5 w-3.5" />}
-                          {member.isPro && <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />}
-                       </div>
-                       <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{member.email?.split('@')[0]}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                     {isSuperAdmin && (
-                       <div className="flex gap-1">
-                          <Button 
-                            variant="ghost" size="icon" 
-                            className={cn("h-10 w-10", member.isVerified ? "text-primary" : "text-zinc-800")}
-                            title={isRtl ? "توثيق هوية" : "Verify Citizen"}
-                            onClick={() => updateDoc(doc(db, "users", member.id), { isVerified: !member.isVerified })}
-                          >
-                            <VerificationBadge className="h-5 w-5" />
-                          </Button>
-                          <Button 
-                            variant="ghost" size="icon" 
-                            className={cn("h-10 w-10", member.isPro ? "text-yellow-500" : "text-zinc-800")}
-                            title={isRtl ? "توثيق قناة إعلامية" : "Verify Media Channel"}
-                            onClick={() => updateDoc(doc(db, "users", member.id), { isPro: !member.isPro })}
-                          >
-                            <Radio className="h-5 w-5" />
-                          </Button>
-                       </div>
-                     )}
-                     <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-700 hover:text-orange-500" onClick={() => {
-                        const banUntil = new Date();
-                        banUntil.setDate(banUntil.getDate() + 3);
-                        updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });
-                        toast({ title: "Banned for 3 days" });
-                     }}>
-                       <Ban className="h-5 w-5" />
-                     </Button>
-                  </div>
-               </div>
-             ))}
-          </TabsContent>
-
-          <TabsContent value="reports" className="space-y-4">
-             {reportsLoading ? (
-               <div className="py-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-zinc-800" /></div>
-             ) : reports.length > 0 ? (
-               reports.map((report: any) => (
-                 <div key={report.id} className="p-6 bg-zinc-950 border border-zinc-900 rounded-[2rem] space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-4">
-                        <div className="p-4 bg-red-500/10 rounded-2xl"><AlertTriangle className="h-6 w-6 text-red-500" /></div>
-                        <div>
-                          <p className="text-sm font-black">{isRtl ? "بلاغ عن " : "Report on "}{report.targetType}</p>
-                          <p className="text-xs text-zinc-500 font-bold mt-1">السبب: {report.reason}</p>
-                        </div>
+             <div className="grid gap-4">
+               {allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
+                 <div key={member.id} className="flex items-center justify-between p-5 bg-zinc-950 border border-zinc-900 rounded-[2rem] hover:border-zinc-800 transition-all shadow-lg">
+                    <div className="flex items-center gap-5">
+                      <Avatar className="h-14 w-14 border-2 border-zinc-800">
+                         <AvatarImage src={member.photoURL} />
+                         <AvatarFallback className="bg-zinc-900">{member.displayName?.[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1">
+                         <div className="flex items-center gap-2">
+                            <p className="text-base font-black tracking-tight">{member.displayName}</p>
+                            {member.isVerified && <VerificationBadge className="h-4 w-4" />}
+                            {member.isPro && <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />}
+                         </div>
+                         <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{member.email?.split('@')[0]}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                       <Button size="sm" variant="ghost" className="flex-1 rounded-xl border border-zinc-800 font-black h-11" onClick={async () => {
-                         await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
-                         toast({ title: "Resolved" });
+                    <div className="flex gap-3">
+                       {isSuperAdmin && (
+                         <div className="flex gap-2">
+                            <Button 
+                              variant="ghost" size="icon" 
+                              className={cn("h-12 w-12 rounded-2xl transition-all", member.isVerified ? "bg-primary/10 text-primary border border-primary/20" : "bg-zinc-900 text-zinc-700 border border-zinc-800")}
+                              title={isRtl ? "توثيق هوية" : "Grant Rosette"}
+                              onClick={() => updateDoc(doc(db, "users", member.id), { isVerified: !member.isVerified })}
+                            >
+                              <VerificationBadge className="h-6 w-6" />
+                            </Button>
+                            <Button 
+                              variant="ghost" size="icon" 
+                              className={cn("h-12 w-12 rounded-2xl transition-all", member.isPro ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20" : "bg-zinc-900 text-zinc-700 border border-zinc-800")}
+                              title={isRtl ? "توثيق قناة إعلامية" : "Grant Media Status"}
+                              onClick={() => updateDoc(doc(db, "users", member.id), { isPro: !member.isPro })}
+                            >
+                              <Radio className="h-6 w-6" />
+                            </Button>
+                         </div>
+                       )}
+                       <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-zinc-900 text-zinc-700 hover:text-red-500 border border-zinc-800 transition-all" onClick={() => {
+                          const banUntil = new Date();
+                          banUntil.setDate(banUntil.getDate() + 3);
+                          updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });
+                          toast({ title: "Citizen restricted for 72h" });
                        }}>
-                         {isRtl ? "تجاهل" : "Ignore"}
-                       </Button>
-                       <Button size="sm" className="flex-1 rounded-xl bg-red-500 text-white font-black h-11" onClick={async () => {
-                         if (report.targetId) await deleteDoc(doc(db, "posts", report.targetId));
-                         await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
-                         toast({ title: "Content Deleted" });
-                       }}>
-                         {isRtl ? "حذف المحتوى" : "Delete Content"}
+                         <Ban className="h-6 w-6" />
                        </Button>
                     </div>
                  </div>
-               ))
+               ))}
+             </div>
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-6">
+             {reportsLoading ? (
+               <div className="py-20 flex justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /></div>
+             ) : reports.length > 0 ? (
+               <div className="grid gap-6">
+                 {reports.map((report: any) => (
+                   <div key={report.id} className="p-8 bg-zinc-950 border border-zinc-900 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-6 opacity-5"><AlertTriangle className="h-20 w-20 text-red-500" /></div>
+                      <div className="flex justify-between items-start relative z-10 mb-6">
+                        <div className="flex items-center gap-6">
+                          <div className="p-5 bg-red-500/10 rounded-2xl border border-red-500/20"><AlertTriangle className="h-8 w-8 text-red-500" /></div>
+                          <div className="space-y-1">
+                            <p className="text-lg font-black">{isRtl ? "بلاغ عن مخالفة" : "Policy Violation Report"}</p>
+                            <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{isRtl ? "النوع: " : "Target: "}{report.targetType}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 mb-6">
+                         <p className="text-sm font-bold text-zinc-300 leading-relaxed italic">"{report.reason}"</p>
+                      </div>
+                      <div className="flex gap-4 relative z-10">
+                         <Button variant="ghost" className="flex-1 rounded-2xl border border-zinc-800 font-black h-14 hover:bg-zinc-900" onClick={async () => {
+                           await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
+                           toast({ title: "Threat Ignored" });
+                         }}>
+                           {isRtl ? "تجاهل" : "Dismiss"}
+                         </Button>
+                         <Button className="flex-1 rounded-2xl bg-red-600 text-white font-black h-14 hover:bg-red-700 shadow-xl" onClick={async () => {
+                           if (report.targetId) {
+                             if (report.targetType === 'post') await deleteDoc(doc(db, "posts", report.targetId));
+                             if (report.targetType === 'user') {
+                                const banDate = new Date();
+                                banDate.setFullYear(banDate.getFullYear() + 1); // 1 year ban
+                                await updateDoc(doc(db, "users", report.targetId), { isBannedUntil: Timestamp.fromDate(banDate) });
+                             }
+                           }
+                           await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
+                           toast({ title: "Sovereign Action Applied" });
+                         }}>
+                           {isRtl ? "تطبيق العقوبة" : "Apply Sanction"}
+                         </Button>
+                      </div>
+                   </div>
+                 ))}
+               </div>
              ) : (
-               <div className="py-32 text-center opacity-20">
-                 <CheckCircle className="h-16 w-16 mb-4 mx-auto" />
-                 <p className="text-sm font-black uppercase tracking-widest">{isRtl ? "لا توجد بلاغات معلقة" : "No pending reports"}</p>
+               <div className="py-40 text-center opacity-10 flex flex-col items-center gap-6">
+                 <CheckCircle className="h-24 w-24" />
+                 <p className="text-lg font-black uppercase tracking-widest">{isRtl ? "المنطقة آمنة بالكامل" : "Perimeter Secured"}</p>
                </div>
              )}
           </TabsContent>
 
-          <TabsContent value="broadcast" className="space-y-6">
-            <Card className="bg-zinc-950 border-zinc-900 border-2 border-dashed border-primary/20">
-               <CardHeader>
-                  <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                     <Megaphone className="h-4 w-4 text-primary" />
-                     {isRtl ? "بيان النظام السيادي" : "Sovereign System Broadcast"}
+          <TabsContent value="broadcast" className="space-y-10">
+            <Card className="bg-zinc-950 border-zinc-900 border-2 border-dashed border-primary/30 rounded-[3rem] shadow-2xl overflow-hidden">
+               <CardHeader className="p-10 pb-6">
+                  <CardTitle className="text-xl font-black uppercase tracking-widest flex items-center gap-4">
+                     <Megaphone className="h-8 w-8 text-primary animate-pulse" />
+                     {isRtl ? "بيان القيادة السيادية" : "Sovereign Proclamation"}
                   </CardTitle>
                </CardHeader>
-               <CardContent className="space-y-4">
+               <CardContent className="p-10 pt-0 space-y-8">
                   <Textarea 
-                    placeholder={isRtl ? "اكتب هنا بيان النظام..." : "Write system announcement here..."}
-                    className="bg-zinc-900 border-zinc-800 rounded-2xl min-h-[120px] resize-none"
+                    placeholder={isRtl ? "اكتب هنا نص البيان الرسمي الموجه لجميع المواطنين..." : "Enter official proclamation for all citizens..."}
+                    className="bg-zinc-900 border-zinc-800 rounded-[2rem] min-h-[200px] resize-none text-lg font-bold p-8 shadow-inner"
                     value={broadcastMessage}
                     onChange={(e) => setBroadcastMessage(e.target.value)}
                   />
                   <Button 
-                    className="w-full h-14 rounded-2xl bg-white text-black hover:bg-zinc-200 font-black"
+                    className="w-full h-18 rounded-[2rem] bg-white text-black hover:bg-zinc-200 font-black text-xl shadow-2xl transition-all active:scale-95"
                     disabled={isBroadcasting || !broadcastMessage.trim() || !isSuperAdmin}
                     onClick={handleBroadcast}
                   >
-                    {isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "إرسال البيان الآن" : "Broadcast Now")}
+                    {isBroadcasting ? <Loader2 className="h-8 w-8 animate-spin" /> : (isRtl ? "بث البيان فوراً" : "Execute Broadcast")}
                   </Button>
                </CardContent>
             </Card>
