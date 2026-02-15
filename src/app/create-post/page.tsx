@@ -71,7 +71,7 @@ function CreatePostContent() {
     setLocalImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (isBanned) {
       toast({ variant: "destructive", title: isRtl ? "أنت محظور" : "Account Restricted" });
       return;
@@ -91,10 +91,10 @@ function CreatePostContent() {
       uid: user?.uid
     };
 
-    // إرسال المهمة للـ Background Context فوراً دون انتظار الضغط
+    // البدء الفوري في الرفع بالخلفية
     startUpload({
       content,
-      localImages, // سيتم الضغط في الخلفية داخل الـ Context
+      localImages,
       videoUrl: videoUrlFromParams,
       userId: user?.uid,
       authorInfo,
@@ -107,8 +107,8 @@ function CreatePostContent() {
       title: isRtl ? "جاري النشر في الخلفية" : "Publishing in background",
     });
     
-    // العودة الفورية للرئيسية دون أي تأخير بصري
-    router.push("/");
+    // الانتقال الفوري والمطلق لتجنب التعلق
+    router.replace("/");
   };
 
   return (

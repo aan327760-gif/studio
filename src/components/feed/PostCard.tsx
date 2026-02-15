@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
 import { useState, useEffect, useRef, memo } from "react";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from "@/firebase";
 import { 
   doc, 
   updateDoc, 
@@ -72,6 +72,7 @@ interface PostCardProps {
 export const PostCard = memo(({ 
   id, author, content, image, mediaUrls = [], mediaType, 
   likes = 0, saves = 0, likedBy = [], savedBy = [], 
+  commentsCount = 0,
   time, allowComments = true 
 }: PostCardProps) => {
   const { isRtl } = useLanguage();
@@ -271,7 +272,7 @@ PostCard.displayName = "PostCard";
 function CommentsList({ postId, isRtl }: { postId: string, isRtl: boolean }) {
   const db = useFirestore();
   const commentsQuery = useMemoFirebase(() => query(collection(db, "posts", postId, "comments"), orderBy("createdAt", "desc"), limit(20)), [db, postId]);
-  const { data: comments = [], loading } = useDoc<any[]>(commentsQuery as any); // Light optimization
+  const { data: comments = [], loading } = useCollection<any>(commentsQuery);
 
   return (
     <ScrollArea className="flex-1 p-4 space-y-8 pb-32">
