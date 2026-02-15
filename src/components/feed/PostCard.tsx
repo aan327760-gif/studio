@@ -17,7 +17,8 @@ import {
   ThumbsDown,
   Info,
   ChevronRight,
-  Star
+  Star,
+  AlertTriangle
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,12 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -98,6 +105,7 @@ export const PostCard = memo(({
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [sortType, setSortType] = useState<'top' | 'latest'>('top');
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
@@ -115,8 +123,6 @@ export const PostCard = memo(({
       updateDoc(postRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
     } else {
       updateDoc(postRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
-      
-      // إرسال تنبيه لصاحب المنشور
       if (author?.uid !== user.uid) {
         addDoc(collection(db, "notifications"), {
           userId: author.uid,
@@ -146,9 +152,29 @@ export const PostCard = memo(({
     toast({ title: isRtl ? "تم نسخ الرابط السيادي" : "Sovereign link copied" });
   };
 
+  const handleReport = async (reason: string) => {
+    if (!user || !id) return;
+    try {
+      await addDoc(collection(db, "reports"), {
+        postId: id,
+        postContent: content,
+        authorId: author.uid || author.id,
+        authorName: author.name || author.displayName,
+        reporterId: user.uid,
+        reporterName: user.displayName,
+        reason,
+        status: "pending",
+        createdAt: serverTimestamp()
+      });
+      toast({ title: isRtl ? "تم إرسال البلاغ لغرفة العمليات" : "Report sent to War Room" });
+      setIsReportDialogOpen(false);
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error sending report" });
+    }
+  };
+
   const handleAddComment = () => {
     if (!newComment.trim() || !user || !id || !allowComments) return;
-    
     const commentData = {
       authorId: user.uid, 
       authorName: user.displayName, 
@@ -160,39 +186,8 @@ export const PostCard = memo(({
       likedBy: [],
       parentId: replyTo?.id || null
     };
-
     addDoc(collection(db, "posts", id, "comments"), commentData);
     updateDoc(doc(db, "posts", id), { commentsCount: increment(1) });
-
-    // تنبيهات التعليق والرد
-    if (replyTo) {
-      if (replyTo.authorId !== user.uid) {
-        addDoc(collection(db, "notifications"), {
-          userId: replyTo.authorId,
-          type: "comment",
-          fromUserId: user.uid,
-          fromUserName: user.displayName,
-          fromUserAvatar: user.photoURL,
-          message: isRtl ? "رد على رؤيتك" : "replied to your comment",
-          read: false,
-          createdAt: serverTimestamp()
-        });
-      }
-    } else {
-      if (author?.uid !== user.uid) {
-        addDoc(collection(db, "notifications"), {
-          userId: author.uid,
-          type: "comment",
-          fromUserId: user.uid,
-          fromUserName: user.displayName,
-          fromUserAvatar: user.photoURL,
-          message: isRtl ? "أضاف رؤية جديدة على منشورك" : "commented on your post",
-          read: false,
-          createdAt: serverTimestamp()
-        });
-      }
-    }
-
     setNewComment("");
     setReplyTo(null);
   };
@@ -226,7 +221,7 @@ export const PostCard = memo(({
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white rounded-2xl p-2 shadow-2xl">
-                <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => e.stopPropagation()}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
+                <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsReportDialogOpen(true); }}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
                 {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف سيادي" : "Root Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -296,7 +291,6 @@ export const PostCard = memo(({
                     <div className="flex items-center gap-4">
                       <SheetClose asChild><Button variant="ghost" size="icon" className="text-white hover:bg-zinc-900 rounded-full"><X className="h-6 w-6" /></Button></SheetClose>
                       <SheetTitle className="text-white font-black text-lg">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
-                      <Button variant="ghost" size="icon" className="text-zinc-400 h-8 w-8"><Info className="h-5 w-5" /></Button>
                     </div>
                   </div>
                   <div className="flex gap-2 mt-4">
@@ -337,6 +331,26 @@ export const PostCard = memo(({
           </div>
         </div>
       </CardContent>
+
+      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2rem] p-6">
+          <DialogHeader><DialogTitle className="text-center font-black uppercase flex items-center justify-center gap-2"><AlertTriangle className="h-5 w-5 text-orange-500" /> {isRtl ? "بلاغ سيادي" : "Report Content"}</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-4">
+            <p className="text-[10px] text-zinc-500 font-bold uppercase text-center mb-4">{isRtl ? "لماذا تبلغ عن هذا المنشور؟" : "Why are you reporting this?"}</p>
+            {[
+              { id: 'hate', label: isRtl ? "خطاب كراهية" : "Hate Speech" },
+              { id: 'violence', label: isRtl ? "تحريض على العنف" : "Violence" },
+              { id: 'porn', label: isRtl ? "محتوى غير لائق" : "Inappropriate" },
+              { id: 'fake', label: isRtl ? "أخبار زائفة" : "Fake News" },
+              { id: 'harassment', label: isRtl ? "تحرش أو مضايقة" : "Harassment" }
+            ].map((reason) => (
+              <Button key={reason.id} variant="ghost" className="w-full justify-start h-12 rounded-xl bg-zinc-900 border border-zinc-800 font-bold text-sm hover:bg-primary/10 transition-all" onClick={() => handleReport(reason.label)}>
+                {reason.label}
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 });
@@ -365,25 +379,10 @@ function CommentsList({ postId, isRtl, sortType, onReply }: any) {
     if (!user) return;
     const isLiked = (comment.likedBy || []).includes(user.uid);
     const commentRef = doc(db, "posts", postId, "comments", comment.id);
-    
     if (isLiked) {
       updateDoc(commentRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
     } else {
       updateDoc(commentRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
-      
-      // تنبيه إعجاب على تعليق
-      if (comment.authorId !== user.uid) {
-        addDoc(collection(db, "notifications"), {
-          userId: comment.authorId,
-          type: "like",
-          fromUserId: user.uid,
-          fromUserName: user.displayName,
-          fromUserAvatar: user.photoURL,
-          message: isRtl ? "أعجب بتعليقك" : "liked your comment",
-          read: false,
-          createdAt: serverTimestamp()
-        });
-      }
     }
   };
 

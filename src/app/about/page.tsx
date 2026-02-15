@@ -27,7 +27,7 @@ export default function AboutPage() {
       icon: Cpu,
       title: isRtl ? "السيادة الرقمية" : "Digital Sovereignty",
       desc: isRtl 
-        ? "نؤمن بحق الأفراد والمجتمعات in امتلاك وإدارة بياناتهم بعيداً عن الهيمنة التقنية العابرة للحدود." 
+        ? "نؤمن بحق الأفراد والمجتمعات في امتلاك وإدارة بياناتهم بعيداً عن الهيمنة التقنية العابرة للحدود." 
         : "We believe in the right of individuals and communities to own and manage their data, free from cross-border technical dominance."
     },
     {
@@ -41,7 +41,7 @@ export default function AboutPage() {
       icon: Zap,
       title: isRtl ? "الابتكار المستقل" : "Independent Innovation",
       desc: isRtl 
-        ? "تطوير حلول تقنية وطنية قادرة على المنابت عالمياً وبناء مستقبل رقمي واعد." 
+        ? "تطوير حلول تقنية وطنية قادرة على المنافسة عالمياً وبناء مستقبل رقمي واعد." 
         : "Developing national technical solutions capable of global competition and building a promising digital future."
     }
   ];
@@ -51,29 +51,29 @@ export default function AboutPage() {
       icon: User,
       title: isRtl ? "طبيعة المبادرة" : "Nature of the Initiative",
       desc: isRtl 
-        ? "إن منصة 'بلا قيود' (Unbound) هي مبادرة تقنية مستقلة تماماً، نبعت من رؤية وطموح مواطن جزائري يسعى للمساهمة في تطوير المشهد الرقمي." 
+        ? "إن منصة 'بلا قيود' (Unbound) هي مبادرة تقنية مستقلة تماماً، نبعت من رؤية وطموح مواطن جزائري يسعى للمساهمة في تطوير المشهد الرقمي العربي." 
         : "Unbound is an entirely independent technical initiative, born from the vision of an Algerian citizen seeking to contribute to the digital landscape."
     },
     {
       icon: Scale,
       title: isRtl ? "الامتثال التشريعي" : "Legislative Compliance",
       desc: isRtl 
-        ? "تلتزم المنصة في كافة عملياتها بالقوانين واللوائح المعمول بها في الجمهورية الجزائرية الديمقراطية الشعبية، وتخضع لولايتها القضائية." 
-        : "The platform adheres in all its operations to the laws and regulations in force in the People's Democratic Republic of Algeria, subject to its jurisdiction."
+        ? "تلتزم المنصة في كافة عملياتها بالقوانين واللوائح المعمول بها في الجمهورية الجزائرية الديمقراطية الشعبية." 
+        : "The platform adheres in all its operations to the laws and regulations in force in the People's Democratic Republic of Algeria."
     },
     {
       icon: Landmark,
       title: isRtl ? "الإطار الإقليمي" : "Regional Framework",
       desc: isRtl 
-        ? "تسترشد المنصة في ممارساتها بالمعايير الأخلاقية والقانونية المتوافقة مع ميثاق جامعة الدول العربية لضمان بيئة آمنة للمجتمعات العربية." 
-        : "The platform is guided by ethical and legal standards aligned with the Charter of the Arab League to ensure a safe environment for Arab communities."
+        ? "تسترشد المنصة في ممارساتها بالمعايير الأخلاقية والقانونية المتوافقة مع ميثاق جامعة الدول العربية لضمان بيئة آمنة." 
+        : "The platform is guided by ethical and legal standards aligned with the Charter of the Arab League to ensure a safe environment."
     },
     {
       icon: Shield,
       title: isRtl ? "الاستقلالية المؤسسية" : "Institutional Independence",
       desc: isRtl 
-        ? "تؤكد المنصة عدم تبعيتها لأي جهة رسمية أو تنظيم حكومي، وهي مشروع خاص يهدف لخدمة الصالح العام بأسلوب حضاري." 
-        : "The platform confirms its non-affiliation with any official body or government organization; it is a private project aimed at serving the public good."
+        ? "تؤكد المنصة عدم تبعيتها لأي جهة رسمية أو تنظيم حكومي، وهي مشروع خاص يهدف لخدمة الصالح العام." 
+        : "The platform confirms its non-affiliation with any official body or government organization; it is a private project."
     }
   ];
 
@@ -87,29 +87,24 @@ export default function AboutPage() {
           <h1 className="text-xl font-black tracking-tight">{isRtl ? "عن بلا قيود" : "About Unbound"}</h1>
         </div>
         <div className="px-3 py-1 bg-zinc-900 rounded-full border border-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-           Official Proclamation
+           Official
         </div>
       </header>
 
       <main className="p-8 space-y-20">
         <section className="space-y-10 text-center relative overflow-hidden py-10">
            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -z-10" />
-           <div className="w-24 h-24 rounded-[2.5rem] bg-primary flex items-center justify-center mx-auto rotate-6 shadow-2xl shadow-primary/40 relative group transition-transform hover:rotate-0">
+           <div className="w-24 h-24 rounded-[2.5rem] bg-primary flex items-center justify-center mx-auto rotate-6 shadow-2xl shadow-primary/40 group transition-transform hover:rotate-0">
               <span className="text-white font-black text-5xl italic">U</span>
-              <div className="absolute -bottom-2 -right-2 bg-black rounded-full p-2 border border-zinc-800">
-                 <Globe className="h-4 w-4 text-primary animate-pulse" />
-              </div>
            </div>
            <div className="space-y-4">
               <h2 className="text-4xl font-black tracking-tighter">UNBOUND OS</h2>
-              <p className="text-primary text-[11px] font-black uppercase tracking-[0.5em]">{isRtl ? "نظام التواصل السيادي المستقل" : "Independent Sovereign Communication System"}</p>
-              <div className="max-w-lg mx-auto pt-6">
-                <p className="text-sm font-medium leading-relaxed text-zinc-400">
-                  {isRtl 
-                    ? "تمثل منصة 'بلا قيود' (Unbound) صرحاً رقمياً سيادياً صُمم ليكون مساحة حرة ومستقلة تماماً. نؤمن بأن التكنولوجيا يجب أن تكون في خدمة الإنسان دون قيود مركزية، مع الحفاظ على الهوية الوطنية والقيم الإقليمية." 
-                    : "Unbound represents a sovereign digital bastion designed to be a completely free and independent space. We believe technology should serve humanity without central constraints, while preserving national identity and regional values."}
-                </p>
-              </div>
+              <p className="text-primary text-[11px] font-black uppercase tracking-[0.5em]">{isRtl ? "نظام التواصل السيادي" : "Sovereign OS"}</p>
+              <p className="text-sm font-medium leading-relaxed text-zinc-400">
+                {isRtl 
+                  ? "تمثل منصة 'بلا قيود' صرحاً رقمياً سيادياً صُمم ليكون مساحة حرة ومستقلة تماماً. نؤمن بأن التكنولوجيا يجب أن تخدم الإنسان دون تبعية." 
+                  : "Unbound represents a sovereign digital bastion designed to be a completely free and independent space."}
+              </p>
            </div>
         </section>
 
@@ -121,7 +116,7 @@ export default function AboutPage() {
            <div className="grid gap-4">
               {coreValues.map((val, i) => (
                 <div key={i} className="p-6 bg-zinc-950 border border-zinc-900 rounded-[2.5rem] flex items-start gap-6 group hover:border-primary/20 transition-all">
-                   <div className="h-14 w-14 bg-zinc-900 rounded-3xl flex items-center justify-center border border-zinc-800 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all shrink-0">
+                   <div className="h-14 w-14 bg-zinc-900 rounded-3xl flex items-center justify-center border border-zinc-800 group-hover:bg-primary/10 transition-all shrink-0">
                       <val.icon className="h-6 w-6 text-primary" />
                    </div>
                    <div className="space-y-2">
@@ -134,23 +129,14 @@ export default function AboutPage() {
         </section>
 
         <section className="space-y-8 bg-zinc-950/50 rounded-[3rem] p-8 border border-zinc-900 relative">
-           <div className="absolute top-8 right-8 text-primary/10">
-              <BookOpen className="h-32 w-32" />
-           </div>
            <div className="space-y-12 relative z-10">
               <div className="space-y-4">
-                <h3 className="text-2xl font-black tracking-tight">{isRtl ? "البيان المؤسسي والهوية" : "Institutional Statement & Identity"}</h3>
-                <p className="text-xs text-zinc-500 font-bold leading-relaxed max-w-md">
-                   {isRtl 
-                     ? "نص أكاديمي يوضح الإطار القانوني والسيادي الذي تعمل من خلاله المنصة لضمان الشفافية والمصداقية." 
-                     : "An academic text clarifying the legal and sovereign framework within which the platform operates to ensure transparency and credibility."}
-                </p>
+                <h3 className="text-2xl font-black tracking-tight">{isRtl ? "البيان المؤسسي" : "Institutional Statement"}</h3>
               </div>
-
               <div className="grid gap-10">
                 {legalFramework.map((item, i) => (
                   <div key={i} className="flex gap-6 items-start">
-                     <div className="h-10 w-10 bg-black rounded-2xl flex items-center justify-center border border-zinc-800 shadow-xl shrink-0">
+                     <div className="h-10 w-10 bg-black rounded-2xl flex items-center justify-center border border-zinc-800 shrink-0">
                         <item.icon className="h-5 w-5 text-primary" />
                      </div>
                      <div className="space-y-2">
@@ -159,17 +145,6 @@ export default function AboutPage() {
                      </div>
                   </div>
                 ))}
-              </div>
-           </div>
-        </section>
-
-        <section className="py-10 text-center border-t border-zinc-900 space-y-10">
-           <div className="pt-10">
-              <p className="text-[8px] font-black text-zinc-800 uppercase tracking-[0.6em] mb-4">
-                 ESTABLISHED 2024 • SOVEREIGN INDEPENDENT PROJECT
-              </p>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-950 border border-zinc-900 rounded-full text-[9px] font-black text-zinc-600 uppercase tracking-widest">
-                 Version 1.0.4 • Build Sovereign
               </div>
            </div>
         </section>

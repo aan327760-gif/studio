@@ -32,7 +32,9 @@ import {
   Lock,
   Globe,
   ExternalLink,
-  Zap
+  Zap,
+  Trash2,
+  CheckCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -75,7 +77,7 @@ export default function AdminDashboard() {
   const { data: allUsers = [], loading: usersLoading } = useCollection<any>(usersQuery);
   
   const reportsQuery = useMemoFirebase(() => isSuper ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isSuper]);
-  const { data: reports = [] } = useCollection<any>(reportsQuery);
+  const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
 
   const handleBroadcast = async () => {
     if (!broadcastMessage.trim() || !isSuper) return;
@@ -94,12 +96,27 @@ export default function AdminDashboard() {
         });
       });
       await batch.commit();
-      toast({ title: isRtl ? "تم بث البيان الرسمي" : "Sovereign Proclamation Broadcasted" });
+      toast({ title: isRtl ? "تم بث البيان الرسمي" : "Broadcasted" });
       setBroadcastMessage("");
     } catch (error) {
       toast({ variant: "destructive", title: "Broadcast Failed" });
     } finally {
       setIsBroadcasting(false);
+    }
+  };
+
+  const handleActionOnReport = async (reportId: string, action: 'ignore' | 'delete' | 'ban', postId?: string, authorId?: string) => {
+    try {
+      if (action === 'delete' && postId) {
+        await deleteDoc(doc(db, "posts", postId));
+      } else if (action === 'ban' && authorId) {
+        const banUntil = new Date(); banUntil.setDate(banUntil.getDate() + 30);
+        await updateDoc(doc(db, "users", authorId), { isBannedUntil: Timestamp.fromDate(banUntil) });
+      }
+      await updateDoc(doc(db, "reports", reportId), { status: "resolved", actionTaken: action });
+      toast({ title: isRtl ? "تم تنفيذ الإجراء" : "Action Executed" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Action Failed" });
     }
   };
 
@@ -166,6 +183,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6">
             <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "الهويات" : "Identity"}</TabsTrigger>
+            <TabsTrigger value="threats" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "التهديدات" : "Threats"}</TabsTrigger>
             <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "البث" : "Broadcast"}</TabsTrigger>
             <TabsTrigger value="deploy" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">{isRtl ? "النشر" : "Deploy"}</TabsTrigger>
           </TabsList>
@@ -206,10 +224,33 @@ export default function AdminDashboard() {
              </div>
           </TabsContent>
 
+          <TabsContent value="threats" className="space-y-4">
+             {reportsLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div> :
+              reports.length > 0 ? reports.map((r: any) => (
+                <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
+                   <div className="flex items-center justify-between">
+                      <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
+                      <span className="text-[8px] text-zinc-600 font-bold">{r.createdAt?.toDate ? r.createdAt.toDate().toLocaleTimeString() : ""}</span>
+                   </div>
+                   <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800">
+                      <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3 italic">"{r.postContent}"</p>
+                      <p className="text-[9px] text-zinc-600 mt-2 font-bold">— {r.authorName}</p>
+                   </div>
+                   <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-green-500/10 text-green-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ignore')}><CheckCircle className="h-3 w-3 mr-1" /> {isRtl ? "تجاهل" : "Ignore"}</Button>
+                      <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-red-500/10 text-red-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'delete', r.postId)}><Trash2 className="h-3 w-3 mr-1" /> {isRtl ? "حذف" : "Delete"}</Button>
+                      <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-zinc-900 text-white font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ban', undefined, r.authorId)}><Ban className="h-3 w-3 mr-1" /> {isRtl ? "حظر" : "Ban"}</Button>
+                   </div>
+                </Card>
+              )) : (
+                <div className="py-20 text-center opacity-20 flex flex-col items-center gap-4"><CheckCircle className="h-12 w-12" /><p className="text-xs font-black uppercase">{isRtl ? "لا توجد تهديدات" : "Zero Threats"}</p></div>
+              )}
+          </TabsContent>
+
           <TabsContent value="broadcast" className="space-y-6">
              <Card className="bg-zinc-950 border-zinc-900 border-2 border-dashed border-primary/20 rounded-[2.5rem] p-6">
-                <div className="flex items-center gap-3 mb-6"><Megaphone className="h-6 w-6 text-primary animate-pulse" /><h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "بث أمر القيادة" : "Command Broadcast"}</h3></div>
-                <Textarea placeholder={isRtl ? "اكتب هنا نص البيان الموجه لجميع المواطنين..." : "Enter official proclamation..."} className="bg-zinc-900 border-zinc-800 rounded-2xl min-h-[150px] resize-none text-sm font-bold p-5 mb-6" value={broadcastMessage} onChange={(e) => setBroadcastMessage(e.target.value)} />
+                <div className="flex items-center gap-3 mb-6"><Megaphone className="h-6 w-6 text-primary" /><h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "بث أمر القيادة" : "Broadcast"}</h3></div>
+                <Textarea placeholder={isRtl ? "اكتب هنا نص البيان الموجه لجميع المواطنين..." : "Enter proclamation..."} className="bg-zinc-900 border-zinc-800 rounded-2xl min-h-[150px] text-sm font-bold p-5 mb-6" value={broadcastMessage} onChange={(e) => setBroadcastMessage(e.target.value)} />
                 <Button className="w-full h-14 rounded-2xl bg-white text-black font-black" disabled={isBroadcasting || !broadcastMessage.trim()} onClick={handleBroadcast}>{isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "تنفيذ البث" : "Execute")}</Button>
              </Card>
           </TabsContent>
@@ -219,26 +260,14 @@ export default function AdminDashboard() {
                 <div className="absolute top-0 right-0 p-6 opacity-5"><Github className="h-24 w-24" /></div>
                 <div className="flex items-center gap-3 mb-6">
                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10"><Github className="h-5 w-5 text-white" /></div>
-                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "المزامنة والنشر السيادي" : "Sovereign Deploy"}</h3>
+                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "المزامنة والنشر السيادي" : "Deploy"}</h3>
                 </div>
                 <div className="space-y-5">
-                   <div className="space-y-2">
-                      <div className="flex items-center gap-2 px-1"><Globe className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">GitHub Repo</span></div>
-                      <Input placeholder="https://github.com/user/unbound-os.git" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
-                   </div>
-                   <div className="space-y-2">
-                      <div className="flex items-center gap-2 px-1"><Lock className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">PAT Token</span></div>
-                      <Input type="password" placeholder="ghp_xxxxxxxxxxxx" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} />
-                   </div>
-                   <Button className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg gap-3 shadow-xl active:scale-95 transition-all" disabled={isSyncing || !repoUrl || !githubToken} onClick={handleGitHubSync}>
-                     {isSyncing ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Rocket className="h-5 w-5" /> {isRtl ? "رفع الكود إلى GitHub" : "Push to GitHub"}</>}
+                   <Input placeholder="GitHub Repo URL" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
+                   <Input type="password" placeholder="PAT Token" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} />
+                   <Button className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg gap-3" disabled={isSyncing || !repoUrl || !githubToken} onClick={handleGitHubSync}>
+                     {isSyncing ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Rocket className="h-5 w-5" /> {isRtl ? "رفع الكود" : "Push Code"}</>}
                    </Button>
-                   <div className="h-[1px] bg-zinc-900 my-4" />
-                   <div className="space-y-4">
-                      <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-blue-500" /><h4 className="font-black text-xs uppercase tracking-widest">Final Vercel Step</h4></div>
-                      <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">{isRtl ? "بمجرد رفع الكود إلى GitHub، اذهب إلى Vercel واربط المستودع." : "Once pushed to GitHub, go to Vercel and link the repo."}</p>
-                      <Button variant="outline" className="w-full h-12 rounded-xl border-zinc-800 hover:bg-zinc-900 font-bold gap-2 text-xs" onClick={() => window.open('https://vercel.com/new', '_blank')}><ExternalLink className="h-4 w-4" /> {isRtl ? "فتح Vercel الآن" : "Open Vercel Now"}</Button>
-                   </div>
                 </div>
              </Card>
           </TabsContent>
