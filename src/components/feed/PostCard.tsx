@@ -363,7 +363,7 @@ function CommentsList({ postId, isRtl, sortType, onReply }: any) {
   );
 }
 
-function ReplyThread({ commentId, allReplies, isRtl, onReply, onLike, onDelete, formatTime, user, isSuper, postId, db }: any) {
+function ReplyThread({ commentId, allReplies, isRtl, onReply, onLike, formatTime, user, isSuper, postId, db }: any) {
   const [showReplies, setShowReplies] = useState(false);
   const replies = allReplies.filter((r: any) => r.parentId === commentId);
   if (replies.length === 0) return null;

@@ -17,8 +17,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
-import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, doc } from "firebase/firestore";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 
 export function AppSidebar() {
   const { isRtl } = useLanguage();
@@ -72,8 +72,8 @@ export function AppSidebar() {
   const createOptions = [
     { icon: ImageIcon, label: isRtl ? "الصور" : "Images", color: "bg-green-500", onClick: () => imageInputRef.current?.click() },
     { icon: Video, label: isRtl ? "فيديو" : "Videos", color: "bg-blue-500", onClick: () => videoInputRef.current?.click() },
+    { icon: Mic, label: isRtl ? "صوت" : "Audio", color: "bg-orange-500", onClick: () => { setIsSheetOpen(false); toast({ title: isRtl ? "قريباً" : "Coming Soon", description: isRtl ? "ميزة التسجيل الصوتي في المرحلة القادمة." : "Voice recording in next phase." }); } },
     { icon: PenLine, label: isRtl ? "نشر" : "Post", color: "bg-primary", onClick: () => { setIsSheetOpen(false); router.push("/create-post"); } },
-    { icon: Archive, label: isRtl ? "الأرشيف" : "Archive", color: "bg-zinc-700", onClick: () => { setIsSheetOpen(false); router.push("/bookmarks"); } },
   ];
 
   return (
