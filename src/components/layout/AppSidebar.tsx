@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, where, doc } from "firebase/firestore";
@@ -191,31 +192,35 @@ export function AppSidebar() {
       </aside>
 
       <Dialog open={isProclamationOpen} onOpenChange={setIsProclamationOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-8 shadow-2xl">
-          <DialogHeader className="space-y-6">
-            <div className="mx-auto h-20 w-20 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-2">
-               <Mic className="h-10 w-10 text-purple-500 animate-pulse" />
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2.5rem] p-0 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <ScrollArea className="flex-1 p-6 sm:p-8">
+            <DialogHeader className="space-y-6">
+              <div className="mx-auto h-16 w-16 sm:h-20 sm:w-20 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-2">
+                 <Mic className="h-8 w-8 sm:h-10 sm:w-10 text-purple-500 animate-pulse" />
+              </div>
+              <DialogTitle className="text-center font-black text-xl sm:text-2xl tracking-tighter uppercase">
+                {isRtl ? "البيان التقني: الساحة الصوتية السيادية" : "Sovereign Acoustic Arena"}
+              </DialogTitle>
+              <DialogDescription className="text-zinc-400 text-center font-medium leading-relaxed text-sm sm:text-[15px]">
+                {isRtl 
+                  ? "إن هذه المساحة ليست مجرد أداة لتسجيل الأصوات، بل هي صرح إبستيمي (معرفي) صُمم ليكون منبراً للنخبة الفكرية، الأكاديميين، والمبدعين. نهدف من خلال 'الساحة الصوتية' إلى توفير بيئة رصينة تحتضن المحاضرات العلمية التخصصية، السجالات السياسية العميقة، والأعمال الموسيقية ذات الرسالة الهادفة. هنا، تصبح الكلمة المنطوقة وثيقة سيادية مسجلة، تعكس الرقي الحضاري لمجتمع 'بلا قيود'."
+                  : "This space is not merely a recording tool, but an epistemic bastion designed as a forum for intellectual elites, academics, and creators. Through the 'Acoustic Arena', we aim to provide a formal environment for specialized scientific lectures, profound political discourse, and purposeful musical works. Here, the spoken word becomes a registered sovereign document, reflecting the societal depth of Unbound OS."}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-8 flex flex-col items-center gap-4 pb-4">
+               <div className="h-[1px] w-24 bg-zinc-800" />
+               <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">
+                  Unbound Academic Core • v1.0.4
+               </p>
             </div>
-            <DialogTitle className="text-center font-black text-2xl tracking-tighter uppercase">
-              {isRtl ? "البيان التقني: الساحة الصوتية السيادية" : "Sovereign Acoustic Arena"}
-            </DialogTitle>
-            <DialogDescription className="text-zinc-400 text-center font-medium leading-relaxed text-[15px]">
-              {isRtl 
-                ? "إن هذه المساحة ليست مجرد أداة لتسجيل الأصوات، بل هي صرح إبستيمي (معرفي) صُمم ليكون منبراً للنخبة الفكرية، الأكاديميين، والمبدعين. نهدف من خلال 'الساحة الصوتية' إلى توفير بيئة رصينة تحتضن المحاضرات العلمية التخصصية، السجالات السياسية العميقة، والأعمال الموسيقية ذات الرسالة الهادفة. هنا، تصبح الكلمة المنطوقة وثيقة سيادية مسجلة، تعكس الرقي الحضاري لمجتمع 'بلا قيود'."
-                : "This space is not merely a recording tool, but an epistemic bastion designed as a forum for intellectual elites, academics, and creators. Through the 'Acoustic Arena', we aim to provide a formal environment for specialized scientific lectures, profound political discourse, and purposeful musical works. Here, the spoken word becomes a registered sovereign document, reflecting the societal depth of Unbound OS."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-8 flex flex-col items-center gap-4">
-             <div className="h-[1px] w-24 bg-zinc-800" />
-             <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">
-                Unbound Academic Core • v1.0.4
-             </p>
-             <Button 
-               className="w-full bg-white text-black hover:bg-zinc-200 font-black rounded-2xl h-14 mt-4 shadow-xl active:scale-95 transition-transform" 
-               onClick={() => setIsProclamationOpen(false)}
-             >
-               {isRtl ? "إقرار بالموافقة" : "Acknowledge & Close"}
-             </Button>
+          </ScrollArea>
+          <div className="p-6 pt-0 mt-auto border-t border-white/5 bg-zinc-950/80 backdrop-blur-md">
+            <Button 
+              className="w-full bg-white text-black hover:bg-zinc-200 font-black rounded-2xl h-14 shadow-xl active:scale-95 transition-transform" 
+              onClick={() => setIsProclamationOpen(false)}
+            >
+              {isRtl ? "إقرار بالموافقة" : "Acknowledge & Close"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
