@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -25,7 +24,8 @@ import {
   ShieldCheck,
   CheckCircle,
   Activity,
-  Megaphone
+  Megaphone,
+  UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
 
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6">
-            <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Identity</TabsTrigger>
+            <TabsTrigger value="users" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Citizens</TabsTrigger>
             <TabsTrigger value="threats" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Threats</TabsTrigger>
             <TabsTrigger value="broadcast" className="flex-1 rounded-xl font-black text-[10px] uppercase data-[state=active]:bg-primary">Broadcast</TabsTrigger>
           </TabsList>
@@ -225,6 +225,7 @@ export default function AdminDashboard() {
                    <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
                       <div className="flex items-center justify-between">
                          <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
+                         <Button variant="ghost" size="sm" className="h-7 text-[8px] font-black uppercase text-zinc-500 bg-zinc-900 rounded-lg border border-zinc-800">تحليل (قريباً)</Button>
                       </div>
                       <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800">
                          <p className="text-xs text-zinc-400 italic">"{r.postContent}"</p>
@@ -258,13 +259,18 @@ export default function AdminDashboard() {
                   value={broadcastMessage} 
                   onChange={(e) => setBroadcastMessage(e.target.value)} 
                 />
-                <Button 
-                  className="w-full h-14 rounded-2xl bg-white text-black font-black" 
-                  disabled={isBroadcasting || !broadcastMessage.trim()} 
-                  onClick={handleBroadcast}
-                >
-                  {isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "تنفيذ البث" : "Execute")}
-                </Button>
+                <div className="flex gap-3">
+                   <Button 
+                    className="flex-1 h-14 rounded-2xl bg-white text-black font-black" 
+                    disabled={isBroadcasting || !broadcastMessage.trim()} 
+                    onClick={handleBroadcast}
+                  >
+                    {isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "تنفيذ البث" : "Execute")}
+                  </Button>
+                  <Button variant="outline" className="flex-1 h-14 rounded-2xl border-zinc-800 font-black text-zinc-500">
+                     رفع الكود (ي)
+                  </Button>
+                </div>
              </Card>
           </TabsContent>
         </Tabs>

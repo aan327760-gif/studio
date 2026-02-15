@@ -213,6 +213,8 @@ export const PostCard = memo(({
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white rounded-2xl p-2 shadow-2xl">
                 <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsReportDialogOpen(true); }}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
+                <DropdownMenuItem disabled className="text-zinc-600 rounded-xl font-black text-[10px] uppercase cursor-default"><div className="flex justify-between w-full"><span>ترجمة (قريباً)</span></div></DropdownMenuItem>
+                <DropdownMenuItem disabled className="text-zinc-600 rounded-xl font-black text-[10px] uppercase cursor-default"><div className="flex justify-between w-full"><span>إيجاز (ي)</span></div></DropdownMenuItem>
                 {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف جذري" : "Root Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>

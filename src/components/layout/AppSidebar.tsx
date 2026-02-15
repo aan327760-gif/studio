@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, StopCircle, Save } from "lucide-react";
@@ -35,10 +34,6 @@ export function AppSidebar() {
   
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isAudioOpen, setIsAudioOpen] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
   
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -56,45 +51,6 @@ export function AppSidebar() {
     { icon: Bell, href: "/notifications", label: "Notifications", hasBadge: unreadNotifs.length > 0 },
     { icon: User, href: user ? "/profile" : "/auth", label: "Profile", isAvatar: true },
   ];
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        setAudioUrl(URL.createObjectURL(blob));
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (e) {
-      toast({ variant: "destructive", title: "Mic Access Required" });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-    }
-  };
-
-  const handleAudioSave = () => {
-    if (audioUrl) {
-      toast({ title: isRtl ? "تم الحفظ" : "Saved", description: isRtl ? "يمكنك الآن استخدامه في المنشورات." : "You can now use it in posts." });
-      setIsAudioOpen(false);
-      setAudioUrl(null);
-    }
-  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -125,7 +81,7 @@ export function AppSidebar() {
     { icon: Video, label: isRtl ? "فيديو" : "Videos", color: "bg-blue-500", onClick: () => videoInputRef.current?.click() },
     { 
       icon: Mic, 
-      label: isRtl ? "صوت" : "Audio", 
+      label: isRtl ? "صوت (قريباً)" : "Audio (Soon)", 
       color: "bg-orange-500", 
       onClick: () => { 
         setIsSheetOpen(false); 
@@ -195,27 +151,13 @@ export function AppSidebar() {
 
       <Dialog open={isAudioOpen} onOpenChange={setIsAudioOpen}>
         <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-8">
-          <DialogHeader><DialogTitle className="text-center font-black uppercase">{isRtl ? "تسجيل سيادي" : "Voice Note"}</DialogTitle></DialogHeader>
-          <div className="flex flex-col items-center py-10 gap-10">
-             <div className={cn("h-24 w-24 rounded-full flex items-center justify-center transition-all duration-500 relative", isRecording ? "bg-red-500 animate-pulse" : "bg-zinc-900")}>
-                {isRecording && <div className="absolute inset-0 rounded-full border-4 border-red-500/30 animate-ping" />}
-                <Mic className={cn("h-10 w-10", isRecording ? "text-white" : "text-primary")} />
+          <DialogHeader><DialogTitle className="text-center font-black uppercase">{isRtl ? "تسجيل سيادي (قريباً)" : "Voice Note (Soon)"}</DialogTitle></DialogHeader>
+          <div className="flex flex-col items-center py-10 gap-6 text-center">
+             <div className="h-24 w-24 rounded-full bg-zinc-900 flex items-center justify-center">
+                <Mic className="h-10 w-10 text-zinc-700" />
              </div>
-             
-             {audioUrl && <audio src={audioUrl} controls className="w-full" />}
-
-             <div className="flex gap-4 w-full">
-                {!isRecording && !audioUrl ? (
-                  <Button className="flex-1 h-14 rounded-2xl bg-white text-black font-black" onClick={startRecording}>{isRtl ? "بدء التسجيل" : "Start"}</Button>
-                ) : isRecording ? (
-                  <Button variant="destructive" className="flex-1 h-14 rounded-2xl font-black gap-2" onClick={stopRecording}><StopCircle className="h-5 w-5" /> {isRtl ? "إيقاف" : "Stop"}</Button>
-                ) : (
-                  <>
-                    <Button variant="outline" className="flex-1 h-14 rounded-2xl font-black" onClick={() => { setAudioUrl(null); chunksRef.current = []; }}>{isRtl ? "إعادة" : "Retry"}</Button>
-                    <Button className="flex-1 h-14 rounded-2xl bg-primary text-white font-black gap-2" onClick={handleAudioSave}><Save className="h-5 w-5" /> {isRtl ? "حفظ" : "Save"}</Button>
-                  </>
-                )}
-             </div>
+             <p className="text-sm text-zinc-500 font-medium">هذه الميزة قيد التحصين البرمجي حالياً وستكون متاحة في الإصدار القادم.</p>
+             <Button className="w-full h-14 rounded-2xl bg-white text-black font-black" onClick={() => setIsAudioOpen(false)}>فهمت</Button>
           </div>
         </DialogContent>
       </Dialog>

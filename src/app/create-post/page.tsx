@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { X, Plus, ImageIcon, Loader2, Sparkles } from "lucide-react";
+import { X, Plus, ImageIcon, Loader2, Sparkles, UserCheck } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -114,8 +114,8 @@ function CreatePostContent() {
         <div className="flex flex-col items-center">
            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Unbound OS</span>
            <div className="flex items-center gap-1">
-              <Sparkles className="h-2 w-2 text-primary fill-primary" />
-              <span className="text-[8px] font-black text-primary uppercase">Sovereign Upload</span>
+              <UserCheck className="h-2 w-2 text-primary" />
+              <span className="text-[8px] font-black text-primary uppercase">Human Thought Only</span>
            </div>
         </div>
         <Button 
@@ -179,6 +179,12 @@ function CreatePostContent() {
                        <ImageIcon className="h-5 w-5 group-hover:text-primary" />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isRtl ? "إضافة وسائط" : "Add Media"}</span>
+                 </button>
+                 <button disabled className="flex items-center gap-2 text-zinc-800 cursor-default">
+                    <div className="h-10 w-10 rounded-2xl bg-zinc-900/50 flex items-center justify-center border border-zinc-800/50">
+                       <Sparkles className="h-5 w-5 opacity-20" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">مساعد ذكي (قريباً)</span>
                  </button>
               </div>
             )}

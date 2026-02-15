@@ -1,4 +1,3 @@
-
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -9,15 +8,12 @@ import { UploadProvider } from "@/context/UploadContext";
 import { GlobalUploadBar } from "@/components/layout/GlobalUploadBar";
 import { NotificationHandler } from "@/components/NotificationHandler";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "Unbound - Sovereign OS",
   description: "Independent sovereign digital space.",
   manifest: "/manifest.json",
-  icons: {
-    icon: "/favicon.ico",
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -40,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased bg-black selection:bg-primary/30 overflow-x-hidden`}>
+      <body className={`${inter.variable} font-sans antialiased bg-black selection:bg-primary/30 overflow-x-hidden`}>
         <FirebaseClientProvider>
           <LanguageProvider>
             <UploadProvider>
