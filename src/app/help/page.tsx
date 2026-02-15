@@ -20,7 +20,8 @@ import {
   Bookmark,
   Hash,
   PenTool,
-  CheckCircle2
+  CheckCircle2,
+  Users
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -56,16 +57,16 @@ export default function HelpCenterPage() {
         {
           question: isRtl ? "ما هي مميزات الحصول على علامة التوثيق؟" : "What are the benefits of Verification?",
           answer: isRtl 
-            ? "المواطن الموثق يتمتع بامتيازات نُخبوية تشمل: القدرة على تحميل أي فيديو من المنصة، أولوية الظهور في صفحة الاكتشاف، الوصول الحصري للساحة الصوتية (Voice)، وشارة الهوية الرسمية التي تعزز الثقة." 
-            : "Verified Citizens enjoy elite privileges including: Downloading any video, priority visibility in Discover, exclusive access to the Acoustic Arena (Voice), and the official Rosette badge.",
+            ? "المواطن الموثق يتمتع بامتيازات نُخبوية تشمل: القدرة على تحميل الفيديوهات، تأسيس وقيادة مجتمعات 'اللمة'، أولوية الظهور بفضل ذكاء التأثير، والولوج الحصري للساحة الصوتية." 
+            : "Verified Citizens enjoy elite privileges including: Video downloading, establishing and leading 'Lamma' communities, priority visibility via Impact Intelligence, and exclusive access to the Acoustic Arena.",
           icon: CheckCircle2
         },
         {
-          question: isRtl ? "من يمكنه تحميل الفيديوهات؟" : "Who can download videos?",
+          question: isRtl ? "من يمكنه إنشاء مجموعات في اللمة؟" : "Who can create Lamma groups?",
           answer: isRtl 
-            ? "ميزة تحميل الفيديوهات هي امتياز سيادي مخصص حصرياً للمواطنين الموثقين وللمسؤولين، تقديراً لدورهم في إثراء المحتوى وحماية جهود المبدعين." 
-            : "Video downloading is a sovereign privilege exclusively for verified citizens and admins, honoring their role in enriching content.",
-          icon: Video
+            ? "إن تأسيس مجتمع جديد في 'اللمة' هو مسؤولية سيادية متاحة حصرياً للمواطنين الموثقين والمسؤولين، لضمان قيادة واعية وراقية لهذه المساحات." 
+            : "Establishing a new 'Lamma' community is a sovereign responsibility available exclusively to verified citizens and admins, ensuring conscious leadership for these spaces.",
+          icon: Users
         }
       ]
     },
@@ -75,8 +76,8 @@ export default function HelpCenterPage() {
         {
           question: isRtl ? "كيف يتم ترتيب المنشورات في 'اكتشف'؟" : "How are posts ranked in 'Discover'?",
           answer: isRtl 
-            ? "تعتمد خوارزميتنا السيادية على 'ذكاء التأثير'؛ حيث يتم تحليل جودة التفاعل والاهتمام الحقيقي بالمحتوى، مع إعطاء وزن خاص للمواطنين الموثقين والقنوات الإعلامية لضمان مصداقية الصفحة الرئيسية." 
-            : "Our sovereign algorithm relies on 'Impact Intelligence'; analyzing engagement quality and real interest, while giving special weight to verified citizens and media channels.",
+            ? "تعتمد خوارزميتنا السيادية على 'ذكاء التأثير'؛ حيث يتم تحليل جودة التفاعل والاهتمام الحقيقي بالمحتوى (مثل الحفظ والتعليق)، مع إعطاء وزن خاص للمواطنين الموثقين لضمان مصداقية الصفحة الرئيسية." 
+            : "Our sovereign algorithm relies on 'Impact Intelligence'; analyzing engagement quality and real interest (like saving and commenting), while giving special weight to verified citizens to ensure credibility.",
           icon: Zap
         }
       ]
@@ -90,13 +91,6 @@ export default function HelpCenterPage() {
             ? "لضمان رقي الحوار وإيجازه، حددنا التعليقات بـ 100 حرف والسيرة الذاتية بـ 150 حرفاً. نحن نشجع على الأفكار المركزة والعميقة بعيداً عن الحشو." 
             : "To ensure concise and elite dialogue, comments are limited to 100 chars and Bio to 150 chars. We encourage focused and deep thoughts.",
           icon: PenTool
-        },
-        {
-          question: isRtl ? "ما هو الأرشيف السيادي؟" : "What is the Sovereign Archive?",
-          answer: isRtl 
-            ? "يمكنك حفظ أي منشور للعودة إليه لاحقاً عبر أيقونة 'Bookmark'. المنشورات المحفوظة تظهر في تبويب خاص بملفك الشخصي لا يراه غيرك، مما يمنحك سيادة كاملة على مكتبتك المعرفية." 
-            : "You can save any post for later using the 'Bookmark' icon. Saved posts appear in a private tab on your profile that only you can see.",
-          icon: Bookmark
         }
       ]
     }

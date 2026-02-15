@@ -22,6 +22,12 @@ service cloud.firestore {
       );
     }
 
+    function isVerified() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isVerified', false) == true;
+    }
+
     match /users/{userId} {
       allow read, list: if true;
       allow create: if isSignedIn();
@@ -37,7 +43,6 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read, list: if true;
       allow create: if isSignedIn() && isNotBanned();
-      // السماح بتحديث المنشور للإعجاب والحفظ والتعليق
       allow update: if isAdmin() || (isSignedIn() && isNotBanned());
       allow delete: if isAdmin() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       
@@ -79,7 +84,8 @@ service cloud.firestore {
 
     match /groups/{groupId} {
       allow read, list: if isSignedIn();
-      allow create: if isSignedIn() && isNotBanned();
+      // السماح بإنشاء المجموعة فقط للموثقين أو المسؤولين غير المحظورين
+      allow create: if isNotBanned() && (isAdmin() || isVerified());
       allow update: if isSignedIn() && (request.auth.uid in resource.data.members || isAdmin());
       allow delete: if isAdmin();
       

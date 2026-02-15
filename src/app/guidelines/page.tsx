@@ -18,7 +18,8 @@ import {
   Star,
   CheckCircle2,
   PenTool,
-  ShieldAlert
+  ShieldAlert,
+  Users
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,13 +43,21 @@ export default function CommunityGuidelinesPage() {
       icon: CheckCircle2,
       title: isRtl ? "2. رتبة المواطن الموثق" : "2. Sovereign Verification Status",
       content: isRtl 
-        ? "تُمنح شارة 'الروزيتا' للمواطنين الذين يثبتون التزامهم بقيم المنصة ويقدمون محتوى نوعياً. التوثيق ليس مجرد شكل جمالي، بل هو تفويض سيادي يمنح صاحبه صلاحيات تقنية متقدمة، وأولوية في ترتيب الأفكار، وامتيازات حصرية في إدارة الوسائط."
-        : "The Rosette badge is granted to citizens who prove commitment to platform values. Verification is a sovereign mandate granting advanced technical powers and priority in thought ranking."
+        ? "تُمنح شارة 'الروزيتا' للمواطنين الذين يثبتون التزامهم بقيم المنصة. التوثيق هو تفويض سيادي يمنح صاحبه صلاحيات تقنية متقدمة، تشمل: إنشاء وقيادة مجتمعات اللمة، أولوية التأثير في ترتيب الأفكار، وامتياز التحميل السيادي للوسائط."
+        : "The Rosette badge is granted to citizens who prove commitment. Verification is a sovereign mandate granting advanced powers: Creating and leading Lamma communities, impact priority, and sovereign media downloading."
+    },
+    {
+      id: "communities",
+      icon: Users,
+      title: isRtl ? "3. سيادة المجتمعات (اللمة)" : "3. Lamma Sovereignty",
+      content: isRtl 
+        ? "إن تأسيس مجتمع جديد هو مسؤولية نُخبوية. الموثقون هم وحدهم المخولون ببدء نقاشات 'اللمة' العامة أو الخاصة، وهم مسؤولون عن جودة الحوار داخلها وسلامة بيئتها من أي خروقات للميثاق."
+        : "Establishing a community is an elite responsibility. Only verified citizens are authorized to start 'Lamma' discussions, and they are responsible for the quality and safety of these spaces."
     },
     {
       id: "concise",
       icon: PenTool,
-      title: isRtl ? "3. بروتوكول الإيجاز والوقار" : "3. Concise Communication Protocol",
+      title: isRtl ? "4. بروتوكول الإيجاز والوقار" : "4. Concise Communication Protocol",
       content: isRtl 
         ? "للحفاظ على جودة المحتوى ومنع الحشو، تلتزم المنصة بحدود صارمة للأحرف:\n• التعليقات والردود: 100 حرف كحد أقصى.\n• السيرة الذاتية للمواطن: 150 حرفاً.\nنهدف من خلال ذلك إلى تشجيع لغة فكرية مكثفة وراقية تليق بمجتمعنا."
         : "To maintain content quality and prevent filler, the platform enforces strict character limits:\n• Comments & Replies: Max 100 characters.\n• Citizen Bio: Max 150 characters."
@@ -56,18 +65,10 @@ export default function CommunityGuidelinesPage() {
     {
       id: "safety",
       icon: AlertOctagon,
-      title: isRtl ? "4. السلامة والمحتوى المحظور" : "4. Safety & Prohibited Content",
+      title: isRtl ? "5. السلامة والمحتوى المحظور" : "5. Safety & Prohibited Content",
       content: isRtl 
         ? "يُمنع منعاً باتاً نشر أو ترويج ما يلي: \n• التحريض على العنف أو الإرهاب بكافة أشكاله.\n• خطاب الكراهية القائم على العرق، الدين، أو الانتماء.\n• المحتوى الإباحي أو المخل بالآداب العامة.\n• نشر أخبار زائفة تهدف لزعزعة الأمن العام."
         : "Incitement to violence, hate speech, pornographic content, or spreading fake news is strictly prohibited."
-    },
-    {
-      id: "media",
-      icon: Star,
-      title: isRtl ? "5. معايير القنوات الإعلامية (Pro)" : "5. Media Channel Standards (Pro)",
-      content: isRtl 
-        ? "القنوات الإعلامية الموثقة ملزمة بمعايير الشفافية والمصداقية. يجب ذكر المصادر عند نشر الأخبار العاجلة. الإخلال بهذه المعايير أو استغلال الأولوية لنشر التضليل يؤدي لسحب الرتبة فوراً."
-        : "Verified Media Channels are bound by standards of transparency. Misusing visibility for misinformation leads to immediate rank revocation."
     },
     {
       id: "legal",
