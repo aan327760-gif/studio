@@ -127,15 +127,6 @@ export function AppSidebar() {
 
   const createOptions = [
     { 
-      icon: MessageSquare, 
-      label: isRtl ? "مساحات" : "Spaces", 
-      color: "bg-orange-500",
-      onClick: () => {
-        setIsSheetOpen(false);
-        router.push("/lamma");
-      }
-    },
-    { 
       icon: ImageIcon, 
       label: isRtl ? "الصور" : "Images", 
       color: "bg-green-500",
@@ -201,7 +192,7 @@ export function AppSidebar() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-5 gap-2 px-2">
+                  <div className="grid grid-cols-4 gap-2 px-2">
                     {createOptions.map((opt, index) => (
                       <div key={index} className="flex flex-col items-center gap-3 group cursor-pointer" onClick={opt.onClick}>
                         <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-white transition-all group-active:scale-90 shadow-xl", opt.color)}>
