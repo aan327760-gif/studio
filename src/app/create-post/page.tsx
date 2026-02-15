@@ -174,14 +174,14 @@ function CreatePostContent() {
             {/* شريط معاينة الصور - تم ضبط الاحتواء للهاتف */}
             {localImages.length > 0 && (
               <div className="w-full overflow-hidden mb-6">
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x max-w-full">
                   {localImages.map((img, i) => (
-                    <div key={i} className="relative h-36 w-36 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group snap-center">
+                    <div key={i} className="relative h-32 w-32 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group snap-center">
                       <img src={img} alt="preview" className="w-full h-full object-cover" />
                       <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 hover:bg-red-600 border-none"
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-100 transition-opacity bg-black/60 hover:bg-red-600 border-none"
                         onClick={() => removeImage(i)}
                       >
                         <X className="h-4 w-4" />
@@ -191,10 +191,10 @@ function CreatePostContent() {
                   {localImages.length < 4 && (
                     <button 
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-36 w-36 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors snap-center"
+                      className="h-32 w-32 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors snap-center"
                     >
                       <Plus className="h-6 w-6 text-zinc-500" />
-                      <span className="text-[8px] font-black text-zinc-600 uppercase">Add Image</span>
+                      <span className="text-[8px] font-black text-zinc-600 uppercase">Add</span>
                     </button>
                   )}
                 </div>
@@ -213,7 +213,7 @@ function CreatePostContent() {
             <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleAddImage} />
 
             {videoUrlFromParams && (
-              <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 mb-6">
+              <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 mb-6 w-full">
                 <video src={videoUrlFromParams} className="w-full h-full object-contain" autoPlay muted loop />
               </div>
             )}
