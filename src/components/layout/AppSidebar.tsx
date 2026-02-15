@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, Search } from "lucide-react";
+import { Home, MessageSquare, Plus, Bell, User, Video, ImageIcon, PenLine } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";

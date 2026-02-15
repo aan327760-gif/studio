@@ -15,14 +15,20 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Unbound - Sovereign OS",
-  description: "Independent sovereign digital space.",
+  title: "Unbound OS - Sovereign System",
+  description: "نظام تواصل اجتماعي سيادي ومستقل.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Unbound",
   },
+  applicationName: "Unbound OS",
+  authors: [{ name: "Sovereign Citizen" }],
+  icons: {
+    icon: "/favicon.ico",
+    apple: "https://picsum.photos/seed/unbound/180/180",
+  }
 };
 
 export const viewport: Viewport = {
@@ -40,12 +46,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased bg-black selection:bg-primary/30 overflow-x-hidden">
+      <body className={`${inter.variable} font-sans antialiased bg-black selection:bg-primary/30 overflow-x-hidden`}>
         <FirebaseClientProvider>
           <LanguageProvider>
             <UploadProvider>

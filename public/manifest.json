@@ -1,12 +1,12 @@
-
 {
-  "name": "Unbound OS",
+  "name": "Unbound OS - Sovereign System",
   "short_name": "Unbound",
+  "description": "نظام التواصل السيادي المستقل - مساحة حرة للفكر البشري",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
-  "theme_color": "#1E6FC9",
-  "gcm_sender_id": "103953800507",
+  "theme_color": "#000000",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "https://picsum.photos/seed/unbound/192/192",
@@ -17,7 +17,8 @@
     {
       "src": "https://picsum.photos/seed/unbound/512/512",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
