@@ -8,7 +8,6 @@ import {
   MoreHorizontal, 
   Calendar, 
   MapPin, 
-  CheckCircle2, 
   Loader2,
   Settings,
   ShieldCheck
@@ -25,6 +24,14 @@ import { collection, query, where, limit, doc, setDoc, deleteDoc, serverTimestam
 import { cn } from "@/lib/utils";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
+
+const VerificationBadge = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={cn("fill-[#1DA1F2]", className)} aria-hidden="true">
+    <g>
+      <path d="M22.5 12.5c0-1.58-.8-3.04-2.12-3.88.59-1.58.29-3.38-.98-4.65s-3.07-1.57-4.65-.98c-.84-1.32-2.3-2.12-3.88-2.12s-3.04.8-3.88 2.12c-1.58-.59-3.38-.29-4.65.98s-1.57 3.07-.98 4.65c-1.32.84-2.12 2.3-2.12 3.88s.8 3.04 2.12 3.88c-.59 1.58-.29 3.38.98 4.65s3.07 1.57 4.65.98c.84 1.32 2.3 2.12 3.88 2.12s3.04-.8 3.88-2.12c1.58.59 3.38.29 4.65-.98s1.57-3.07.98-4.65c1.32-.84 2.12-2.3 2.12-3.88zM10.5 16l-3.5-3.5 1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"></path>
+    </g>
+  </svg>
+);
 
 export default function UserProfilePage() {
   const { uid } = useParams();
@@ -87,7 +94,6 @@ export default function UserProfilePage() {
   const isProfileAdmin = profile?.role === "admin" || profile?.email === SUPER_ADMIN_EMAIL;
   const isVisitorAdmin = currentUserProfile?.role === "admin" || currentUser?.email === SUPER_ADMIN_EMAIL;
   
-  // التأكد من ظهور علامة التوثيق للمدير العام دائماً بشكل احترافي
   const showCheckmark = profile?.isVerified || profile?.email === SUPER_ADMIN_EMAIL;
 
   return (
@@ -123,11 +129,7 @@ export default function UserProfilePage() {
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <h2 className="text-2xl font-black tracking-tight">{profile?.displayName}</h2>
-              {showCheckmark && (
-                <div className="flex items-center justify-center bg-[#1DA1F2] rounded-full p-1 shadow-sm">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-white fill-white" strokeWidth={4} />
-                </div>
-              )}
+              {showCheckmark && <VerificationBadge className="h-5 w-5" />}
             </div>
             <div className="flex items-center gap-2">
               <p className="text-zinc-500 text-sm font-medium">@{profile?.email?.split('@')[0] || "user"}</p>

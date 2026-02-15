@@ -26,7 +26,6 @@ import {
   ShieldCheck,
   Flag,
   CheckCircle,
-  CheckCircle2,
   Trash2,
   Users,
   MessageSquare,
@@ -59,6 +58,15 @@ import {
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
+// أيقونة التوثيق المتعرجة (Twitter Style)
+const VerificationBadge = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={cn("fill-[#1DA1F2]", className)} aria-hidden="true">
+    <g>
+      <path d="M22.5 12.5c0-1.58-.8-3.04-2.12-3.88.59-1.58.29-3.38-.98-4.65s-3.07-1.57-4.65-.98c-.84-1.32-2.3-2.12-3.88-2.12s-3.04.8-3.88 2.12c-1.58-.59-3.38-.29-4.65.98s-1.57 3.07-.98 4.65c-1.32.84-2.12 2.3-2.12 3.88s.8 3.04 2.12 3.88c-.59 1.58-.29 3.38.98 4.65s3.07 1.57 4.65.98c.84 1.32 2.3 2.12 3.88 2.12s3.04-.8 3.88-2.12c1.58.59 3.38.29 4.65-.98s1.57-3.07.98-4.65c1.32-.84 2.12-2.3 2.12-3.88zM10.5 16l-3.5-3.5 1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"></path>
+    </g>
+  </svg>
+);
+
 export default function AdminDashboard() {
   const { user, loading: userLoading } = useUser();
   const { isRtl } = useLanguage();
@@ -77,14 +85,12 @@ export default function AdminDashboard() {
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
   const isAdmin = isSuperAdmin || currentUserProfile?.role === "admin";
 
-  // استعلامات البيانات
   const usersQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "users"), limit(100)) : null, [db, isAdmin]);
   const { data: allUsers = [], loading: usersLoading } = useCollection<any>(usersQuery);
   
   const reportsQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isAdmin]);
   const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
 
-  // إحصائيات بيانية تجريبية
   const chartData = [
     { name: 'Sat', activity: 240 },
     { name: 'Sun', activity: 139 },
@@ -392,7 +398,6 @@ export default function AdminDashboard() {
                   u.email?.toLowerCase().includes(searchQuery.toLowerCase())
                 ).map((member: any) => {
                const isBanned = member.isBannedUntil && member.isBannedUntil.toDate() > new Date();
-               // التأكد من توثيق حساب المدير العام في القائمة بشكل احترافي
                const isMemberVerified = member.isVerified || member.email === SUPER_ADMIN_EMAIL;
                
                return (
@@ -405,11 +410,7 @@ export default function AdminDashboard() {
                       <div>
                          <div className="flex items-center gap-1.5">
                             <p className="text-sm font-black">{member.displayName}</p>
-                            {isMemberVerified && (
-                              <div className="flex items-center justify-center bg-[#1DA1F2] rounded-full p-0.5 shadow-sm">
-                                <CheckCircle2 className="h-2.5 w-2.5 text-white fill-white" strokeWidth={4} />
-                              </div>
-                            )}
+                            {isMemberVerified && <VerificationBadge className="h-3.5 w-3.5" />}
                             {member.role === "admin" && member.email !== SUPER_ADMIN_EMAIL && <ShieldCheck className="h-3.5 w-3.5 text-primary fill-primary" />}
                             {isBanned && <Clock className="h-3.5 w-3.5 text-orange-500 animate-pulse" />}
                          </div>
@@ -426,7 +427,7 @@ export default function AdminDashboard() {
                                className={cn("h-10 w-10 transition-colors", isMemberVerified ? "text-[#1DA1F2]" : "text-zinc-800 hover:text-[#1DA1F2]")}
                                onClick={() => handleToggleVerification(member.id, !!member.isVerified)}
                              >
-                               <CheckCircle2 className="h-5 w-5" />
+                               <VerificationBadge className="h-5 w-5" />
                              </Button>
                            )}
                            {isBanned ? (

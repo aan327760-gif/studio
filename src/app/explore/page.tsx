@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Input } from "@/components/ui/input";
-import { Search, Users, Loader2, Flame, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Search, Users, Loader2, Flame, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
@@ -23,6 +23,14 @@ const TRENDING_TOPICS = [
   { tag: "FreedomOfSpeech", posts: "18K", category: "Rights" },
 ];
 
+const VerificationBadge = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={cn("fill-[#1DA1F2]", className)} aria-hidden="true">
+    <g>
+      <path d="M22.5 12.5c0-1.58-.8-3.04-2.12-3.88.59-1.58.29-3.38-.98-4.65s-3.07-1.57-4.65-.98c-.84-1.32-2.3-2.12-3.88-2.12s-3.04.8-3.88 2.12c-1.58-.59-3.38-.29-4.65.98s-1.57 3.07-.98 4.65c-1.32.84-2.12 2.3-2.12 3.88s.8 3.04 2.12 3.88c-.59 1.58-.29 3.38.98 4.65s3.07 1.57 4.65.98c.84 1.32 2.3 2.12 3.88 2.12s3.04-.8 3.88-2.12c1.58.59 3.38.29 4.65-.98s1.57-3.07.98-4.65c1.32-.84 2.12-2.3 2.12-3.88zM10.5 16l-3.5-3.5 1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"></path>
+    </g>
+  </svg>
+);
+
 export default function ExplorePage() {
   const { isRtl } = useLanguage();
   const db = useFirestore();
@@ -30,7 +38,6 @@ export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("users");
 
-  // البحث عن المستخدمين
   const userResultsQuery = useMemoFirebase(() => {
     if (!searchQuery.trim()) return null;
     return query(
@@ -43,7 +50,6 @@ export default function ExplorePage() {
 
   const { data: userResults = [], loading: userLoading } = useCollection<any>(userResultsQuery);
 
-  // البحث عن المنشورات
   const postResultsQuery = useMemoFirebase(() => {
     if (!searchQuery.trim()) return null;
     return query(
@@ -56,7 +62,6 @@ export default function ExplorePage() {
 
   const { data: postResults = [], loading: postLoading } = useCollection<any>(postResultsQuery);
 
-  // جلب المتابعات الحالية للمستخدم
   const followsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(collection(db, "follows"), where("followerId", "==", currentUser.uid));
@@ -141,11 +146,7 @@ export default function ExplorePage() {
                           <div>
                             <div className="flex items-center gap-1">
                               <p className="text-sm font-bold group-hover:text-primary transition-colors">{user.displayName}</p>
-                              {isUserVerified && (
-                                <div className="flex items-center justify-center bg-[#1DA1F2] rounded-full p-0.5 shadow-sm">
-                                  <CheckCircle2 className="h-2.5 w-2.5 text-white fill-white" strokeWidth={4} />
-                                </div>
-                              )}
+                              {isUserVerified && <VerificationBadge className="h-3 w-3" />}
                             </div>
                             <p className="text-[10px] text-zinc-500">@{user.email?.split('@')[0]}</p>
                           </div>

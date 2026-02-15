@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Heart, MessageCircle, MoreHorizontal, Send, X, Trash2, CheckCircle2, Ban, Flag } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Send, X, Trash2, Ban, Flag } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -65,6 +65,14 @@ interface PostCardProps {
     stickers?: any[];
   };
 }
+
+const VerificationBadge = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={cn("fill-[#1DA1F2]", className)} aria-hidden="true">
+    <g>
+      <path d="M22.5 12.5c0-1.58-.8-3.04-2.12-3.88.59-1.58.29-3.38-.98-4.65s-3.07-1.57-4.65-.98c-.84-1.32-2.3-2.12-3.88-2.12s-3.04.8-3.88 2.12c-1.58-.59-3.38-.29-4.65.98s-1.57 3.07-.98 4.65c-1.32.84-2.12 2.3-2.12 3.88s.8 3.04 2.12 3.88c-.59 1.58-.29 3.38.98 4.65s3.07 1.57 4.65.98c.84 1.32 2.3 2.12 3.88 2.12s3.04-.8 3.88-2.12c1.58.59 3.38.29 4.65-.98s1.57-3.07.98-4.65c1.32-.84 2.12-2.3 2.12-3.88zM10.5 16l-3.5-3.5 1.4-1.4 2.1 2.1 5.2-5.2 1.4 1.4-6.6 6.6z"></path>
+    </g>
+  </svg>
+);
 
 export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, time, mediaSettings }: PostCardProps) {
   const { isRtl } = useLanguage();
@@ -171,11 +179,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
               <div className="flex flex-col">
                 <div className="flex items-center gap-1">
                   <h3 className="font-bold text-sm truncate">{author.name}</h3>
-                  {isAuthorVerified && (
-                    <div className="flex items-center justify-center bg-[#1DA1F2] rounded-full p-0.5 ml-0.5">
-                      <CheckCircle2 className="h-2.5 w-2.5 text-white fill-white" strokeWidth={4} />
-                    </div>
-                  )}
+                  {isAuthorVerified && <VerificationBadge className="h-3.5 w-3.5" />}
                 </div>
                 <span className="text-[10px] text-zinc-500">@{author.handle}</span>
               </div>
