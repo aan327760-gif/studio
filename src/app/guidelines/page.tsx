@@ -17,7 +17,8 @@ import {
   MessageSquare,
   Star,
   CheckCircle2,
-  PenTool
+  PenTool,
+  ShieldAlert
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -37,28 +38,28 @@ export default function CommunityGuidelinesPage() {
         : "Unbound believes that digital sovereignty begins with the individual. This charter aims to establish a regulatory framework that ensures freedom without compromising the dignity of others or social stability."
     },
     {
+      id: "verification",
+      icon: CheckCircle2,
+      title: isRtl ? "2. رتبة المواطن الموثق" : "2. Sovereign Verification Status",
+      content: isRtl 
+        ? "تُمنح شارة 'الروزيتا' للمواطنين الذين يثبتون التزامهم بقيم المنصة ويقدمون محتوى نوعياً. التوثيق ليس مجرد شكل جمالي، بل هو تفويض سيادي يمنح صاحبه صلاحيات تقنية متقدمة، وأولوية في ترتيب الأفكار، وامتيازات حصرية في إدارة الوسائط."
+        : "The Rosette badge is granted to citizens who prove commitment to platform values. Verification is a sovereign mandate granting advanced technical powers and priority in thought ranking."
+    },
+    {
       id: "concise",
       icon: PenTool,
-      title: isRtl ? "2. بروتوكول الإيجاز والوقار" : "2. Concise Communication Protocol",
+      title: isRtl ? "3. بروتوكول الإيجاز والوقار" : "3. Concise Communication Protocol",
       content: isRtl 
         ? "للحفاظ على جودة المحتوى ومنع الحشو، تلتزم المنصة بحدود صارمة للأحرف:\n• التعليقات والردود: 100 حرف كحد أقصى.\n• السيرة الذاتية للمواطن: 150 حرفاً.\nنهدف من خلال ذلك إلى تشجيع لغة فكرية مكثفة وراقية تليق بمجتمعنا."
-        : "To maintain content quality and prevent filler, the platform enforces strict character limits:\n• Comments & Replies: Max 100 characters.\n• Citizen Bio: Max 150 characters.\nWe aim to encourage an intense and refined intellectual language."
+        : "To maintain content quality and prevent filler, the platform enforces strict character limits:\n• Comments & Replies: Max 100 characters.\n• Citizen Bio: Max 150 characters."
     },
     {
       id: "safety",
       icon: AlertOctagon,
-      title: isRtl ? "3. السلامة والمحتوى المحظور" : "3. Safety & Prohibited Content",
+      title: isRtl ? "4. السلامة والمحتوى المحظور" : "4. Safety & Prohibited Content",
       content: isRtl 
         ? "يُمنع منعاً باتاً نشر أو ترويج ما يلي: \n• التحريض على العنف أو الإرهاب بكافة أشكاله.\n• خطاب الكراهية القائم على العرق، الدين، أو الانتماء.\n• المحتوى الإباحي أو المخل بالآداب العامة.\n• نشر أخبار زائفة تهدف لزعزعة الأمن العام."
-        : "The following is strictly prohibited: \n• Incitement to violence or terrorism.\n• Hate speech based on race, religion, or affiliation.\n• Pornographic or indecent content.\n• Spreading fake news aimed at destabilizing public security."
-    },
-    {
-      id: "privacy",
-      icon: Lock,
-      title: isRtl ? "4. سيادة البيانات والخصوصية" : "4. Data Sovereignty & Privacy",
-      content: isRtl 
-        ? "نحن نحترم خصوصيتك كحق مقدس. يُمنع 'التشهير' (Doxxing) أو نشر بيانات شخصية للغير دون إذن صريح. كما يُمنع استخدام أدوات التنقيب عن البيانات أو محاولة اختراق حسابات المواطنين الآخرين."
-        : "We respect your privacy as a sacred right. Doxxing or publishing third-party personal data without explicit written permission is prohibited."
+        : "Incitement to violence, hate speech, pornographic content, or spreading fake news is strictly prohibited."
     },
     {
       id: "media",
@@ -66,7 +67,7 @@ export default function CommunityGuidelinesPage() {
       title: isRtl ? "5. معايير القنوات الإعلامية (Pro)" : "5. Media Channel Standards (Pro)",
       content: isRtl 
         ? "القنوات الإعلامية الموثقة ملزمة بمعايير الشفافية والمصداقية. يجب ذكر المصادر عند نشر الأخبار العاجلة. الإخلال بهذه المعايير أو استغلال الأولوية لنشر التضليل يؤدي لسحب الرتبة فوراً."
-        : "Verified Media Channels are bound by standards of transparency and credibility. Sources must be cited. Misusing visibility for misinformation leads to immediate rank revocation."
+        : "Verified Media Channels are bound by standards of transparency. Misusing visibility for misinformation leads to immediate rank revocation."
     },
     {
       id: "legal",
@@ -74,7 +75,7 @@ export default function CommunityGuidelinesPage() {
       title: isRtl ? "6. الامتثال القانوني والإقليمي" : "6. Legal & Regional Compliance",
       content: isRtl 
         ? "تخضع المنصة وكافة النزاعات الناشئة عنها لولاية القضاء الجزائري. نحن نلتزم بالاتفاقية العربية لمكافحة جرائم تقنية المعلومات. أي محتوى ينتهك السيادة الوطنية للدول سيتم التعامل معه كخرق جسيم للميثاق."
-        : "The platform and all disputes arising from it are subject to Algerian jurisdiction. We adhere to the Arab Convention on Combating Information Technology Crimes."
+        : "The platform and all disputes are subject to Algerian jurisdiction and the Arab Convention on Combating IT Crimes."
     }
   ];
 
@@ -131,7 +132,7 @@ export default function CommunityGuidelinesPage() {
            <p className="text-sm text-zinc-500 font-bold max-w-lg mx-auto leading-relaxed">
               {isRtl 
                 ? "باستخدامك لمنصة بلا قيود، أنت تقر بأنك قرأت وفهمت وتوافق على الالتزام بهذا الميثاق وكافة التبعات القانونية المترتبة على مخالفته." 
-                : "By using Unbound, you acknowledge that you have read, understood, and agree to be bound by this charter and all legal consequences of its violation."}
+                : "By using Unbound, you acknowledge that you have read, understood, and agree to be bound by this charter."}
            </p>
            <div className="flex flex-col items-center gap-6">
               <div className="h-[1px] w-32 bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />

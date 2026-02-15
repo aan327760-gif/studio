@@ -19,7 +19,8 @@ import {
   Lock,
   Bookmark,
   Hash,
-  PenTool
+  PenTool,
+  CheckCircle2
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -50,21 +51,33 @@ export default function HelpCenterPage() {
       ]
     },
     {
+      title: isRtl ? "امتيازات المواطن الموثق (الروزيتا)" : "Verified Citizen Privileges",
+      faqs: [
+        {
+          question: isRtl ? "ما هي مميزات الحصول على علامة التوثيق؟" : "What are the benefits of Verification?",
+          answer: isRtl 
+            ? "المواطن الموثق يتمتع بامتيازات نُخبوية تشمل: القدرة على تحميل أي فيديو من المنصة، أولوية الظهور في صفحة الاكتشاف، الوصول الحصري للساحة الصوتية (Voice)، وشارة الهوية الرسمية التي تعزز الثقة." 
+            : "Verified Citizens enjoy elite privileges including: Downloading any video, priority visibility in Discover, exclusive access to the Acoustic Arena (Voice), and the official Rosette badge.",
+          icon: CheckCircle2
+        },
+        {
+          question: isRtl ? "من يمكنه تحميل الفيديوهات؟" : "Who can download videos?",
+          answer: isRtl 
+            ? "ميزة تحميل الفيديوهات هي امتياز سيادي مخصص حصرياً للمواطنين الموثقين وللمسؤولين، تقديراً لدورهم في إثراء المحتوى وحماية جهود المبدعين." 
+            : "Video downloading is a sovereign privilege exclusively for verified citizens and admins, honoring their role in enriching content.",
+          icon: Video
+        }
+      ]
+    },
+    {
       title: isRtl ? "الخوارزمية والترتيب" : "Algorithm & Ranking",
       faqs: [
         {
           question: isRtl ? "كيف يتم ترتيب المنشورات في 'اكتشف'؟" : "How are posts ranked in 'Discover'?",
           answer: isRtl 
-            ? "تعتمد خوارزميتنا السيادية على 'ذكاء التأثير'؛ حيث تعطى الأولوية للمحتوى النوعي الذي يلهم المواطنين للتفاعل معه بعمق أو الاحتفاظ به كمرجع، مع مراعاة حداثة الفكرة وتوقيتها." 
-            : "Our sovereign algorithm relies on 'Impact Intelligence'; priority is given to quality content that inspires citizens to engage deeply or keep it as a reference, while considering the recency and timing of the thought.",
+            ? "تعتمد خوارزميتنا السيادية على 'ذكاء التأثير'؛ حيث يتم تحليل جودة التفاعل والاهتمام الحقيقي بالمحتوى، مع إعطاء وزن خاص للمواطنين الموثقين والقنوات الإعلامية لضمان مصداقية الصفحة الرئيسية." 
+            : "Our sovereign algorithm relies on 'Impact Intelligence'; analyzing engagement quality and real interest, while giving special weight to verified citizens and media channels.",
           icon: Zap
-        },
-        {
-          question: isRtl ? "هل يمكن لمواطن غير موثق تصدر الصفحة؟" : "Can unverified citizens trend?",
-          answer: isRtl 
-            ? "نعم، بالتأكيد! القوة الحقيقية في منصتنا هي 'قوة الفكرة'؛ فالمحتوى المؤثر الذي يحظى بنقاشات حادة أو عمليات حفظ واسعة يمكنه تجاوز أي رتبة أخرى والتصدر فوراً." 
-            : "Yes! The real power on our platform is the 'Power of the Thought'; impactful content that garners intense discussions or widespread saves can surpass any other rank and trend immediately.",
-          icon: Hash
         }
       ]
     },
@@ -84,13 +97,6 @@ export default function HelpCenterPage() {
             ? "يمكنك حفظ أي منشور للعودة إليه لاحقاً عبر أيقونة 'Bookmark'. المنشورات المحفوظة تظهر في تبويب خاص بملفك الشخصي لا يراه غيرك، مما يمنحك سيادة كاملة على مكتبتك المعرفية." 
             : "You can save any post for later using the 'Bookmark' icon. Saved posts appear in a private tab on your profile that only you can see.",
           icon: Bookmark
-        },
-        {
-          question: isRtl ? "من يمكنه تحميل الفيديوهات؟" : "Who can download videos?",
-          answer: isRtl 
-            ? "ميزة تحميل الفيديوهات هي امتياز سيادي مخصص حصرياً للمواطنين الموثقين وللمسؤولين، لضمان حماية جهود المبدعين وتقدير النخبة في المجتمع." 
-            : "Video downloading is a sovereign privilege exclusively for verified citizens and admins, ensuring creators' protection and elite appreciation in the community.",
-          icon: Video
         }
       ]
     }
