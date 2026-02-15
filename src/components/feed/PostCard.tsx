@@ -14,13 +14,18 @@ import {
   X,
   Loader2,
   Reply,
-  CornerDownLeft
+  CornerDownLeft,
+  ThumbsUp,
+  ThumbsDown,
+  Info,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
-import { useState, useRef, memo } from "react";
+import { useState, useRef, memo, useMemo } from "react";
 import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { 
   doc, 
@@ -94,6 +99,7 @@ export const PostCard = memo(({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [sortType, setSortType] = useState<'top' | 'latest'>('top');
 
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
@@ -231,30 +237,63 @@ export const PostCard = memo(({
                   <span className="text-xs font-black text-zinc-700">{commentsCount || 0}</span>
                 </div>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[85vh] bg-zinc-950 border-zinc-900 rounded-t-[3rem] p-0 flex flex-col outline-none shadow-2xl">
-                <SheetHeader className="p-4 border-b border-zinc-900">
+              <SheetContent side="bottom" className="h-[95vh] bg-black border-zinc-900 rounded-t-[1.5rem] p-0 flex flex-col outline-none shadow-2xl">
+                <SheetHeader className="p-4 border-b border-zinc-900/50">
                   <div className="flex items-center justify-between">
-                    <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-500 rounded-full hover:bg-zinc-900"><X className="h-5 w-5" /></Button></SheetClose>
-                    <SheetTitle className="text-white font-black text-lg uppercase tracking-widest">{isRtl ? "النقاش السيادي" : "Sovereign Dialogue"}</SheetTitle>
-                    <div className="w-10" />
+                    <div className="flex items-center gap-4">
+                      <SheetClose asChild><Button variant="ghost" size="icon" className="text-white hover:bg-zinc-900 rounded-full"><X className="h-6 w-6" /></Button></SheetClose>
+                      <SheetTitle className="text-white font-black text-lg">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
+                      <Button variant="ghost" size="icon" className="text-zinc-400 h-8 w-8"><Info className="h-5 w-5" /></Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button 
+                      onClick={() => setSortType('top')}
+                      className={cn(
+                        "h-8 px-4 rounded-lg text-xs font-bold transition-all",
+                        sortType === 'top' ? "bg-white text-black" : "bg-zinc-900 text-white hover:bg-zinc-800"
+                      )}
+                    >
+                      {isRtl ? "الأهم" : "Top"}
+                    </Button>
+                    <Button 
+                      onClick={() => setSortType('latest')}
+                      className={cn(
+                        "h-8 px-4 rounded-lg text-xs font-bold transition-all",
+                        sortType === 'latest' ? "bg-white text-black" : "bg-zinc-900 text-white hover:bg-zinc-800"
+                      )}
+                    >
+                      {isRtl ? "أحدث التعليقات" : "Newest"}
+                    </Button>
                   </div>
                 </SheetHeader>
-                <CommentsList postId={id} isRtl={isRtl} onReply={(c: any) => setReplyTo(c)} />
-                <div className="p-4 pb-8 border-t border-zinc-900 bg-black/95 backdrop-blur-xl">
+
+                <CommentsList postId={id} isRtl={isRtl} sortType={sortType} onReply={(c: any) => setReplyTo(c)} />
+
+                <div className="p-3 pb-8 border-t border-zinc-900 bg-black sticky bottom-0">
                   {replyTo && (
-                    <div className="flex items-center justify-between bg-primary/10 p-2 px-4 rounded-t-xl border-x border-t border-primary/20 animate-in slide-in-from-bottom-2">
+                    <div className="flex items-center justify-between bg-zinc-900 p-2 px-4 rounded-t-xl border-x border-t border-zinc-800 animate-in slide-in-from-bottom-2">
                       <div className="flex items-center gap-2">
-                        <CornerDownLeft className="h-3 w-3 text-primary" />
-                        <span className="text-[10px] font-bold text-primary uppercase">الرد على @{replyTo.handle}</span>
+                        <CornerDownLeft className="h-3 w-3 text-zinc-400" />
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase">الرد على @{replyTo.handle}</span>
                       </div>
                       <button onClick={() => setReplyTo(null)}><X className="h-3 w-3 text-zinc-500" /></button>
                     </div>
                   )}
                   <div className="flex gap-3 items-center">
-                    <Avatar className="h-10 w-10 border border-zinc-800"><AvatarImage src={user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
-                    <div className="flex-1 flex items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800 shadow-inner">
-                      <Input placeholder={isRtl ? "أضف رؤيتك..." : "Add your insight..."} className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" value={newComment} onChange={(e) => setNewComment(e.target.value)} maxLength={100} onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
-                      <Button size="icon" className="rounded-full h-10 w-10 bg-primary shadow-lg" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
+                    <Avatar className="h-9 w-9"><AvatarImage src={user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
+                    <div className="flex-1 flex items-center bg-zinc-900 rounded-full pl-4 pr-1 py-1">
+                      <Input 
+                        placeholder={isRtl ? "إضافة تعليق..." : "Add a comment..."} 
+                        className="bg-transparent border-none h-8 text-sm focus-visible:ring-0 shadow-none p-0 placeholder:text-zinc-500" 
+                        value={newComment} 
+                        onChange={(e) => setNewComment(e.target.value)} 
+                        maxLength={100} 
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} 
+                      />
+                      <Button size="icon" className="rounded-full h-8 w-8 bg-transparent hover:bg-zinc-800 text-white" onClick={handleAddComment} disabled={!newComment.trim()}>
+                        <Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -276,17 +315,32 @@ export const PostCard = memo(({
 
 PostCard.displayName = "PostCard";
 
-function CommentsList({ postId, isRtl, onReply }: { postId: string, isRtl: boolean, onReply: (c: any) => void }) {
+function CommentsList({ postId, isRtl, sortType, onReply }: { postId: string, isRtl: boolean, sortType: 'top' | 'latest', onReply: (c: any) => void }) {
   const db = useFirestore();
   const { user } = useUser();
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
-  const commentsQuery = useMemoFirebase(() => query(collection(db, "posts", postId, "comments"), orderBy("createdAt", "desc"), limit(50)), [db, postId]);
-  const { data: comments = [] } = useCollection<any>(commentsQuery);
+  const commentsQuery = useMemoFirebase(() => {
+    const orderField = sortType === 'top' ? 'likesCount' : 'createdAt';
+    return query(
+      collection(db, "posts", postId, "comments"), 
+      orderBy(orderField, "desc"), 
+      limit(100)
+    );
+  }, [db, postId, sortType]);
+
+  const { data: rawComments = [] } = useCollection<any>(commentsQuery);
+
+  // تنظيم الردود تحت التعليقات الأساسية
+  const organizedComments = useMemo(() => {
+    const main = rawComments.filter(c => !c.parentId);
+    const replies = rawComments.filter(c => c.parentId);
+    return { main, replies };
+  }, [rawComments]);
 
   const handleLikeComment = (commentId: string, likedBy: string[]) => {
     if (!user) return;
-    const isLiked = likedBy.includes(user.uid);
+    const isLiked = (likedBy || []).includes(user.uid);
     const commentRef = doc(db, "posts", postId, "comments", commentId);
     updateDoc(commentRef, isLiked ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) } : { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
   };
@@ -298,39 +352,128 @@ function CommentsList({ postId, isRtl, onReply }: { postId: string, isRtl: boole
     }
   };
 
+  const formatTime = (createdAt: any) => {
+    if (!createdAt) return "";
+    const date = createdAt.toDate ? createdAt.toDate() : new Date();
+    const diff = (new Date().getTime() - date.getTime()) / 1000;
+    if (diff < 60) return isRtl ? "الآن" : "Just now";
+    if (diff < 3600) return `${Math.floor(diff/60)} ${isRtl ? "دقيقة" : "m"}`;
+    if (diff < 86400) return `${Math.floor(diff/3600)} ${isRtl ? "ساعة" : "h"}`;
+    return date.toLocaleDateString();
+  };
+
   return (
-    <ScrollArea className="flex-1 p-4 pb-32">
-      {comments.length > 0 ? comments.map((comment: any) => (
-        <div key={comment.id} className={cn("flex gap-4 mb-6 group animate-in fade-in", comment.parentId && "ml-10 border-l-2 border-zinc-900 pl-4")}>
-          <Avatar className="h-9 w-9 border border-zinc-900 shrink-0"><AvatarImage src={comment.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
-          <div className="flex-1 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black text-zinc-400 uppercase tracking-tighter">@{comment.authorHandle}</span>
-                {comment.authorId === SUPER_ADMIN_EMAIL && <VerificationBadge className="h-3 w-3" />}
+    <ScrollArea className="flex-1 px-4 py-2">
+      {organizedComments.main.length > 0 ? organizedComments.main.map((comment: any) => (
+        <div key={comment.id} className="mb-6 animate-in fade-in group">
+          <div className="flex gap-3">
+            <Avatar className="h-9 w-9 shrink-0"><AvatarImage src={comment.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[11px] font-bold text-zinc-400">@{comment.authorHandle}</span>
+                  <span className="text-[10px] text-zinc-600">• {formatTime(comment.createdAt)}</span>
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                   <MoreHorizontal className="h-4 w-4 text-zinc-600" />
+                </button>
               </div>
-              <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <p className="text-[14px] text-zinc-100 leading-relaxed mb-2">{comment.text}</p>
+              
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => handleLikeComment(comment.id, comment.likedBy)} className="text-zinc-400 hover:text-white transition-all active:scale-125">
+                    <ThumbsUp className={cn("h-4 w-4", (comment.likedBy || []).includes(user?.uid) && "fill-white text-white")} />
+                  </button>
+                  <span className="text-[11px] font-bold text-zinc-500">{comment.likesCount || 0}</span>
+                  <button className="text-zinc-400 hover:text-white transition-all ml-2">
+                    <ThumbsDown className="h-4 w-4" />
+                  </button>
+                </div>
+                <button onClick={() => onReply({ id: comment.id, handle: comment.authorHandle })} className="text-zinc-400 hover:text-white">
+                  <MessageCircle className="h-4 w-4" />
+                </button>
                 {(isSuper || user?.uid === comment.authorId) && (
-                  <button onClick={() => handleDeleteComment(comment.id)} className="text-zinc-700 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => handleDeleteComment(comment.id)} className="text-zinc-700 hover:text-red-500 ml-auto">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 )}
               </div>
-            </div>
-            <p className="text-[14px] text-zinc-200 leading-relaxed font-medium">{comment.text}</p>
-            <div className="flex items-center gap-6 pt-1">
-              <button onClick={() => handleLikeComment(comment.id, comment.likedBy || [])} className={cn("flex items-center gap-1.5 text-[10px] font-black uppercase transition-colors", (comment.likedBy || []).includes(user?.uid) ? "text-red-500" : "text-zinc-600 hover:text-zinc-400")}>
-                <Heart className={cn("h-3 w-3", (comment.likedBy || []).includes(user?.uid) && "fill-red-500")} />
-                {comment.likesCount || 0}
-              </button>
-              <button onClick={() => onReply({ id: comment.id, handle: comment.authorHandle })} className="flex items-center gap-1.5 text-[10px] font-black text-zinc-600 uppercase hover:text-primary transition-colors">
-                <Reply className="h-3 w-3" />
-                {isRtl ? "رد" : "Reply"}
-              </button>
+
+              {/* نظام الردود المتداخلة (YouTube Style) */}
+              <ReplyThread 
+                commentId={comment.id} 
+                allReplies={organizedComments.replies} 
+                isRtl={isRtl} 
+                onReply={onReply} 
+                onLike={handleLikeComment} 
+                onDelete={handleDeleteComment}
+                formatTime={formatTime}
+                user={user}
+                isSuper={isSuper}
+              />
             </div>
           </div>
         </div>
       )) : (
-        <div className="py-20 text-center opacity-20"><MessageCircle className="h-12 w-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا يوجد نقاش بعد" : "No dialogue yet"}</p></div>
+        <div className="py-20 text-center opacity-20"><MessageCircle className="h-12 w-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا توجد نقاشات بعد" : "No comments yet"}</p></div>
       )}
     </ScrollArea>
+  );
+}
+
+function ReplyThread({ commentId, allReplies, isRtl, onReply, onLike, onDelete, formatTime, user, isSuper }: any) {
+  const [showReplies, setShowReplies] = useState(false);
+  const replies = allReplies.filter((r: any) => r.parentId === commentId);
+
+  if (replies.length === 0) return null;
+
+  return (
+    <div className="mt-2">
+      {!showReplies ? (
+        <button 
+          onClick={() => setShowReplies(true)}
+          className="flex items-center gap-2 text-primary font-bold text-[12px] hover:underline"
+        >
+          <ChevronRight className={cn("h-4 w-4", isRtl ? "rotate-180" : "", showReplies && "rotate-90")} />
+          {replies.length} {isRtl ? "ردود" : "replies"}
+        </button>
+      ) : (
+        <div className={cn("mt-4 space-y-4 relative", isRtl ? "mr-2 pr-4 border-r border-zinc-800" : "ml-2 pl-4 border-l border-zinc-800")}>
+          {replies.map((reply: any) => (
+            <div key={reply.id} className="group">
+              <div className="flex gap-3">
+                <Avatar className="h-6 w-6"><AvatarImage src={reply.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[10px] font-bold text-zinc-400">@{reply.authorHandle}</span>
+                    <span className="text-[9px] text-zinc-600">• {formatTime(reply.createdAt)}</span>
+                  </div>
+                  <p className="text-[13px] text-zinc-200 leading-relaxed mb-2">{reply.text}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => onLike(reply.id, reply.likedBy)} className="text-zinc-400 active:scale-125">
+                        <ThumbsUp className={cn("h-3.5 w-3.5", (reply.likedBy || []).includes(user?.uid) && "fill-white text-white")} />
+                      </button>
+                      <span className="text-[10px] text-zinc-500">{reply.likesCount || 0}</span>
+                    </div>
+                    <button onClick={() => onReply({ id: reply.id, handle: reply.authorHandle })} className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase">{isRtl ? "رد" : "Reply"}</button>
+                    {(isSuper || user?.uid === reply.authorId) && (
+                      <button onClick={() => onDelete(reply.id)} className="text-zinc-800 hover:text-red-500"><Trash2 className="h-3 w-3" /></button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          <button 
+            onClick={() => setShowReplies(false)}
+            className="text-[11px] font-bold text-zinc-500 hover:text-white block pt-2"
+          >
+            {isRtl ? "إخفاء الردود" : "Hide replies"}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
