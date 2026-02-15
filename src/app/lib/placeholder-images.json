@@ -2,6 +2,54 @@
 {
   "placeholderImages": [
     {
+      "id": "sticker-unbound-sovereign",
+      "description": "Sovereign Unbound Seal",
+      "imageUrl": "https://picsum.photos/seed/unbound1/200/200",
+      "imageHint": "sovereign seal"
+    },
+    {
+      "id": "sticker-unbound-free",
+      "description": "Digital Freedom - Break Chains",
+      "imageUrl": "https://picsum.photos/seed/unbound2/200/200",
+      "imageHint": "broken chain"
+    },
+    {
+      "id": "sticker-unbound-privacy",
+      "description": "Privacy Guard Shield",
+      "imageUrl": "https://picsum.photos/seed/unbound3/200/200",
+      "imageHint": "encryption shield"
+    },
+    {
+      "id": "sticker-unbound-future",
+      "description": "Future of Sovereign Tech",
+      "imageUrl": "https://picsum.photos/seed/unbound4/200/200",
+      "imageHint": "abstract microchip"
+    },
+    {
+      "id": "sticker-unbound-unity",
+      "description": "Sovereign Community Unity",
+      "imageUrl": "https://picsum.photos/seed/unbound5/200/200",
+      "imageHint": "connecting hands"
+    },
+    {
+      "id": "sticker-dz-flag",
+      "description": "Algeria National Flag",
+      "imageUrl": "https://picsum.photos/seed/algeria1/200/200",
+      "imageHint": "algerian flag"
+    },
+    {
+      "id": "sticker-dz-monument",
+      "description": "Martyrs Memorial - Maqam Echahid",
+      "imageUrl": "https://picsum.photos/seed/algeria2/200/200",
+      "imageHint": "martyrs monument"
+    },
+    {
+      "id": "sticker-dz-culture",
+      "description": "Algerian Heritage Pattern",
+      "imageUrl": "https://picsum.photos/seed/algeria3/200/200",
+      "imageHint": "algerian pattern"
+    },
+    {
       "id": "sticker-sloth",
       "description": "Cute sloth sticker",
       "imageUrl": "https://picsum.photos/seed/sloth1/200/200",
