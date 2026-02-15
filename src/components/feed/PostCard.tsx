@@ -63,6 +63,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { VerificationBadge } from "@/components/ui/verification-badge";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 interface PostCardProps {
   id: string;
@@ -122,35 +124,44 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     return () => unsubscribe();
   }, [id, db, user]);
 
-  const handleLike = async (e: React.MouseEvent) => {
+  const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id || isBanned) return;
     const postRef = doc(db, "posts", id);
-    if (isLiked) {
-      updateDoc(postRef, { likedBy: arrayRemove(user.uid) });
-    } else {
-      updateDoc(postRef, { likedBy: arrayUnion(user.uid) });
-      
-      if (author?.id !== user.uid && author?.uid !== user.uid) {
-        addDoc(collection(db, "notifications"), {
-          userId: author?.id || author?.uid,
-          type: "like",
-          fromUserId: user.uid,
-          fromUserName: currentUserProfile?.displayName || user.displayName,
-          fromUserAvatar: currentUserProfile?.photoURL || user.photoURL,
-          postId: id,
-          message: isRtl ? "أعجب بمنشورك" : "liked your post",
-          read: false,
-          createdAt: serverTimestamp()
-        });
-      }
+    
+    const updateData = isLiked 
+      ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) }
+      : { likedBy: arrayUnion(user.uid), likesCount: increment(1) };
+
+    updateDoc(postRef, updateData).catch(async (serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: postRef.path,
+        operation: 'update',
+        requestResourceData: updateData,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    });
+
+    if (!isLiked && author?.uid !== user.uid) {
+      const notifData = {
+        userId: author?.uid || author?.id,
+        type: "like",
+        fromUserId: user.uid,
+        fromUserName: currentUserProfile?.displayName || user.displayName,
+        fromUserAvatar: currentUserProfile?.photoURL || user.photoURL,
+        postId: id,
+        message: isRtl ? "أعجب بمنشورك" : "liked your post",
+        read: false,
+        createdAt: serverTimestamp()
+      };
+      addDoc(collection(db, "notifications"), notifData).catch(() => {});
     }
   };
 
-  const handleAddComment = async () => {
+  const handleAddComment = () => {
     if (isBanned || !newComment.trim() || !user || !id || !allowComments) return;
     
-    await addDoc(collection(db, "posts", id, "comments"), {
+    const commentData = {
       authorId: user.uid,
       authorName: currentUserProfile?.displayName || user.displayName || "User",
       authorAvatar: currentUserProfile?.photoURL || user.photoURL || "",
@@ -159,11 +170,21 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       createdAt: serverTimestamp(),
       likesCount: 0,
       likedBy: []
+    };
+
+    const commentsRef = collection(db, "posts", id, "comments");
+    addDoc(commentsRef, commentData).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: commentsRef.path,
+        operation: 'create',
+        requestResourceData: commentData,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
     });
 
-    if (author?.id !== user.uid && author?.uid !== user.uid) {
+    if (author?.uid !== user.uid) {
       addDoc(collection(db, "notifications"), {
-        userId: author?.id || author?.uid,
+        userId: author?.uid || author?.id,
         type: "comment",
         fromUserId: user.uid,
         fromUserName: currentUserProfile?.displayName || user.displayName,
@@ -172,62 +193,66 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
         message: isRtl ? "علق على منشورك" : "commented on your post",
         read: false,
         createdAt: serverTimestamp()
-      });
+      }).catch(() => {});
     }
 
     setNewComment("");
   };
 
-  const handleCommentLike = async (commentId: string, likedBy: string[] = []) => {
+  const handleCommentLike = (commentId: string, likedBy: string[] = []) => {
     if (!user || !id || isBanned) return;
     const commentRef = doc(db, "posts", id, "comments", commentId);
     const isCurrentlyLiked = likedBy.includes(user.uid);
 
-    if (isCurrentlyLiked) {
-      updateDoc(commentRef, { 
-        likedBy: arrayRemove(user.uid),
-        likesCount: increment(-1)
-      });
-    } else {
-      updateDoc(commentRef, { 
-        likedBy: arrayUnion(user.uid),
-        likesCount: increment(1)
-      });
-    }
-  };
+    const updateData = isCurrentlyLiked
+      ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) }
+      : { likedBy: arrayUnion(user.uid), likesCount: increment(1) };
 
-  const handleTranslateClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    toast({
-      title: isRtl ? "الترجمة السيادية (قريباً)" : "Sovereign Translate (Soon)",
-      description: isRtl ? "هذه الميزة ستتوفر في التحديث القادم لكسر الحواجز اللغوية." : "Coming in the next update.",
+    updateDoc(commentRef, updateData).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: commentRef.path,
+        operation: 'update',
+        requestResourceData: updateData,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
     });
   };
 
-  const handleReport = async (e: React.MouseEvent) => {
+  const handleReport = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id) return;
-    try {
-      await addDoc(collection(db, "reports"), {
-        targetId: id,
-        targetType: "post",
-        reason: isRtl ? "محتوى مخالف" : "Inappropriate content",
-        reportedBy: user.uid,
-        status: "pending",
-        createdAt: serverTimestamp()
-      });
+    const reportData = {
+      targetId: id,
+      targetType: "post",
+      reason: isRtl ? "محتوى مخالف" : "Inappropriate content",
+      reportedBy: user.uid,
+      status: "pending",
+      createdAt: serverTimestamp()
+    };
+    addDoc(collection(db, "reports"), reportData).then(() => {
       toast({ title: isRtl ? "تم إرسال البلاغ" : "Report sent" });
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error" });
-    }
+    }).catch(async (err) => {
+      const permissionError = new FirestorePermissionError({
+        path: 'reports',
+        operation: 'create',
+        requestResourceData: reportData,
+      } satisfies SecurityRuleContext);
+      errorEmitter.emit('permission-error', permissionError);
+    });
   };
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAdmin || !id) return;
     if (confirm(isRtl ? "حذف هذا المنشور؟" : "Delete this insight?")) {
-      await deleteDoc(doc(db, "posts", id));
-      toast({ title: "Deleted" });
+      const postRef = doc(db, "posts", id);
+      deleteDoc(postRef).catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: postRef.path,
+          operation: 'delete',
+        } satisfies SecurityRuleContext);
+        errorEmitter.emit('permission-error', permissionError);
+      });
     }
   };
 
@@ -317,10 +342,13 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
             variant="ghost" 
             size="sm" 
             className="h-8 px-3 bg-zinc-900/50 text-zinc-400 hover:text-primary rounded-xl font-black text-[9px] uppercase tracking-widest gap-2.5 transition-all"
-            onClick={handleTranslateClick}
+            onClick={(e) => {
+              e.stopPropagation();
+              toast({ title: isRtl ? "الترجمة قريباً" : "Translate Soon" });
+            }}
           >
             <Languages className="h-3.5 w-3.5" />
-            {isRtl ? "الترجمة السيادية (قريباً)" : "Sovereign Translate (Soon)"}
+            {isRtl ? "الترجمة السيادية" : "Sovereign Translate"}
           </Button>
         </div>
 
@@ -364,34 +392,6 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
               ) : (
                 <div className="relative">
                   <img src={image} alt="Media" className={cn("w-full h-auto max-h-[600px] object-cover transition-transform duration-700 group-hover:scale-105", mediaSettings?.filter || "filter-none")} />
-                  
-                  {mediaSettings && (
-                    <div className="absolute inset-0 pointer-events-none select-none">
-                      {mediaSettings.textOverlay && (
-                        <div 
-                          className={cn("absolute z-10 transition-transform", mediaSettings.textEffect)}
-                          style={{ left: `${mediaSettings.textX}%`, top: `${mediaSettings.textY}%`, transform: 'translate(-50%, -50%)' }}
-                        >
-                          <span className={cn(
-                            "text-xl md:text-2xl font-black px-4 py-2 rounded-xl text-center block drop-shadow-2xl",
-                            mediaSettings.textColor || "text-white",
-                            mediaSettings.textBg ? "bg-black/60 backdrop-blur-md border border-white/10" : ""
-                          )}>
-                            {mediaSettings.textOverlay}
-                          </span>
-                        </div>
-                      )}
-                      {mediaSettings.stickers?.map((s: any) => (
-                        <div 
-                          key={s.id}
-                          className="absolute z-10"
-                          style={{ left: `${s.x}%`, top: `${s.y}%`, transform: `translate(-50%, -50%) scale(${s.scale}) rotate(${s.rotation}deg)` }}
-                        >
-                          <img src={s.imageUrl} alt="Sticker" className="w-20 h-20 md:w-24 md:h-24 object-contain drop-shadow-2xl" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
                 </div>
               )}
