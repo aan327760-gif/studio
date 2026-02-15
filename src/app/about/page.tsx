@@ -41,7 +41,7 @@ export default function AboutPage() {
       icon: Zap,
       title: isRtl ? "الابتكار المستقل" : "Independent Innovation",
       desc: isRtl 
-        ? "تطوير حلول تقنية وطنية قادرة على المنافسة عالمياً وبناء مستقبل رقمي واعد." 
+        ? "تطوير حلول تقنية وطنية قادرة على المنابت عالمياً وبناء مستقبل رقمي واعد." 
         : "Developing national technical solutions capable of global competition and building a promising digital future."
     }
   ];
