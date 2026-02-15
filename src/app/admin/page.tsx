@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -32,7 +33,9 @@ import {
   Lock,
   Globe,
   ExternalLink,
-  Zap
+  Zap,
+  MoreVertical,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -124,6 +127,11 @@ export default function AdminDashboard() {
     toast({ title: isRtl ? "تم تحديث التوثيق" : "Verification Updated" });
   };
 
+  const handleTogglePro = async (userId: string, current: boolean) => {
+    await updateDoc(doc(db, "users", userId), { isPro: !current });
+    toast({ title: isRtl ? "تم تحديث رتبة الإعلام" : "Media Status Updated" });
+  };
+
   if (userLoading) {
     return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
   }
@@ -192,6 +200,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex gap-2">
                        <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", member.isVerified ? "bg-blue-500/10 text-blue-500" : "bg-zinc-900 text-zinc-700")} onClick={() => handleToggleVerify(member.id, member.isVerified)}><ShieldCheck className="h-4 w-4" /></Button>
+                       <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", member.isPro ? "bg-yellow-500/10 text-yellow-500" : "bg-zinc-900 text-zinc-700")} onClick={() => handleTogglePro(member.id, member.isPro)}><Star className="h-4 w-4" /></Button>
                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-zinc-900 text-zinc-700 hover:text-red-500" onClick={() => {
                           const banUntil = new Date(); banUntil.setDate(banUntil.getDate() + 7);
                           updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });

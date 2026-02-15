@@ -17,7 +17,7 @@ export default function Home() {
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
-  // خوارزمية اكتشاف سيادية
+  // خوارزمية اكتشاف سيادية بحتة (بدون AI)
   const discoverPostsQuery = useMemoFirebase(() => {
     return query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(100));
   }, [db]);
@@ -30,10 +30,10 @@ export default function Home() {
       const getScore = (post: any) => {
         let score = 0;
         const author = post.author || {};
-        // وزن رتبة المواطن
+        // وزن رتبة المواطن السيادي
         if (author.isPro) score += 1000;
         if (author.isVerified || author.role === 'admin') score += 500;
-        // وزن التفاعل
+        // وزن التفاعل البشري الحقيقي
         score += (post.likesCount || 0) * 10;
         score += (post.commentsCount || 0) * 15; 
         score += (post.savesCount || 0) * 20;    
@@ -47,7 +47,7 @@ export default function Home() {
     }).slice(0, 30);
   }, [rawDiscoverPosts]);
 
-  // استعلام البيانات السيادية (تنبيهات النظام)
+  // استعلام البيانات السيادية (تنبيهات النظام للمدير العام)
   const systemAlertQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(
@@ -77,7 +77,6 @@ export default function Home() {
   const followingPostsQuery = useMemoFirebase(() => {
     const ids = JSON.parse(followingIdsString);
     if (!currentUser || ids.length === 0) return null;
-    // Firestore supports 'in' with up to 30 items
     return query(collection(db, "posts"), where("authorId", "in", ids.slice(0, 30)));
   }, [db, currentUser, followingIdsString]);
   

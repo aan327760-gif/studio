@@ -19,19 +19,17 @@ export default function NotificationsPage() {
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
-  // تم إزالة orderBy من الاستعلام لتجنب الحاجة لفهرس (Index)
   const notificationsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(
       collection(db, "notifications"),
       where("userId", "==", currentUser.uid),
-      limit(100) // جلب كمية أكبر قليلاً لترتيبها محلياً
+      limit(100)
     );
   }, [db, currentUser]);
 
   const { data: rawNotifications = [], loading } = useCollection<any>(notificationsQuery);
 
-  // ترتيب التنبيهات محلياً (أحدثها أولاً) لضمان الأداء بدون أخطاء صلاحيات أو فهارس
   const notifications = useMemo(() => {
     return [...rawNotifications].sort((a, b) => {
       const timeA = a.createdAt?.seconds || 0;
