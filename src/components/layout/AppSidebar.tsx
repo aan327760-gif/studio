@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, Search, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, StopCircle, MessageSquare } from "lucide-react";
+import { Home, Search, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, StopCircle, Info } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -16,6 +16,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
@@ -27,14 +35,10 @@ export function AppSidebar() {
   const { user } = useUser();
   const db = useFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isProclamationOpen, setIsProclamationOpen] = useState(false);
   
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const unreadNotifsQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -73,32 +77,6 @@ export function AppSidebar() {
     }
   };
 
-  const handleStartRecording = async () => {
-    // بيان أكاديمي لميزة الصوت بناءً على طلب المدير العام
-    toast({
-      duration: 10000,
-      title: isRtl ? "بيان تقني: الساحة الصوتية السيادية" : "Technical Proclamation: Sovereign Acoustic Arena",
-      description: isRtl 
-        ? "قريباً: يهدف هذا الحيز المعرفي لتوفير بيئة رصينة لأصحاب الفكر والأكاديميين والفنانين. سيكون منبراً عاماً للمحاضرات التخصصية، السجالات السياسية المعمقة، والإبداع الموسيقي الهادف، حيث تتحول الكلمة المنطوقة إلى وثيقة سيادية رصينة تعبر عن عمق المجتمع."
-        : "Coming Soon: This epistemic space is engineered for thinkers, academics, and artists. It will serve as a public forum for specialized lectures, in-depth political discourse, and purposeful musical creation, where the spoken word becomes a sovereign and formal record of societal depth.",
-    });
-    setIsSheetOpen(false);
-  };
-
-  const handleStopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const createOptions = [
     { 
       icon: ImageIcon, 
@@ -125,47 +103,40 @@ export function AppSidebar() {
       icon: Mic, 
       label: isRtl ? "صوت" : "Voice", 
       color: "bg-purple-500",
-      onClick: handleStartRecording
+      onClick: () => {
+        setIsSheetOpen(false);
+        setIsProclamationOpen(true);
+      }
     },
   ];
 
   return (
-    <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto glass border-t border-zinc-800 z-50 px-2 h-16 shadow-2xl flex justify-around items-center">
-      <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
-      <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
+    <>
+      <aside className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto glass border-t border-zinc-800 z-50 px-2 h-16 shadow-2xl flex justify-around items-center">
+        <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
+        <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
 
-      {navItems.map((item, idx) => {
-        const isActive = pathname === item.href;
-        
-        if (item.special) {
-          return (
-            <Sheet key="create-sheet" open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-              <SheetTrigger asChild>
-                <div className="p-1">
-                  <Button className="h-12 w-12 rounded-2xl bg-white text-black hover:bg-zinc-200 shadow-lg shadow-white/5 active:scale-95 transition-transform">
-                    <Plus className="h-7 w-7 stroke-[3px]" />
-                  </Button>
-                </div>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="bg-zinc-950 border-zinc-900 rounded-t-[3rem] pb-12 outline-none">
-                <SheetHeader className="mb-8 pt-2">
-                  <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6" />
-                  <SheetTitle className="text-white text-center font-bold text-xl">
-                    {isRecording ? (isRtl ? "جاري التسجيل..." : "Recording...") : (isRtl ? "إضافة محتوى" : "Create New")}
-                  </SheetTitle>
-                </SheetHeader>
-                
-                {isRecording ? (
-                  <div className="flex flex-col items-center gap-6 py-4">
-                    <div className="text-5xl font-mono text-red-500 animate-pulse">
-                      {formatTime(recordingTime)}
-                    </div>
-                    <Button variant="destructive" size="lg" className="rounded-full h-14 px-8 font-bold gap-3" onClick={handleStopRecording}>
-                      <StopCircle className="h-6 w-6" />
-                      {isRtl ? "إيقاف وحفظ" : "Stop & Save"}
+        {navItems.map((item, idx) => {
+          const isActive = pathname === item.href;
+          
+          if (item.special) {
+            return (
+              <Sheet key="create-sheet" open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetTrigger asChild>
+                  <div className="p-1">
+                    <Button className="h-12 w-12 rounded-2xl bg-white text-black hover:bg-zinc-200 shadow-lg shadow-white/5 active:scale-95 transition-transform">
+                      <Plus className="h-7 w-7 stroke-[3px]" />
                     </Button>
                   </div>
-                ) : (
+                </SheetTrigger>
+                <SheetContent side="bottom" className="bg-zinc-950 border-zinc-900 rounded-t-[3rem] pb-12 outline-none">
+                  <SheetHeader className="mb-8 pt-2">
+                    <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6" />
+                    <SheetTitle className="text-white text-center font-bold text-xl">
+                      {isRtl ? "إضافة محتوى" : "Create New"}
+                    </SheetTitle>
+                  </SheetHeader>
+                  
                   <div className="grid grid-cols-4 gap-2 px-2">
                     {createOptions.map((opt, index) => (
                       <div key={index} className="flex flex-col items-center gap-3 group cursor-pointer" onClick={opt.onClick}>
@@ -178,33 +149,64 @@ export function AppSidebar() {
                       </div>
                     ))}
                   </div>
-                )}
-              </SheetContent>
-            </Sheet>
-          );
-        }
+                </SheetContent>
+              </Sheet>
+            );
+          }
 
-        return (
-          <Link key={idx} href={item.href} className="flex-1">
-            <div className="flex flex-col items-center justify-center relative h-full active:scale-90 transition-transform">
-              {item.isAvatar ? (
-                <Avatar className={cn("h-7 w-7 transition-all", isActive ? "ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-60")}>
-                  <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/50/50"} />
-                  <AvatarFallback>{user?.displayName?.[0] || "U"}</AvatarFallback>
-                </Avatar>
-              ) : (
-                <div className="relative">
-                  <item.icon className={cn("h-7 w-7 transition-colors", isActive ? "text-white stroke-[2.5px]" : "text-zinc-600")} />
-                  {item.hasBadge && (
-                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-black" />
-                  )}
-                </div>
-              )}
-              <div className={cn("h-1 w-1 rounded-full mt-1.5 transition-all", isActive ? "bg-white opacity-100" : "bg-transparent opacity-0")} />
+          return (
+            <Link key={idx} href={item.href} className="flex-1">
+              <div className="flex flex-col items-center justify-center relative h-full active:scale-90 transition-transform">
+                {item.isAvatar ? (
+                  <Avatar className={cn("h-7 w-7 transition-all", isActive ? "ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-60")}>
+                    <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/50/50"} />
+                    <AvatarFallback>{user?.displayName?.[0] || "U"}</AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <div className="relative">
+                    <item.icon className={cn("h-7 w-7 transition-colors", isActive ? "text-white stroke-[2.5px]" : "text-zinc-600")} />
+                    {item.hasBadge && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-black" />
+                    )}
+                  </div>
+                )}
+                <div className={cn("h-1 w-1 rounded-full mt-1.5 transition-all", isActive ? "bg-white opacity-100" : "bg-transparent opacity-0")} />
+              </div>
+            </Link>
+          );
+        })}
+      </aside>
+
+      {/* بيان الساحة الصوتية الأكاديمي */}
+      <Dialog open={isProclamationOpen} onOpenChange={setIsProclamationOpen}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-8 shadow-2xl">
+          <DialogHeader className="space-y-6">
+            <div className="mx-auto h-20 w-20 rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-2">
+               <Mic className="h-10 w-10 text-purple-500 animate-pulse" />
             </div>
-          </Link>
-        );
-      })}
-    </aside>
+            <DialogTitle className="text-center font-black text-2xl tracking-tighter uppercase">
+              {isRtl ? "البيان التقني: الساحة الصوتية السيادية" : "Sovereign Acoustic Arena"}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 text-center font-medium leading-relaxed text-[15px]">
+              {isRtl 
+                ? "قريباً: إن هذه المساحة ليست مجرد أداة لتسجيل الأصوات، بل هي صرح إبستيمي (معرفي) صُمم ليكون منبراً للنخبة الفكرية، الأكاديميين، والمبدعين. نهدف من خلال 'الساحة الصوتية' إلى توفير بيئة رصينة تحتضن المحاضرات العلمية التخصصية، السجالات السياسية العميقة، والأعمال الموسيقية ذات الرسالة الهادفة. هنا، تصبح الكلمة المنطوقة وثيقة سيادية مسجلة، تعكس الرقي الحضاري لمجتمع 'بلا قيود'."
+                : "Coming Soon: This space is not merely a recording tool, but an epistemic bastion designed as a forum for intellectual elites, academics, and creators. Through the 'Acoustic Arena', we aim to provide a formal environment for specialized scientific lectures, profound political discourse, and purposeful musical works. Here, the spoken word becomes a registered sovereign document, reflecting the societal depth of Unbound OS."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-8 flex flex-col items-center gap-4">
+             <div className="h-[1px] w-24 bg-zinc-800" />
+             <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">
+                Unbound Academic Core • v1.0.4
+             </p>
+             <Button 
+               className="w-full bg-white text-black hover:bg-zinc-200 font-black rounded-2xl h-12 mt-4" 
+               onClick={() => setIsProclamationOpen(false)}
+             >
+               {isRtl ? "إقرار بالموافقة" : "Acknowledge"}
+             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
