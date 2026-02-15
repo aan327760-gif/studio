@@ -9,7 +9,6 @@ import {
   Settings,
   ShieldCheck,
   Star,
-  Heart,
   Calendar,
   MapPin,
   MessageSquare,
@@ -60,8 +59,16 @@ export default function UserProfilePage() {
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
 
+  // استعلام المنشورات الأصلية
   const userPostsQuery = useMemoFirebase(() => uid ? query(collection(db, "posts"), where("authorId", "==", uid), limit(30)) : null, [db, uid]);
   const { data: userPosts = [], loading: postsLoading } = useCollection<any>(userPostsQuery);
+
+  // استعلام المحفوظات (يظهر فقط لصاحب الملف)
+  const savedPostsQuery = useMemoFirebase(() => {
+    if (!isOwnProfile) return null;
+    return query(collection(db, "posts"), where("savedBy", "array-contains", uid), limit(30));
+  }, [db, uid, isOwnProfile]);
+  const { data: savedPosts = [], loading: savedLoading } = useCollection<any>(savedPostsQuery);
 
   const handleFollow = async () => {
     if (!currentUser || !uid || isOwnProfile || !followRef) return;
@@ -192,6 +199,11 @@ export default function UserProfilePage() {
         <TabsList className="w-full bg-black h-14 p-0 border-b border-zinc-900 flex">
           <TabsTrigger value="posts" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">{isRtl ? "المنشورات" : "Posts"}</TabsTrigger>
           <TabsTrigger value="media" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">{isRtl ? "الوسائط" : "Media"}</TabsTrigger>
+          {isOwnProfile && (
+            <TabsTrigger value="saved" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
+              {isRtl ? "المحفوظات" : "Saved"}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="likes" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">{isRtl ? "الإعجابات" : "Likes"}</TabsTrigger>
         </TabsList>
 
@@ -199,9 +211,34 @@ export default function UserProfilePage() {
           {postsLoading ? <div className="p-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div> :
             userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0], id: uid}} content={post.content} image={post.mediaUrl} mediaUrls={post.mediaUrls} mediaType={post.mediaType} likes={post.likesCount || 0} saves={post.savesCount || 0} likedBy={post.likedBy} savedBy={post.savedBy} commentsCount={post.commentsCount} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}
         </TabsContent>
+
+        <TabsContent value="saved" className="m-0">
+          {savedLoading ? <div className="p-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div> :
+            savedPosts.length > 0 ? savedPosts.map((post: any) => (
+              <PostCard 
+                key={post.id} 
+                id={post.id} 
+                author={post.author} 
+                content={post.content} 
+                image={post.mediaUrl} 
+                mediaUrls={post.mediaUrls} 
+                mediaType={post.mediaType} 
+                likes={post.likesCount || 0} 
+                saves={post.savesCount || 0} 
+                likedBy={post.likedBy} 
+                savedBy={post.savedBy}
+                commentsCount={post.commentsCount}
+                time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
+              />
+            )) : (
+              <div className="py-40 text-center opacity-20 flex flex-col items-center gap-4">
+                <Bookmark className="h-12 w-12" />
+                <p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا توجد محفوظات" : "No saved insights"}</p>
+              </div>
+            )}
+        </TabsContent>
       </Tabs>
 
-      {/* Followers/Following Dialogs */}
       <FollowListDialog open={showFollowers} onOpenChange={setShowFollowers} userId={uid as string} type="followers" isRtl={isRtl} />
       <FollowListDialog open={showFollowing} onOpenChange={setShowFollowing} userId={uid as string} type="following" isRtl={isRtl} />
 

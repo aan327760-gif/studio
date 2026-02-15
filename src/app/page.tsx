@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { PostCard } from "@/components/feed/PostCard";
 import { useLanguage } from "@/context/LanguageContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Search, Loader2, Sparkles, UserPlus, Megaphone, Zap } from "lucide-react";
+import { Search, Loader2, Megaphone, Zap, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
@@ -17,7 +17,7 @@ export default function Home() {
   const db = useFirestore();
   const { user: currentUser } = useUser();
 
-  // خوارزمية اكتشاف سيادية بحتة (بدون AI)
+  // خوارزمية الاكتشاف السيادية (المحرك الرئيسي)
   const discoverPostsQuery = useMemoFirebase(() => {
     return query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(100));
   }, [db]);
@@ -30,24 +30,28 @@ export default function Home() {
       const getScore = (post: any) => {
         let score = 0;
         const author = post.author || {};
-        // وزن رتبة المواطن السيادي
+        
+        // 1. وزن رتبة المواطن (Sovereign Rank Weight)
         if (author.isPro) score += 1000;
-        if (author.isVerified || author.role === 'admin') score += 500;
-        // وزن التفاعل البشري الحقيقي
+        if (author.isVerified || author.role === 'admin' || author.email === "adelbenmaza3@gmail.com") score += 500;
+        
+        // 2. وزن التفاعل البشري (Engagement Weight)
         score += (post.likesCount || 0) * 10;
         score += (post.commentsCount || 0) * 15; 
         score += (post.savesCount || 0) * 20;    
-        // وزن الوقت (التلاشي الزمني)
+        
+        // 3. وزن التوقيت (Time Decay Weight)
         const postTime = post.createdAt?.seconds ? post.createdAt.seconds * 1000 : Date.now();
         const hoursPassed = (Date.now() - postTime) / (1000 * 60 * 60);
-        score -= hoursPassed * 25;
+        score -= hoursPassed * 25; // فقدان 25 نقطة كل ساعة
+        
         return score;
       };
       return getScore(b) - getScore(a);
     }).slice(0, 30);
   }, [rawDiscoverPosts]);
 
-  // استعلام البيانات السيادية (تنبيهات النظام للمدير العام)
+  // استعلام تنبيهات النظام
   const systemAlertQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
     return query(
