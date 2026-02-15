@@ -1,16 +1,11 @@
 'use server';
 
 /**
- * @fileOverview نظام داخلي بسيط لفحص المحتوى (Content Moderation).
- * يقوم بفحص النصوص بحثاً عن كلمات غير لائقة محددة مسبقاً بدلاً من الاعتماد على ذكاء اصطناعي خارجي.
+ * @fileOverview درع المحتوى السيادي - نظام فحص ذكي مدعوم بـ Gemini.
  */
 
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-
-// قائمة بسيطة بالكلمات المحظورة (يمكنك توسيعها لاحقاً)
-const PROHIBITED_WORDS = [
-  'badword1', 'badword2', 'سب', 'شتم', 'قذف', 'عنف', 'إباحي'
-];
 
 const ModerateContentInputSchema = z.object({
   text: z.string().describe('النص المراد فحصه.'),
@@ -18,30 +13,50 @@ const ModerateContentInputSchema = z.object({
 export type ModerateContentInput = z.infer<typeof ModerateContentInputSchema>;
 
 const ModerateContentOutputSchema = z.object({
-  isAppropriate: z.boolean().describe('True إذا كان المحتوى لائقاً.'),
-  moderationFlags: z.array(z.string()).describe('قائمة التصنيفات المكتشفة.'),
-  reasoning: z.string().optional().describe('سبب القرار.'),
+  isAppropriate: z.boolean().describe('True إذا كان المحتوى لائقاً سيادياً.'),
+  moderationFlags: z.array(z.string()).describe('التصنيفات المكتشفة (عنف، كراهية، إباحية، إلخ).'),
+  reasoning: z.string().describe('شرح مختصر للقرار باللغة العربية.'),
+  severity: z.enum(['low', 'medium', 'high']).describe('مستوى خطورة المخالفة.'),
 });
 export type ModerateContentOutput = z.infer<typeof ModerateContentOutputSchema>;
 
-/**
- * دالة فحص المحتوى - تعمل الآن داخلياً بدون الحاجة للاتصال بخوادم خارجية.
- */
 export async function moderateContent(input: ModerateContentInput): Promise<ModerateContentOutput> {
-  const text = input.text.toLowerCase();
-  const detectedWords = PROHIBITED_WORDS.filter(word => text.includes(word));
+  const { output } = await ai.generate({
+    prompt: `أنت نظام الرقابة السيادي لمنصة Unbound. 
+    مهمتك فحص النص التالي والتأكد من توافقه مع قيم الحرية والسيادة والاحترام.
+    يُمنع منعاً باتاً: التحريض على العنف، الكراهية الصريحة، المحتوى الإباحي، أو السب القاذف.
+    نحن نشجع حرية التعبير الجريئة لكن نرفض الإساءة المباشرة.
+    
+    النص: ${input.text}`,
+    output: { schema: ModerateContentOutputSchema }
+  });
+  
+  return output!;
+}
 
-  if (detectedWords.length > 0) {
-    return {
-      isAppropriate: false,
-      moderationFlags: ['HATE_SPEECH_OR_HARASSMENT'],
-      reasoning: `تم اكتشاف كلمات غير لائقة: (${detectedWords.join(', ')})`,
-    };
-  }
+/**
+ * تحليل البلاغات للمشرفين.
+ */
+const AnalyzeReportInputSchema = z.object({
+  postContent: z.string(),
+  reason: z.string(),
+});
+export type AnalyzeReportInput = z.infer<typeof AnalyzeReportInputSchema>;
 
-  return {
-    isAppropriate: true,
-    moderationFlags: [],
-    reasoning: 'المحتوى يبدو سليماً وفقاً لنظام الفحص الداخلي.',
-  };
+export async function analyzeReportAI(input: AnalyzeReportInput) {
+  const { output } = await ai.generate({
+    prompt: `أنت مستشار إداري ذكي. تلقينا بلاغاً عن منشور.
+    محتوى المنشور: "${input.postContent}"
+    سبب البلاغ المقدم من المستخدم: "${input.reason}"
+    
+    حلل الموقف وقدم توصية للمشرف (هل يحذف المنشور؟ هل يحظر المستخدم؟ أم يتجاهل البلاغ؟) مع ذكر السبب.`,
+    output: { 
+      schema: z.object({
+        recommendation: z.string(),
+        suggestedAction: z.enum(['ignore', 'delete', 'ban_user']),
+        riskLevel: z.string()
+      })
+    }
+  });
+  return output!;
 }
