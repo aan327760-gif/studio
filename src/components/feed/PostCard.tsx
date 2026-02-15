@@ -11,7 +11,6 @@ import {
   Send,
   Bookmark,
   X,
-  Sparkles,
   Loader2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -52,7 +51,6 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
-import { summarizeInsight } from "@/ai/flows/summarizer-flow";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -90,8 +88,6 @@ export const PostCard = memo(({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [summary, setSummary] = useState<string | null>(null);
-  const [isSummarizing, setIsSummarizing] = useState(false);
 
   const isLiked = user ? likedBy.includes(user.uid) : false;
   const isSaved = user ? savedBy.includes(user.uid) : false;
@@ -118,20 +114,6 @@ export const PostCard = memo(({
     e.stopPropagation();
     navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
     toast({ title: isRtl ? "تم نسخ الرابط السيادي" : "Sovereign link copied" });
-  };
-
-  const handleSummarize = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (summary) { setSummary(null); return; }
-    setIsSummarizing(true);
-    try {
-      const result = await summarizeInsight(content);
-      setSummary(result);
-    } catch (e) {
-      toast({ variant: "destructive", title: "AI Error" });
-    } finally {
-      setIsSummarizing(false);
-    }
   };
 
   const handleAddComment = () => {
@@ -171,16 +153,6 @@ export const PostCard = memo(({
               <span className="text-[10px] text-zinc-600 font-bold uppercase">@{author?.handle || author?.email?.split('@')[0]}</span>
             </div>
             <div className="flex items-center gap-1">
-              {isLongContent && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={cn("h-8 w-8 rounded-full transition-all", summary ? "bg-primary/20 text-primary" : "text-zinc-700")}
-                  onClick={handleSummarize}
-                >
-                  {isSummarizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                </Button>
-              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl p-2 shadow-2xl">
@@ -197,15 +169,6 @@ export const PostCard = memo(({
         <div className="px-5 pb-3">
           {content && (
             <div className="space-y-3">
-              {summary && (
-                <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl animate-in zoom-in-95 duration-300">
-                   <div className="flex items-center gap-2 mb-1.5">
-                      <Sparkles className="h-3 w-3 text-primary" />
-                      <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">{isRtl ? "إيجاز سيادي" : "Sovereign Summary"}</span>
-                   </div>
-                   <p className="text-sm font-bold text-zinc-200 leading-relaxed italic">"{summary}"</p>
-                </div>
-              )}
               <div className="space-y-1.5">
                 <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{isLongContent ? displayContent : content}</p>
                 {isLongContent && (
