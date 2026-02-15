@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -31,8 +32,7 @@ import {
   Activity,
   Megaphone,
   BrainCircuit,
-  Star,
-  Trash2
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
   const [statsLoading, setStatsLoading] = useState(true);
 
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
-  const isAdmin = isSuperAdmin || currentUserProfile?.role === "admin";
+  const isAdmin = isSuperAdmin || (currentUserProfile && currentUserProfile.role === "admin");
 
   const usersQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "users"), limit(100)) : null, [db, isAdmin]);
   const { data: allUsers = [], loading: usersLoading } = useCollection<any>(usersQuery);
@@ -82,19 +82,11 @@ export default function AdminDashboard() {
   const reportsQuery = useMemoFirebase(() => isAdmin ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isAdmin]);
   const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
 
-  const chartData = [
-    { name: 'Sat', activity: 240 },
-    { name: 'Sun', activity: 139 },
-    { name: 'Mon', activity: 980 },
-    { name: 'Tue', activity: 390 },
-    { name: 'Wed', activity: 480 },
-    { name: 'Thu', activity: 380 },
-    { name: 'Fri', activity: 430 },
-  ];
-
   useEffect(() => {
     async function fetchStats() {
-      if (!isAdmin || !db) return;
+      // التأكد تماماً من أن المستخدم مسؤول قبل طلب الإحصائيات لتجنب خطأ الصلاحيات
+      if (!isAdmin || !db || !currentUserProfile) return;
+      
       try {
         const uCount = await getCountFromServer(collection(db, "users"));
         const pCount = await getCountFromServer(collection(db, "posts"));
@@ -108,26 +100,23 @@ export default function AdminDashboard() {
           reports: rCount.data().count
         });
       } catch (err: any) {
-        if (err.code === 'permission-denied') {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'stats', operation: 'list' }));
-        }
+        console.warn("Stats fetch error:", err.message);
       } finally {
         setStatsLoading(false);
       }
     }
     fetchStats();
-  }, [db, isAdmin]);
+  }, [db, isAdmin, currentUserProfile?.id]);
 
   useEffect(() => {
-    if (!userLoading && !isAdmin && user) router.replace("/");
-  }, [user, userLoading, router, isAdmin]);
+    if (!userLoading && !isAdmin && user && currentUserProfile) router.replace("/");
+  }, [user, userLoading, router, isAdmin, currentUserProfile]);
 
   const handleBroadcast = async () => {
     if (!broadcastMessage.trim() || !isSuperAdmin) return;
     setIsBroadcasting(true);
     try {
       const batch = writeBatch(db);
-      // إرسال لآخر 50 مستخدم مسجل مؤقتاً (بسبب حدود الباتش)
       allUsers.slice(0, 50).forEach((member: any) => {
         const notifRef = doc(collection(db, "notifications"));
         batch.set(notifRef, {
@@ -149,41 +138,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleBanUser = async (userId: string) => {
-    const banUntil = new Date();
-    banUntil.setDate(banUntil.getDate() + 3);
-    updateDoc(doc(db, "users", userId), { isBannedUntil: Timestamp.fromDate(banUntil) });
-    toast({ title: isRtl ? "تم تنفيذ الإيقاف" : "Banned for 3 days" });
-  };
-
-  const handleToggleVerification = async (userId: string, currentStatus: boolean) => {
-    if (!isSuperAdmin) return;
-    updateDoc(doc(db, "users", userId), { isVerified: !currentStatus });
-    toast({ title: isRtl ? "تم تحديث التوثيق" : "Verification updated" });
-  };
-
-  const handleTogglePro = async (userId: string, currentStatus: boolean) => {
-    if (!isSuperAdmin) return;
-    updateDoc(doc(db, "users", userId), { isPro: !currentStatus });
-    toast({ title: isRtl ? "تم تحديث حالة Pro" : "Pro status updated" });
-  };
-
-  const handleResolveReport = async (reportId: string, action: 'ignore' | 'delete') => {
-    if (action === 'delete') {
-      const report = reports.find((r: any) => r.id === reportId);
-      if (report?.targetId) {
-        await deleteDoc(doc(db, "posts", report.targetId));
-      }
-    }
-    await updateDoc(doc(db, "reports", reportId), { status: "resolved" });
-    toast({ title: isRtl ? "تمت معالجة البلاغ" : "Report resolved" });
-  };
-
-  if (userLoading || (!isAdmin && !userLoading)) {
+  if (userLoading || (!isAdmin && !userLoading && user)) {
     return (
       <div className="h-screen bg-black flex flex-col items-center justify-center gap-4 text-white">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-widest">{isRtl ? "جاري الدخول لمركز القيادة..." : "Accessing Command Center..."}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest">{isRtl ? "جاري التحقق من الصلاحيات..." : "Verifying Permissions..."}</p>
       </div>
     );
   }
@@ -229,48 +188,6 @@ export default function AdminDashboard() {
           ))}
         </section>
 
-        <section className="grid md:grid-cols-3 gap-6">
-          <Card className="md:col-span-2 bg-zinc-950 border-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                {isRtl ? "مؤشر النشاط السيادي" : "Sovereign Activity"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#18181b" vertical={false} />
-                  <XAxis dataKey="name" stroke="#52525b" fontSize={10} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a' }} />
-                  <Area type="monotone" dataKey="activity" stroke="#1E6FC9" fill="#1E6FC9" fillOpacity={0.1} strokeWidth={2} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-zinc-950 border-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-green-500" />
-                {isRtl ? "حالة النظام" : "System Health"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-               <div className="flex justify-between items-end">
-                  <span className="text-xs font-bold text-zinc-500">{isRtl ? "المحتوى السليم" : "Safe Content"}</span>
-                  <span className="text-xl font-black text-green-500">99.1%</span>
-               </div>
-               <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 w-[99%]" />
-               </div>
-               <p className="text-[9px] text-zinc-600 font-bold uppercase leading-relaxed">
-                  {isRtl ? "يتم فحص المحتوى يدوياً بواسطة المشرفين لضمان سلامة المجتمع." : "Content is reviewed manually by moderators to ensure society safety."}
-               </p>
-            </CardContent>
-          </Card>
-        </section>
-
         <Tabs defaultValue="reports" className="w-full">
           <TabsList className="w-full bg-zinc-950 border border-zinc-900 h-14 p-1 rounded-2xl mb-6">
             <TabsTrigger value="reports" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary">
@@ -300,10 +217,17 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                       <Button size="sm" variant="ghost" className="flex-1 rounded-xl border border-zinc-800 font-black h-11" onClick={() => handleResolveReport(report.id, 'ignore')}>
+                       <Button size="sm" variant="ghost" className="flex-1 rounded-xl border border-zinc-800 font-black h-11" onClick={async () => {
+                         await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
+                         toast({ title: "Resolved" });
+                       }}>
                          {isRtl ? "تجاهل" : "Ignore"}
                        </Button>
-                       <Button size="sm" className="flex-1 rounded-xl bg-red-500 text-white font-black h-11" onClick={() => handleResolveReport(report.id, 'delete')}>
+                       <Button size="sm" className="flex-1 rounded-xl bg-red-500 text-white font-black h-11" onClick={async () => {
+                         if (report.targetId) await deleteDoc(doc(db, "posts", report.targetId));
+                         await updateDoc(doc(db, "reports", report.id), { status: "resolved" });
+                         toast({ title: "Content Deleted" });
+                       }}>
                          {isRtl ? "حذف المحتوى" : "Delete Content"}
                        </Button>
                     </div>
@@ -345,26 +269,20 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex gap-2">
                      {isSuperAdmin && (
-                       <>
-                         <Button 
-                           variant="ghost" 
-                           size="icon" 
-                           className={cn("h-10 w-10", member.isVerified ? "text-primary" : "text-zinc-800")}
-                           onClick={() => handleToggleVerification(member.id, !!member.isVerified)}
-                         >
-                           <VerificationBadge className="h-5 w-5" />
-                         </Button>
-                         <Button 
-                           variant="ghost" 
-                           size="icon" 
-                           className={cn("h-10 w-10", member.isPro ? "text-yellow-500" : "text-zinc-800")}
-                           onClick={() => handleTogglePro(member.id, !!member.isPro)}
-                         >
-                           <Star className="h-5 w-5 fill-current" />
-                         </Button>
-                       </>
+                       <Button 
+                         variant="ghost" size="icon" 
+                         className={cn("h-10 w-10", member.isVerified ? "text-primary" : "text-zinc-800")}
+                         onClick={() => updateDoc(doc(db, "users", member.id), { isVerified: !member.isVerified })}
+                       >
+                         <VerificationBadge className="h-5 w-5" />
+                       </Button>
                      )}
-                     <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-700 hover:text-orange-500" onClick={() => handleBanUser(member.id)}>
+                     <Button variant="ghost" size="icon" className="h-10 w-10 text-zinc-700 hover:text-orange-500" onClick={() => {
+                        const banUntil = new Date();
+                        banUntil.setDate(banUntil.getDate() + 3);
+                        updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });
+                        toast({ title: "Banned for 3 days" });
+                     }}>
                        <Ban className="h-5 w-5" />
                      </Button>
                   </div>

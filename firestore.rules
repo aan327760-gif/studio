@@ -61,13 +61,15 @@ service cloud.firestore {
     
     // قواعد التنبيهات
     match /notifications/{notificationId} {
-      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      // السماح للمستخدم برؤية تنبيهاته فقط، وللنظام برؤية الكل للأغراض الإدارية
+      allow read, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (request.query.limit <= 50) && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn() && isNotBanned();
     }
     
     // قواعد المجموعات (اللمة)
     match /groups/{groupId} {
-      allow read: if isSignedIn() && (
+      allow read, list: if isSignedIn() && (
         isAdmin() || 
         (request.auth.uid in resource.data.members) || 
         (resource.data.isPrivate == false)
@@ -84,7 +86,7 @@ service cloud.firestore {
 
     // قواعد البلاغات
     match /reports/{reportId} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow create: if isSignedIn() && isNotBanned();
       allow update: if isAdmin();
       allow delete: if isAdmin();

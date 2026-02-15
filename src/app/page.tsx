@@ -23,15 +23,17 @@ export default function Home() {
   }, [db]);
   const { data: discoverPosts, loading: discoverLoading } = useCollection<any>(discoverPostsQuery);
 
-  // استعلام رسائل النظام (آخر رسالة بث)
+  // استعلام رسائل النظام (آخر رسالة بث خاصة بالمستخدم)
   const systemAlertQuery = useMemoFirebase(() => {
+    if (!currentUser) return null;
     return query(
       collection(db, "notifications"), 
+      where("userId", "==", currentUser.uid),
       where("type", "==", "system"), 
       orderBy("createdAt", "desc"), 
       limit(1)
     );
-  }, [db]);
+  }, [db, currentUser]);
   const { data: systemAlerts = [] } = useCollection<any>(systemAlertQuery);
 
   // استعلام المتابعات
@@ -41,18 +43,20 @@ export default function Home() {
   }, [db, currentUser]);
   const { data: userFollows = [] } = useCollection<any>(followsQuery);
 
-  const followingIds = userFollows.map(f => f.followingId);
+  // استخراج معرّفات المتابعين بشكل مستقر للـ useMemo
+  const followingIdsString = JSON.stringify(userFollows.map(f => f.followingId));
 
   // استعلام منشورات المتابعة
   const followingPostsQuery = useMemoFirebase(() => {
-    if (!currentUser || followingIds.length === 0) return null;
+    const ids = JSON.parse(followingIdsString);
+    if (!currentUser || ids.length === 0) return null;
     return query(
       collection(db, "posts"), 
-      where("authorId", "in", followingIds.slice(0, 10)),
+      where("authorId", "in", ids.slice(0, 10)),
       orderBy("createdAt", "desc"),
       limit(20)
     );
-  }, [db, currentUser, followingIds.length]);
+  }, [db, currentUser, followingIdsString]);
   
   const { data: followingPosts, loading: followingLoading } = useCollection<any>(followingPostsQuery);
 
