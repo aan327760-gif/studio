@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,8 +17,12 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!query) return;
+    if (!query) {
+      setLoading(false);
+      return;
+    }
 
+    setLoading(true);
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
@@ -26,7 +31,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
         setLoading(false);
       },
       async (err: any) => {
-        // التحقق من نوع الخطأ
         if (err.code === 'permission-denied') {
           const permissionError = new FirestorePermissionError({
             path: (query as any)._query?.path?.segments?.join('/') || 'unknown',
@@ -34,7 +38,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
           });
           errorEmitter.emit('permission-error', permissionError);
         } else if (err.message.toLowerCase().includes('index')) {
-          // خطأ الفهرس المفقود - نرسل الخطأ الأصلي لأنه يحتوي على تعليمات مفيدة في الـ Console
           errorEmitter.emit('permission-error', {
             message: err.message,
             context: {
@@ -42,8 +45,6 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
               operation: 'list',
             }
           });
-        } else {
-          console.error("Firestore Error:", err);
         }
         setError(err);
         setLoading(false);
