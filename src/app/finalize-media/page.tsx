@@ -29,6 +29,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { useLanguage } from "@/context/LanguageContext";
 
 const TEXT_COLORS = [
   "text-white", "text-black", "text-primary", "text-red-500", "text-yellow-400", 
@@ -59,6 +60,7 @@ function FinalizeMediaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
+  const { isRtl } = useLanguage();
   
   const imageUrl = searchParams.get("image");
   const videoUrl = searchParams.get("video");
@@ -118,7 +120,6 @@ function FinalizeMediaContent() {
     let x = ((clientX - rect.left) / rect.width) * 100;
     let y = ((clientY - rect.top) / rect.height) * 100;
     
-    // Constraints: Keep element within visible bounds
     x = Math.max(10, Math.min(90, x));
     y = Math.max(10, Math.min(90, y));
 
@@ -224,15 +225,15 @@ function FinalizeMediaContent() {
 
       <header className="relative z-50 p-4 flex justify-between items-center">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-black/40 backdrop-blur-md text-white">
-          <ArrowLeft className="h-7 w-7" />
+          <ArrowLeft className={cn("h-7 w-7", isRtl ? "rotate-180" : "")} />
         </Button>
       </header>
 
       <div className="relative z-50 flex-1 flex flex-col justify-center px-4 gap-4">
         {[
-          { icon: Type, label: "الكتابة", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
-          { icon: StickerIcon, label: "الملصقات", onClick: () => setIsStickerDialogOpen(true), active: stickers.length > 0 },
-          { icon: Layers, label: "الفلاتر", onClick: () => router.back(), active: filterClass !== "filter-none" },
+          { icon: Type, label: isRtl ? "الكتابة" : "Text", onClick: () => setIsTextDialogOpen(true), active: !!finalText },
+          { icon: StickerIcon, label: isRtl ? "الملصقات" : "Stickers", onClick: () => setIsStickerDialogOpen(true), active: stickers.length > 0 },
+          { icon: Layers, label: isRtl ? "الفلاتر" : "Filters", onClick: () => router.back(), active: filterClass !== "filter-none" },
         ].map((action) => (
           <div key={action.label} className="flex items-center gap-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); action.onClick(); }}>
             <div className={cn("h-12 w-12 flex items-center justify-center rounded-2xl backdrop-blur-md border border-white/20 shadow-2xl transition-all", action.active ? "bg-primary border-primary scale-110" : "bg-black/50")}>
@@ -240,7 +241,7 @@ function FinalizeMediaContent() {
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-black drop-shadow-md">{action.label}</span>
-              {action.active && <span className="text-[10px] text-primary font-bold">نشط</span>}
+              {action.active && <span className="text-[10px] text-primary font-bold">{isRtl ? "نشط" : "Active"}</span>}
             </div>
           </div>
         ))}
@@ -272,22 +273,28 @@ function FinalizeMediaContent() {
 
       <footer className="relative z-50 p-6 flex justify-end">
         <Button onClick={handleNext} className="rounded-full bg-white text-black hover:bg-zinc-200 px-12 py-7 text-xl font-black shadow-2xl active:scale-95 transition-transform">
-          التالي
+          {isRtl ? "التالي" : "Next"}
         </Button>
       </footer>
 
       <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
         <DialogContent className="bg-zinc-950/98 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[2.5rem] p-6 outline-none h-[85vh] flex flex-col">
-          <DialogHeader><DialogTitle className="text-center font-black">أضف لمستك السينمائية</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-center font-black uppercase tracking-tight">
+              {isRtl ? "أضف لمستك السينمائية" : "Cinema Edit"}
+            </DialogTitle>
+          </DialogHeader>
           <ScrollArea className="flex-1">
             <div className="space-y-6 pb-4">
               <Input 
-                placeholder="اكتب هنا..." value={textOverlay} onChange={(e) => setTextOverlay(e.target.value)}
+                placeholder={isRtl ? "اكتب هنا..." : "Type here..."} 
+                value={textOverlay} 
+                onChange={(e) => setTextOverlay(e.target.value)}
                 className={cn("bg-zinc-900 border-none rounded-2xl h-20 text-center text-2xl font-black", textColor, textEffect)}
                 autoFocus
               />
               <div className="space-y-3">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">التأثيرات</span>
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{isRtl ? "التأثيرات" : "Effects"}</span>
                 <div className="grid grid-cols-4 gap-2">
                   {TEXT_EFFECTS.map((eff) => (
                     <button 
@@ -302,29 +309,38 @@ function FinalizeMediaContent() {
                 </div>
               </div>
               <div className="space-y-3">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">الألوان</span>
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{isRtl ? "الألوان" : "Colors"}</span>
                 <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                   {TEXT_COLORS.map(c => (
                     <button key={c} className={cn("h-8 w-8 rounded-full border-2 shrink-0", c.replace('text-', 'bg-'), textColor === c ? "border-white" : "border-transparent")} onClick={() => setTextColor(c)} />
                   ))}
                 </div>
               </div>
-              <Button variant={textBg ? "default" : "outline"} className="w-full rounded-2xl font-bold" onClick={() => setTextBg(!textBg)}>خلفية زجاجية: {textBg ? "مفعل" : "معطل"}</Button>
+              <Button variant={textBg ? "default" : "outline"} className="w-full rounded-2xl font-bold" onClick={() => setTextBg(!textBg)}>
+                {isRtl ? "خلفية زجاجية" : "Glass Backdrop"}: {textBg ? (isRtl ? "مفعل" : "Enabled") : (isRtl ? "معطل" : "Disabled")}
+              </Button>
             </div>
           </ScrollArea>
           <div className="flex gap-4 mt-4">
-            <Button className="flex-1 bg-white text-black hover:bg-zinc-200 rounded-2xl font-black h-12" onClick={() => { setFinalText(textOverlay); setIsTextDialogOpen(false); }}>تطبيق</Button>
+            <Button className="flex-1 bg-white text-black hover:bg-zinc-200 rounded-2xl font-black h-12" onClick={() => { setFinalText(textOverlay); setIsTextDialogOpen(false); }}>
+              {isRtl ? "تطبيق" : "Apply"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isStickerDialogOpen} onOpenChange={setIsStickerDialogOpen}>
         <DialogContent className="bg-zinc-950/98 border-zinc-800 text-white w-[92%] max-w-[400px] rounded-[3rem] p-0 outline-none h-[75vh] flex flex-col overflow-hidden">
+          <DialogHeader className="pt-6 px-6 pb-2">
+            <DialogTitle className="text-center font-black uppercase text-sm tracking-widest">
+              {isRtl ? "اختر ملصقاً" : "Choose Sticker"}
+            </DialogTitle>
+          </DialogHeader>
           <div className="p-4 border-b border-white/10">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
               <Input 
-                placeholder="Search stickers..." 
+                placeholder={isRtl ? "البحث عن ملصقات..." : "Search stickers..."} 
                 className="pl-10 bg-zinc-900 border-none rounded-full h-10" 
                 value={stickerSearch}
                 onChange={(e) => setStickerSearch(e.target.value)}
