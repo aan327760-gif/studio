@@ -29,12 +29,8 @@ import {
   ShieldCheck,
   Github,
   Rocket,
-  Lock,
-  Globe,
-  ExternalLink,
-  Zap,
-  Trash2,
-  CheckCircle
+  CheckCircle,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -110,7 +106,8 @@ export default function AdminDashboard() {
       if (action === 'delete' && postId) {
         await deleteDoc(doc(db, "posts", postId));
       } else if (action === 'ban' && authorId) {
-        const banUntil = new Date(); banUntil.setDate(banUntil.getDate() + 30);
+        const banUntil = new Date();
+        banUntil.setDate(banUntil.getDate() + 30);
         await updateDoc(doc(db, "users", authorId), { isBannedUntil: Timestamp.fromDate(banUntil) });
       }
       await updateDoc(doc(db, "reports", reportId), { status: "resolved", actionTaken: action });
@@ -146,7 +143,11 @@ export default function AdminDashboard() {
   };
 
   if (userLoading) {
-    return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+    return (
+      <div className="h-screen bg-black flex items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (!isSuper) return null;
@@ -163,7 +164,9 @@ export default function AdminDashboard() {
             <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black tracking-widest mt-0.5">ROOT ACCESS</Badge>
           </div>
         </div>
-        <div className="h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center"><ShieldAlert className="h-5 w-5 text-primary" /></div>
+        <div className="h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+          <ShieldAlert className="h-5 w-5 text-primary" />
+        </div>
       </header>
 
       <main className="p-4 space-y-8">
@@ -194,64 +197,102 @@ export default function AdminDashboard() {
                 <Input placeholder={isRtl ? "ابحث عن مواطن..." : "Search citizen..."} className="bg-zinc-950 border-zinc-900 rounded-2xl pl-11 h-12 text-xs font-bold" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
              </div>
              <div className="space-y-3">
-               {usersLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div> : 
-                allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
-                 <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem] hover:border-zinc-800 transition-all">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12 border border-zinc-800">
-                         <AvatarImage src={member.photoURL} />
-                         <AvatarFallback>{member.displayName?.[0]}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                         <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-black truncate max-w-[100px]">{member.displayName}</p>
-                            {member.isVerified && <VerificationBadge className="h-3 w-3" />}
-                         </div>
-                         <p className="text-[9px] text-zinc-600 font-bold uppercase">@{member.email?.split('@')[0]}</p>
+               {usersLoading ? (
+                 <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div>
+               ) : (
+                 allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
+                   <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem] hover:border-zinc-800 transition-all">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12 border border-zinc-800">
+                           <AvatarImage src={member.photoURL} />
+                           <AvatarFallback>{member.displayName?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                           <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-black truncate max-w-[100px]">{member.displayName}</p>
+                              {member.isVerified && <VerificationBadge className="h-3 w-3" />}
+                           </div>
+                           <p className="text-[9px] text-zinc-600 font-bold uppercase">@{member.email?.split('@')[0]}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                       <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", member.isVerified ? "bg-blue-500/10 text-blue-500" : "bg-zinc-900 text-zinc-700")} onClick={() => handleToggleVerify(member.id, member.isVerified)}><ShieldCheck className="h-4 w-4" /></Button>
-                       <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", member.isPro ? "bg-yellow-500/10 text-yellow-500" : "bg-zinc-900 text-zinc-700")} onClick={() => handleTogglePro(member.id, member.isPro)}><Star className="h-4 w-4" /></Button>
-                       <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-zinc-900 text-zinc-700 hover:text-red-500" onClick={() => {
-                          const banUntil = new Date(); banUntil.setDate(banUntil.getDate() + 7);
-                          updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });
-                          toast({ title: "7 Days Sanction Applied" });
-                       }}><Ban className="h-4 w-4" /></Button>
-                    </div>
-                 </div>
-               ))}
+                      <div className="flex gap-2">
+                         <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", member.isVerified ? "bg-blue-500/10 text-blue-500" : "bg-zinc-900 text-zinc-700")} onClick={() => handleToggleVerify(member.id, member.isVerified)}>
+                           <ShieldCheck className="h-4 w-4" />
+                         </Button>
+                         <Button variant="ghost" size="icon" className={cn("h-9 w-9 rounded-xl", member.isPro ? "bg-yellow-500/10 text-yellow-500" : "bg-zinc-900 text-zinc-700")} onClick={() => handleTogglePro(member.id, member.isPro)}>
+                           <Star className="h-4 w-4" />
+                         </Button>
+                         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-zinc-900 text-zinc-700 hover:text-red-500" onClick={() => {
+                            const banUntil = new Date();
+                            banUntil.setDate(banUntil.getDate() + 7);
+                            updateDoc(doc(db, "users", member.id), { isBannedUntil: Timestamp.fromDate(banUntil) });
+                            toast({ title: "7 Days Sanction Applied" });
+                         }}>
+                           <Ban className="h-4 w-4" />
+                         </Button>
+                      </div>
+                   </div>
+                 ))
+               )}
              </div>
           </TabsContent>
 
           <TabsContent value="threats" className="space-y-4">
-             {reportsLoading ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div> :
-              reports.length > 0 ? reports.map((r: any) => (
-                <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
-                   <div className="flex items-center justify-between">
-                      <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
-                      <span className="text-[8px] text-zinc-600 font-bold">{r.createdAt?.toDate ? r.createdAt.toDate().toLocaleTimeString() : ""}</span>
-                   </div>
-                   <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800">
-                      <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3 italic">"{r.postContent}"</p>
-                      <p className="text-[9px] text-zinc-600 mt-2 font-bold">— {r.authorName}</p>
-                   </div>
-                   <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-green-500/10 text-green-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ignore')}><CheckCircle className="h-3 w-3 mr-1" /> {isRtl ? "تجاهل" : "Ignore"}</Button>
-                      <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-red-500/10 text-red-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'delete', r.postId)}><Trash2 className="h-3 w-3 mr-1" /> {isRtl ? "حذف" : "Delete"}</Button>
-                      <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-zinc-900 text-white font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ban', undefined, r.authorId)}><Ban className="h-3 w-3 mr-1" /> {isRtl ? "حظر" : "Ban"}</Button>
-                   </div>
-                </Card>
-              )) : (
-                <div className="py-20 text-center opacity-20 flex flex-col items-center gap-4"><CheckCircle className="h-12 w-12" /><p className="text-xs font-black uppercase">{isRtl ? "لا توجد تهديدات" : "Zero Threats"}</p></div>
-              )}
+             {reportsLoading ? (
+               <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div>
+             ) : (
+               reports.length > 0 ? (
+                 reports.map((r: any) => (
+                   <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
+                      <div className="flex items-center justify-between">
+                         <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
+                         <span className="text-[8px] text-zinc-600 font-bold">{r.createdAt?.toDate ? r.createdAt.toDate().toLocaleTimeString() : ""}</span>
+                      </div>
+                      <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800">
+                         <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3 italic">"{r.postContent}"</p>
+                         <p className="text-[9px] text-zinc-600 mt-2 font-bold">— {r.authorName}</p>
+                      </div>
+                      <div className="flex gap-2">
+                         <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-green-500/10 text-green-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ignore')}>
+                           <CheckCircle className="h-3 w-3 mr-1" /> {isRtl ? "تجاهل" : "Ignore"}
+                         </Button>
+                         <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-red-500/10 text-red-500 font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'delete', r.postId)}>
+                           <Trash2 className="h-3 w-3 mr-1" /> {isRtl ? "حذف" : "Delete"}
+                         </Button>
+                         <Button variant="ghost" size="sm" className="flex-1 rounded-xl bg-zinc-900 text-white font-black text-[10px]" onClick={() => handleActionOnReport(r.id, 'ban', undefined, r.authorId)}>
+                           <Ban className="h-3 w-3 mr-1" /> {isRtl ? "حظر" : "Ban"}
+                         </Button>
+                      </div>
+                   </Card>
+                 ))
+               ) : (
+                 <div className="py-20 text-center opacity-20 flex flex-col items-center gap-4">
+                   <CheckCircle className="h-12 w-12" />
+                   <p className="text-sm font-black uppercase">{isRtl ? "لا توجد تهديدات" : "Zero Threats"}</p>
+                 </div>
+               )
+             )}
           </TabsContent>
 
           <TabsContent value="broadcast" className="space-y-6">
              <Card className="bg-zinc-950 border-zinc-900 border-2 border-dashed border-primary/20 rounded-[2.5rem] p-6">
-                <div className="flex items-center gap-3 mb-6"><Megaphone className="h-6 w-6 text-primary" /><h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "بث أمر القيادة" : "Broadcast"}</h3></div>
-                <Textarea placeholder={isRtl ? "اكتب هنا نص البيان الموجه لجميع المواطنين..." : "Enter proclamation..."} className="bg-zinc-900 border-zinc-800 rounded-2xl min-h-[150px] text-sm font-bold p-5 mb-6" value={broadcastMessage} onChange={(e) => setBroadcastMessage(e.target.value)} />
-                <Button className="w-full h-14 rounded-2xl bg-white text-black font-black" disabled={isBroadcasting || !broadcastMessage.trim()} onClick={handleBroadcast}>{isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "تنفيذ البث" : "Execute")}</Button>
+                <div className="flex items-center gap-3 mb-6">
+                  <Megaphone className="h-6 w-6 text-primary" />
+                  <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "بث أمر القيادة" : "Broadcast"}</h3>
+                </div>
+                <Textarea 
+                  placeholder={isRtl ? "اكتب هنا نص البيان الموجه لجميع المواطنين..." : "Enter proclamation..."} 
+                  className="bg-zinc-900 border-zinc-800 rounded-2xl min-h-[150px] text-sm font-bold p-5 mb-6" 
+                  value={broadcastMessage} 
+                  onChange={(e) => setBroadcastMessage(e.target.value)} 
+                />
+                <Button 
+                  className="w-full h-14 rounded-2xl bg-white text-black font-black" 
+                  disabled={isBroadcasting || !broadcastMessage.trim()} 
+                  onClick={handleBroadcast}
+                >
+                  {isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "تنفيذ البث" : "Execute")}
+                </Button>
              </Card>
           </TabsContent>
 
@@ -259,7 +300,9 @@ export default function AdminDashboard() {
              <Card className="bg-zinc-950 border-zinc-900 border-2 border-primary/10 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-6 opacity-5"><Github className="h-24 w-24" /></div>
                 <div className="flex items-center gap-3 mb-6">
-                   <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10"><Github className="h-5 w-5 text-white" /></div>
+                   <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
+                     <Github className="h-5 w-5 text-white" />
+                   </div>
                    <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "المزامنة والنشر السيادي" : "Deploy"}</h3>
                 </div>
                 <div className="space-y-5">
