@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { X, Loader2, Globe, Plus, Trash2, ImageIcon, Camera } from "lucide-react";
+import { X, Loader2, Globe, Plus, ImageIcon } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,13 +52,10 @@ function CreatePostContent() {
   const [privacy, setPrivacy] = useState("public");
   const [allowComments, setAllowComments] = useState(true);
 
-  // دعم الصور المتعددة
   const [localImages, setLocalImages] = useState<string[]>([]);
   const videoUrlFromParams = searchParams.get("video");
-  const initialImageUrl = searchParams.get("image");
   const source = searchParams.get("source");
 
-  // تحميل الصور إذا جاءت كألبوم من الـ Sidebar
   useEffect(() => {
     if (source === 'album') {
       const stored = sessionStorage.getItem('pending_album_images');
@@ -66,10 +63,11 @@ function CreatePostContent() {
         setLocalImages(JSON.parse(stored));
         sessionStorage.removeItem('pending_album_images');
       }
-    } else if (initialImageUrl) {
-      setLocalImages([initialImageUrl]);
+    } else {
+      const initialImageUrl = searchParams.get("image");
+      if (initialImageUrl) setLocalImages([initialImageUrl]);
     }
-  }, [source, initialImageUrl]);
+  }, [source, searchParams]);
 
   const isBanned = profile?.isBannedUntil && profile.isBannedUntil.toDate() > new Date();
 
@@ -77,7 +75,7 @@ function CreatePostContent() {
     const files = e.target.files;
     if (files) {
       const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      setLocalImages(prev => [...prev, ...newImages].slice(0, 4)); // حد أقصى 4 صور
+      setLocalImages(prev => [...prev, ...newImages].slice(0, 4));
     }
   };
 
@@ -98,9 +96,8 @@ function CreatePostContent() {
       let finalMediaUrls: string[] = [];
       let mediaType: "image" | "video" | "audio" | "album" | null = null;
 
-      // رفع الصور المتعددة
       if (localImages.length > 0) {
-        toast({ title: isRtl ? "جاري رفع الوسائط السيادية..." : "Uploading sovereign media..." });
+        toast({ title: isRtl ? "جاري رفع الوسائط..." : "Uploading media..." });
         const uploadPromises = localImages.map(async (url) => {
           const base64 = url.startsWith('data:') ? url : await urlToBlob(url);
           return uploadToCloudinary(base64, 'image');
@@ -145,12 +142,12 @@ function CreatePostContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-x-hidden">
       <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-20 border-b border-zinc-900">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900"><X className="h-6 w-6" /></Button>
-        <div className="flex items-center gap-2">
-           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Draft Sovereign</span>
-        </div>
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900">
+          <X className="h-6 w-6" />
+        </Button>
+        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Draft Sovereign</span>
         <Button 
           onClick={handleSubmit} 
           disabled={isSubmitting || isBanned || (!content.trim() && localImages.length === 0 && !videoUrlFromParams)} 
@@ -166,39 +163,41 @@ function CreatePostContent() {
             <AvatarImage src={user?.photoURL || ""} />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
-          <div className="flex-1 space-y-6">
+          <div className="flex-1 min-w-0">
             <Textarea 
               placeholder={isRtl ? "شارك فكرة حرة أو ألبوماً..." : "Share a free thought or album..."} 
-              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[120px]" 
+              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[120px] mb-4" 
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
             />
 
-            {/* عرض الصور المحددة */}
+            {/* شريط معاينة الصور - تم ضبط الاحتواء للهاتف */}
             {localImages.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                {localImages.map((img, i) => (
-                  <div key={i} className="relative h-40 w-40 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group">
-                    <img src={img} alt="preview" className="w-full h-full object-cover" />
-                    <Button 
-                      variant="destructive" 
-                      size="icon" 
-                      className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(i)}
+              <div className="w-full overflow-hidden mb-6">
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
+                  {localImages.map((img, i) => (
+                    <div key={i} className="relative h-36 w-36 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group snap-center">
+                      <img src={img} alt="preview" className="w-full h-full object-cover" />
+                      <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 hover:bg-red-600 border-none"
+                        onClick={() => removeImage(i)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {localImages.length < 4 && (
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-36 w-36 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors snap-center"
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                {localImages.length < 4 && (
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="h-40 w-40 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors"
-                  >
-                    <Plus className="h-6 w-6 text-zinc-500" />
-                    <span className="text-[10px] font-black text-zinc-600 uppercase">Add Image</span>
-                  </button>
-                )}
+                      <Plus className="h-6 w-6 text-zinc-500" />
+                      <span className="text-[8px] font-black text-zinc-600 uppercase">Add Image</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -214,19 +213,19 @@ function CreatePostContent() {
             <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleAddImage} />
 
             {videoUrlFromParams && (
-              <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900">
+              <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 mb-6">
                 <video src={videoUrlFromParams} className="w-full h-full object-contain" autoPlay muted loop />
               </div>
             )}
 
-            <div className="space-y-6 pt-6 border-t border-zinc-900">
+            <div className="space-y-4 pt-6 border-t border-zinc-900">
                <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl">
                   <div className="flex items-center gap-3">
                      <Globe className="h-5 w-5 text-zinc-400" />
                      <span className="text-sm font-bold">{isRtl ? "الجمهور" : "Audience"}</span>
                   </div>
                   <Select value={privacy} onValueChange={setPrivacy}>
-                    <SelectTrigger className="w-[100px] bg-zinc-900 border-none h-8 text-xs font-bold"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-[100px] bg-zinc-900 border-none h-8 text-xs font-bold shadow-none"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
                       <SelectItem value="public">{isRtl ? "عام" : "Public"}</SelectItem>
                       <SelectItem value="followers">{isRtl ? "متابعون" : "Followers"}</SelectItem>

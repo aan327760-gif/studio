@@ -5,20 +5,14 @@ import {
   Heart, 
   MessageCircle, 
   MoreHorizontal, 
-  Send, 
   Trash2, 
   Flag, 
   Play, 
   Pause, 
   Volume2,
   X,
-  Info,
   ThumbsUp,
-  ThumbsDown,
-  MoreVertical,
   MessageSquare,
-  ChevronDown,
-  ChevronUp,
   Star,
   Download,
   Loader2
@@ -80,7 +74,7 @@ interface PostCardProps {
   allowComments?: boolean;
 }
 
-export function PostCard({ id, author, content, image, mediaUrls = [], mediaType, likes: initialLikes, time, mediaSettings, allowComments = true }: PostCardProps) {
+export function PostCard({ id, author, content, image, mediaUrls = [], mediaType, likes: initialLikes, time, allowComments = true }: PostCardProps) {
   const { isRtl } = useLanguage();
   const { user } = useUser();
   const db = useFirestore();
@@ -97,15 +91,8 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  const CONTENT_LIMIT = 280;
-  const shouldTruncate = content.length > CONTENT_LIMIT;
-  const displayContent = shouldTruncate && !isExpanded 
-    ? content.substring(0, CONTENT_LIMIT) + "..." 
-    : content;
 
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
@@ -169,7 +156,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
     if (!isViewerVerified) {
       toast({
         title: isRtl ? "امتياز سيادي محدود" : "Sovereign Privilege",
-        description: isRtl ? "عذراً، ميزة تحميل أي فيديو متاحة حصرياً للمواطنين الموثقين." : "Exclusively for verified citizens."
+        description: isRtl ? "عذراً، ميزة التحميل متاحة حصرياً للمواطنين الموثقين." : "Exclusively for verified citizens."
       });
       return;
     }
@@ -237,12 +224,12 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
 
       <CardContent className="p-0">
         <div className="px-5 pb-3">
-          {content && <p className="text-[15px] leading-relaxed whitespace-pre-wrap mb-3">{displayContent}</p>}
+          {content && <p className="text-[15px] leading-relaxed whitespace-pre-wrap mb-3">{content}</p>}
         </div>
 
         {carouselImages.length > 0 && (
           <div className="px-5 mb-4">
-            <div className="relative rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-950 shadow-2xl group">
+            <div className="relative rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-950 shadow-2xl group w-full">
               {mediaType === 'video' ? (
                 <div className="relative aspect-video bg-black">
                   <video ref={videoRef} src={carouselImages[0]} className="w-full h-full object-contain" onClick={toggleMedia} />
@@ -261,15 +248,15 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
                 <Carousel className="w-full" onSelect={(api) => setCurrentSlide(api?.selectedScrollSnap() || 0)}>
                   <CarouselContent>
                     {carouselImages.map((url, idx) => (
-                      <CarouselItem key={idx}>
-                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto max-h-[600px] object-cover" />
+                      <CarouselItem key={idx} className="flex justify-center items-center">
+                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto max-h-[500px] object-cover aspect-[4/5] md:aspect-square" />
                       </CarouselItem>
                     ))}
                   </CarouselContent>
                   {carouselImages.length > 1 && (
-                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
                       {carouselImages.map((_, idx) => (
-                        <div key={idx} className={cn("h-1 w-4 rounded-full transition-all", idx === currentSlide ? "bg-primary" : "bg-white/20")} />
+                        <div key={idx} className={cn("h-1 w-3 rounded-full transition-all", idx === currentSlide ? "bg-primary w-5" : "bg-white/30")} />
                       ))}
                     </div>
                   )}
