@@ -174,7 +174,6 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
       likedBy: []
     };
 
-    // إضافة التعليق وتحديث عداد التعليقات في المنشور للخوارزمية
     addDoc(collection(db, "posts", id, "comments"), commentData).catch(async (err) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `posts/${id}/comments`, operation: 'create', requestResourceData: commentData }));
     });

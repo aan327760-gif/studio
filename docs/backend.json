@@ -10,7 +10,7 @@
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
         "bannerURL": { "type": "string" },
-        "bio": { "type": "string" },
+        "bio": { "type": "string", "maxLength": 150 },
         "phoneNumber": { "type": "string" },
         "location": { "type": "string" },
         "joinedAt": { "type": "string", "format": "date-time" },
@@ -54,35 +54,10 @@
         "authorName": { "type": "string" },
         "authorAvatar": { "type": "string" },
         "authorHandle": { "type": "string" },
-        "text": { "type": "string" },
+        "text": { "type": "string", "maxLength": 100 },
         "likesCount": { "type": "number" },
         "likedBy": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "Reply": {
-      "title": "Comment Reply",
-      "description": "A reply to a comment",
-      "type": "object",
-      "properties": {
-        "authorId": { "type": "string" },
-        "authorName": { "type": "string" },
-        "authorAvatar": { "type": "string" },
-        "authorHandle": { "type": "string" },
-        "text": { "type": "string" },
-        "likesCount": { "type": "number" },
-        "likedBy": { "type": "array", "items": { "type": "string" } },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
-    },
-    "DirectConversation": {
-      "title": "Direct Conversation",
-      "description": "Friend-only 1-on-1 private chat",
-      "type": "object",
-      "properties": {
-        "participants": { "type": "array", "items": { "type": "string" } },
-        "lastMessage": { "type": "string" },
-        "updatedAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -92,9 +67,6 @@
   "firestore": {
     "/users/{userId}": { "schema": "UserProfile", "description": "Citizen profiles" },
     "/posts/{postId}": { "schema": "Post", "description": "Sovereign insights" },
-    "/posts/{postId}/comments/{commentId}": { "schema": "Comment", "description": "Post discussions" },
-    "/posts/{postId}/comments/{commentId}/replies/{replyId}": { "schema": "Reply", "description": "Comment threads" },
-    "/direct_conversations/{chatId}": { "schema": "DirectConversation", "description": "Private chats" },
-    "/direct_conversations/{chatId}/messages/{msgId}": { "schema": "object", "description": "Messages" }
+    "/posts/{postId}/comments/{commentId}": { "schema": "Comment", "description": "Post discussions" }
   }
 }

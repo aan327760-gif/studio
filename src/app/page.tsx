@@ -13,8 +13,8 @@ import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import { useMemo } from "react";
 
 /**
- * الخوارزمية السيادية - Sovereign Algorithm v2
- * تدخل التعليقات والحفظ كعوامل قوة أساسية.
+ * الخوارزمية السيادية - Sovereign Algorithm v2.1
+ * الترتيب بناءً على: سلطة الهوية + قوة التفاعل (إعجاب/تعليق/حفظ) + عامل الزمن.
  */
 export default function Home() {
   const { isRtl } = useLanguage();
@@ -34,16 +34,16 @@ export default function Home() {
         let score = 0;
         const author = post.author || {};
         
-        // 1. سلطة الهوية
+        // 1. سلطة الهوية (Authority)
         if (author.isPro) score += 1000;
         if (author.isVerified) score += 500;
         
-        // 2. قوة التفاعل (الإعجاب والحوار والحفظ)
+        // 2. قوة التفاعل (Interaction Weight)
         score += (post.likesCount || 0) * 10;
         score += (post.commentsCount || 0) * 15; // النقاش يعطي قيمة أعلى
         score += (post.savesCount || 0) * 20;    // الحفظ يعكس أعلى مستويات الاهتمام
         
-        // 3. عامل الزمن (تدهور القيمة مع الوقت)
+        // 3. عامل الزمن (Time Decay)
         const postTime = post.createdAt?.seconds ? post.createdAt.seconds * 1000 : Date.now();
         const hoursPassed = (Date.now() - postTime) / (1000 * 60 * 60);
         score -= hoursPassed * 20; 
