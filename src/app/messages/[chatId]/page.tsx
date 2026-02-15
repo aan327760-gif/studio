@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -7,7 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, ArrowLeft, Loader2, MoreVertical, ChevronDown, Lock } from "lucide-react";
+import { Send, ArrowLeft, Loader2, MoreVertical, ChevronDown, Lock, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useCollection, useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, doc, updateDoc } from "firebase/firestore";
@@ -99,7 +98,10 @@ export default function DirectChatRoomPage() {
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10 ring-1 ring-zinc-800"><AvatarImage src={otherUser?.photoURL} /><AvatarFallback>{otherUser?.displayName?.[0]}</AvatarFallback></Avatar>
             <div className="flex flex-col">
-              <h2 className="font-black text-[15px] truncate max-w-[150px] tracking-tight">{otherUser?.displayName || "Citizen"}</h2>
+              <div className="flex items-center gap-1">
+                <h2 className="font-black text-[15px] truncate max-w-[150px] tracking-tight">{otherUser?.displayName || "Citizen"}</h2>
+                {isFriend && <ShieldCheck className="h-3 w-3 text-primary" />}
+              </div>
               <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{isRtl ? "نشط الآن" : "Active now"}</p>
             </div>
           </div>
@@ -110,13 +112,19 @@ export default function DirectChatRoomPage() {
       <main className="flex-1 relative overflow-hidden flex flex-col">
         <ScrollArea className="flex-1" ref={scrollRef}>
           <div className="flex flex-col gap-1 p-4 pb-10">
+            {!isFriend && (
+              <div className="py-10 text-center space-y-4 opacity-40">
+                <div className="w-16 h-16 bg-zinc-900 rounded-3xl mx-auto flex items-center justify-center"><Lock className="h-8 w-8" /></div>
+                <p className="text-[10px] font-black uppercase tracking-widest">{isRtl ? "دردشة مغلقة: المتابعة ليست متبادلة" : "Locked: Not mutual friends"}</p>
+              </div>
+            )}
+            
             {messages.map((msg: any, index: number) => {
               const isMe = msg.senderId === user?.uid;
               const msgDate = msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date();
               const prevMsg = index > 0 ? messages[index - 1] : null;
               const prevDate = prevMsg?.createdAt?.toDate ? prevMsg.createdAt.toDate() : null;
               
-              // عرض الفاصل الزمني المركزي
               const showTimeSeparator = !prevDate || (msgDate.getTime() - prevDate.getTime() > 3600000);
 
               return (
@@ -131,10 +139,10 @@ export default function DirectChatRoomPage() {
                   <div className={cn("flex items-end gap-2 mb-1", isMe ? "justify-end" : "justify-start")}>
                     {!isMe && <Avatar className="h-7 w-7 ring-1 ring-zinc-900 mb-0.5 shrink-0"><AvatarImage src={otherUser?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>}
                     <div className={cn(
-                      "p-3.5 text-[15px] font-medium shadow-sm max-w-[75%] break-words",
+                      "p-3.5 text-[15px] font-medium shadow-sm max-w-[75%] break-words transition-all",
                       isMe 
-                        ? "bg-blue-600 text-white rounded-[1.5rem] rounded-tr-[0.2rem]" 
-                        : "bg-zinc-800 text-zinc-100 rounded-[1.5rem] rounded-tl-[0.2rem]"
+                        ? "bg-primary text-white rounded-[1.5rem] rounded-tr-[0.2rem] shadow-primary/10" 
+                        : "bg-zinc-900 text-zinc-100 rounded-[1.5rem] rounded-tl-[0.2rem] border border-white/5"
                     )}>
                       {msg.text}
                     </div>
@@ -144,16 +152,6 @@ export default function DirectChatRoomPage() {
             })}
           </div>
         </ScrollArea>
-        
-        {showScrollDown && (
-          <Button 
-            size="icon" 
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full h-10 w-10 bg-zinc-900 border border-zinc-800 shadow-2xl animate-bounce"
-            onClick={scrollToBottom}
-          >
-            <ChevronDown className="h-5 w-5" />
-          </Button>
-        )}
       </main>
 
       <footer className="p-4 border-t border-zinc-900 bg-black">
@@ -175,7 +173,7 @@ export default function DirectChatRoomPage() {
               size="icon" 
               className={cn(
                 "rounded-full h-9 w-9 shrink-0 shadow-lg transition-all", 
-                newMessage.trim() ? "bg-blue-600 scale-100" : "bg-zinc-800 scale-90"
+                newMessage.trim() ? "bg-primary scale-100" : "bg-zinc-800 scale-90"
               )} 
               onClick={handleSend} 
               disabled={!newMessage.trim()}

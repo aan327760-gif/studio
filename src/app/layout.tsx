@@ -8,7 +8,11 @@ import { UploadProvider } from "@/context/UploadContext";
 import { GlobalUploadBar } from "@/components/layout/GlobalUploadBar";
 import { NotificationHandler } from "@/components/NotificationHandler";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const inter = Inter({ 
+  subsets: ["latin"], 
+  variable: "--font-inter",
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: "Unbound - Sovereign OS",
@@ -36,13 +40,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased bg-black selection:bg-primary/30 overflow-x-hidden`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
+      </head>
+      <body className="font-body antialiased bg-black selection:bg-primary/30 overflow-x-hidden">
         <FirebaseClientProvider>
           <LanguageProvider>
             <UploadProvider>
               <GlobalUploadBar />
               <NotificationHandler />
-              {children}
+              <div className="min-h-screen">
+                {children}
+              </div>
               <Toaster />
             </UploadProvider>
           </LanguageProvider>

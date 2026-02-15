@@ -25,7 +25,8 @@ import {
   CheckCircle,
   Activity,
   Megaphone,
-  UserCheck
+  Users,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -225,7 +226,7 @@ export default function AdminDashboard() {
                    <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
                       <div className="flex items-center justify-between">
                          <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px]">{r.reason}</Badge>
-                         <Button variant="ghost" size="sm" className="h-7 text-[8px] font-black uppercase text-zinc-500 bg-zinc-900 rounded-lg border border-zinc-800">تحليل (قريباً)</Button>
+                         <div className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Human Review Only</div>
                       </div>
                       <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800">
                          <p className="text-xs text-zinc-400 italic">"{r.postContent}"</p>
@@ -259,18 +260,13 @@ export default function AdminDashboard() {
                   value={broadcastMessage} 
                   onChange={(e) => setBroadcastMessage(e.target.value)} 
                 />
-                <div className="flex gap-3">
-                   <Button 
-                    className="flex-1 h-14 rounded-2xl bg-white text-black font-black" 
-                    disabled={isBroadcasting || !broadcastMessage.trim()} 
-                    onClick={handleBroadcast}
-                  >
-                    {isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "تنفيذ البث" : "Execute")}
-                  </Button>
-                  <Button variant="outline" className="flex-1 h-14 rounded-2xl border-zinc-800 font-black text-zinc-500">
-                     رفع الكود (ي)
-                  </Button>
-                </div>
+                <Button 
+                  className="w-full h-14 rounded-2xl bg-white text-black font-black shadow-xl active:scale-95 transition-all" 
+                  disabled={isBroadcasting || !broadcastMessage.trim()} 
+                  onClick={handleBroadcast}
+                >
+                  {isBroadcasting ? <Loader2 className="h-6 w-6 animate-spin" /> : (isRtl ? "تنفيذ البث" : "Execute")}
+                </Button>
              </Card>
           </TabsContent>
         </Tabs>

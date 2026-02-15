@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, StopCircle, Save } from "lucide-react";
+import { Home, MessageSquare, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, Search } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,13 +15,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 
@@ -33,8 +26,6 @@ export function AppSidebar() {
   const db = useFirestore();
   
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isAudioOpen, setIsAudioOpen] = useState(false);
-  
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,7 +40,7 @@ export function AppSidebar() {
     { icon: MessageSquare, href: "/messages", label: "Messages" },
     { icon: Plus, href: "#", label: "Add", special: true },
     { icon: Bell, href: "/notifications", label: "Notifications", hasBadge: unreadNotifs.length > 0 },
-    { icon: User, href: user ? "/profile" : "/auth", label: "Profile", isAvatar: true },
+    { icon: User, href: user ? `/profile/${user.uid}` : "/auth", label: "Profile", isAvatar: true },
   ];
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,17 +68,8 @@ export function AppSidebar() {
   };
 
   const createOptions = [
-    { icon: ImageIcon, label: isRtl ? "الصور" : "Images", color: "bg-green-500", onClick: () => imageInputRef.current?.click() },
+    { icon: ImageIcon, label: isRtl ? "الصور" : "Images", color: "bg-emerald-500", onClick: () => imageInputRef.current?.click() },
     { icon: Video, label: isRtl ? "فيديو" : "Videos", color: "bg-blue-500", onClick: () => videoInputRef.current?.click() },
-    { 
-      icon: Mic, 
-      label: isRtl ? "صوت (قريباً)" : "Audio (Soon)", 
-      color: "bg-orange-500", 
-      onClick: () => { 
-        setIsSheetOpen(false); 
-        setIsAudioOpen(true);
-      } 
-    },
     { icon: PenLine, label: isRtl ? "نشر" : "Post", color: "bg-primary", onClick: () => { setIsSheetOpen(false); router.push("/create-post"); } },
   ];
 
@@ -104,7 +86,7 @@ export function AppSidebar() {
             <Sheet key="create-sheet" open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
                 <div className="p-1">
-                  <Button className="h-12 w-12 rounded-2xl bg-white text-black hover:bg-zinc-200 shadow-lg shadow-white/5 active:scale-95 transition-transform">
+                  <Button className="h-12 w-12 rounded-2xl bg-white text-black hover:bg-zinc-200 shadow-lg active:scale-95 transition-transform">
                     <Plus className="h-7 w-7 stroke-[3px]" />
                   </Button>
                 </div>
@@ -112,15 +94,15 @@ export function AppSidebar() {
               <SheetContent side="bottom" className="bg-zinc-950 border-zinc-900 rounded-t-[3rem] pb-12 outline-none">
                 <SheetHeader className="mb-8 pt-2">
                   <div className="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-6" />
-                  <SheetTitle className="text-white text-center font-bold text-xl">{isRtl ? "إضافة محتوى" : "Create New"}</SheetTitle>
+                  <SheetTitle className="text-white text-center font-black text-xl uppercase tracking-tighter">{isRtl ? "إضافة محتوى" : "Sovereign Input"}</SheetTitle>
                 </SheetHeader>
-                <div className="grid grid-cols-4 gap-2 px-2">
+                <div className="grid grid-cols-3 gap-4 px-4">
                   {createOptions.map((opt, index) => (
                     <div key={index} className="flex flex-col items-center gap-3 group cursor-pointer" onClick={opt.onClick}>
-                      <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-white transition-all group-active:scale-90 shadow-xl", opt.color)}>
-                        <opt.icon className="h-7 w-7" />
+                      <div className={cn("h-16 w-16 rounded-3xl flex items-center justify-center text-white transition-all group-active:scale-90 shadow-xl", opt.color)}>
+                        <opt.icon className="h-8 w-8" />
                       </div>
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter text-center">{opt.label}</span>
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">{opt.label}</span>
                     </div>
                   ))}
                 </div>
@@ -133,34 +115,21 @@ export function AppSidebar() {
           <Link key={idx} href={item.href} className="flex-1">
             <div className="flex flex-col items-center justify-center relative h-full active:scale-90 transition-transform">
               {item.isAvatar ? (
-                <Avatar className={cn("h-7 w-7 transition-all", isActive ? "ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-60")}>
+                <Avatar className={cn("h-7 w-7 transition-all", isActive ? "ring-2 ring-primary ring-offset-2 ring-offset-black" : "opacity-60")}>
                   <AvatarImage src={user?.photoURL || ""} />
-                  <AvatarFallback>{user?.displayName?.[0] || "U"}</AvatarFallback>
+                  <AvatarFallback className="bg-zinc-900 font-black">{user?.displayName?.[0] || "U"}</AvatarFallback>
                 </Avatar>
               ) : (
                 <div className="relative">
-                  <item.icon className={cn("h-7 w-7 transition-colors", isActive ? "text-white stroke-[2.5px]" : "text-zinc-600")} />
-                  {item.hasBadge && <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-black" />}
+                  <item.icon className={cn("h-7 w-7 transition-colors", isActive ? "text-primary stroke-[2.5px]" : "text-zinc-600")} />
+                  {item.hasBadge && <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full border-2 border-black animate-pulse" />}
                 </div>
               )}
-              <div className={cn("h-1 w-1 rounded-full mt-1.5 transition-all", isActive ? "bg-white opacity-100" : "bg-transparent opacity-0")} />
+              <div className={cn("h-1 w-1 rounded-full mt-1.5 transition-all", isActive ? "bg-primary opacity-100" : "bg-transparent opacity-0")} />
             </div>
           </Link>
         );
       })}
-
-      <Dialog open={isAudioOpen} onOpenChange={setIsAudioOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2.5rem] p-8">
-          <DialogHeader><DialogTitle className="text-center font-black uppercase">{isRtl ? "تسجيل سيادي (قريباً)" : "Voice Note (Soon)"}</DialogTitle></DialogHeader>
-          <div className="flex flex-col items-center py-10 gap-6 text-center">
-             <div className="h-24 w-24 rounded-full bg-zinc-900 flex items-center justify-center">
-                <Mic className="h-10 w-10 text-zinc-700" />
-             </div>
-             <p className="text-sm text-zinc-500 font-medium">هذه الميزة قيد التحصين البرمجي حالياً وستكون متاحة في الإصدار القادم.</p>
-             <Button className="w-full h-14 rounded-2xl bg-white text-black font-black" onClick={() => setIsAudioOpen(false)}>فهمت</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </aside>
   );
 }
