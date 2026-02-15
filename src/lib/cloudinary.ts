@@ -4,49 +4,43 @@
 import { v2 as cloudinary } from 'cloudinary';
 
 /**
- * إعداد Cloudinary للعمل مع الروابط الآمنة.
- * يتم جلب الإعدادات تلقائياً من متغير البيئة CLOUDINARY_URL في ملف .env
- */
-cloudinary.config({
-  secure: true
-});
-
-/**
- * يرفع الملف إلى Cloudinary مع فحص مسبق للإعدادات.
- * يدعم الصور، الفيديوهات، والمقاطع الصوتية.
+ * دالة لرفع الوسائط إلى Cloudinary.
+ * تستخرج الإعدادات مباشرة من CLOUDINARY_URL لضمان الدقة.
  */
 export async function uploadToCloudinary(fileData: string, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<string> {
   const cloudinaryUrl = process.env.CLOUDINARY_URL;
 
-  // فحص ما إذا كان الرابط مهيأ بشكل صحيح
-  const isNotConfigured = !cloudinaryUrl || 
-                          cloudinaryUrl.includes('<your_') || 
-                          cloudinaryUrl.includes('your_cloud_name');
-
-  if (isNotConfigured) {
-    const errorMsg = 'إعدادات Cloudinary غير مكتملة في ملف .env. يرجى التأكد من وضع الرابط الصحيح من لوحة تحكم Cloudinary.';
-    console.warn('Configuration Warning:', errorMsg);
-    throw new Error(errorMsg);
+  if (!cloudinaryUrl || cloudinaryUrl.includes('<your_')) {
+    throw new Error('إعدادات Cloudinary غير مكتملة. يرجى التأكد من وضع الرابط الصحيح في ملف .env');
   }
+
+  // تهيئة الإعدادات من الرابط مباشرة
+  cloudinary.config({
+    secure: true
+  });
 
   try {
     if (!fileData) throw new Error('لا توجد بيانات للرفع');
 
-    // الرفع باستخدام واجهة الـ API الخاصة بـ Cloudinary
     const result = await cloudinary.uploader.upload(fileData, {
       resource_type: resourceType,
       folder: 'unbound_media',
-      // تحسين المعالجة للفيديوهات الطويلة
-      timeout: 120000, // 2 دقيقة
+      timeout: 120000,
     });
     
     return result.secure_url;
   } catch (error: any) {
-    console.error('Cloudinary Execution Error:', error);
-    // توفير رسالة خطأ صديقة للمستخدم
-    if (error.message?.includes('invalid api_key')) {
-      throw new Error('مفتاح الـ API الخاص بـ Cloudinary غير صحيح. يرجى مراجعة ملف .env');
+    console.error('Cloudinary Error:', error);
+
+    // معالجة خطأ التوقيع غير الصحيح
+    if (error.message?.includes('Invalid Signature')) {
+      throw new Error('خطأ في "التوقيع": الرمز السري (API Secret) غير صحيح. يرجى نسخه مجدداً من لوحة تحكم Cloudinary.');
     }
+
+    if (error.message?.includes('api_key')) {
+      throw new Error('مفتاح الـ API غير صحيح. يرجى التأكد من البيانات في ملف .env');
+    }
+
     throw new Error(error.message || 'حدث خطأ أثناء رفع الوسائط. يرجى المحاولة مرة أخرى.');
   }
 }
