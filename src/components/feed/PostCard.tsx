@@ -144,7 +144,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
       likedBy: []
     };
 
-    addDoc(collection(db, "posts", id, "comments"), commentData);
+    addDoc(collection(db, "posts", id, "comments"), commentData).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `posts/${id}/comments`, operation: 'create', requestResourceData: commentData }));
+    });
     setNewComment("");
   };
 
@@ -185,7 +187,14 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-700 hover:text-white rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl shadow-2xl p-2">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); addDoc(collection(db, "reports"), { targetId: id, targetType: "post", reason: "Policy Violation", reportedBy: user?.uid, status: "pending", createdAt: serverTimestamp() }); toast({ title: "Reported" }); }} className="text-orange-500 rounded-xl m-1 h-11 font-black text-xs uppercase"><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { 
+                  e.stopPropagation(); 
+                  const reportData = { targetId: id, targetType: "post", reason: "Policy Violation", reportedBy: user?.uid, status: "pending", createdAt: serverTimestamp() };
+                  addDoc(collection(db, "reports"), reportData).catch(async (err) => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'reports', operation: 'create', requestResourceData: reportData }));
+                  });
+                  toast({ title: "Reported" }); 
+                }} className="text-orange-500 rounded-xl m-1 h-11 font-black text-xs uppercase"><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
                 {isAdmin && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); if (confirm("Delete?")) deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl m-1 h-11 font-black text-xs uppercase"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف" : "Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -295,7 +304,12 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
   const [replyText, setReplyText] = useState("");
   const [showReplies, setShowReplies] = useState(false);
 
-  const repliesQuery = useMemoFirebase(() => query(collection(db, "posts", postId, "comments", comment.id, "replies"), orderBy("createdAt", "asc")), [db, postId, comment.id]);
+  // تحسين: لا يتم تحميل الردود إلا عند الحاجة
+  const repliesQuery = useMemoFirebase(() => {
+    if (!showReplies) return null;
+    return query(collection(db, "posts", postId, "comments", comment.id, "replies"), orderBy("createdAt", "asc"));
+  }, [db, postId, comment.id, showReplies]);
+  
   const { data: replies = [] } = useCollection<any>(repliesQuery);
   const isCommentLiked = user && Array.isArray(comment.likedBy) && comment.likedBy.includes(user.uid);
 
@@ -305,12 +319,15 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
     const updateData = isCommentLiked 
       ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) }
       : { likedBy: arrayUnion(user.uid), likesCount: increment(1) };
-    updateDoc(commentRef, updateData);
+    
+    updateDoc(commentRef, updateData).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: commentRef.path, operation: 'update', requestResourceData: updateData }));
+    });
   };
 
   const handleAddReply = () => {
     if (isBanned || !replyText.trim() || !user) return;
-    addDoc(collection(db, "posts", postId, "comments", comment.id, "replies"), {
+    const replyData = {
       authorId: user.uid,
       authorName: user.displayName || "User",
       authorAvatar: user.photoURL || "",
@@ -319,6 +336,10 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
       createdAt: serverTimestamp(),
       likesCount: 0,
       likedBy: []
+    };
+
+    addDoc(collection(db, "posts", postId, "comments", comment.id, "replies"), replyData).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `posts/${postId}/comments/${comment.id}/replies`, operation: 'create', requestResourceData: replyData }));
     });
     setReplyText("");
     setIsReplying(false);
@@ -358,12 +379,10 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
             </div>
           )}
 
-          {replies.length > 0 && (
-            <button className="mt-3 flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest" onClick={() => setShowReplies(!showReplies)}>
-              {showReplies ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              {replies.length} {isRtl ? "رد" : "Replies"}
-            </button>
-          )}
+          <button className="mt-3 flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest" onClick={() => setShowReplies(!showReplies)}>
+            {showReplies ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {isRtl ? "الردود" : "Replies"}
+          </button>
 
           {showReplies && replies.map((reply: any) => (
             <div key={reply.id} className="mt-4 flex gap-3 border-l border-zinc-900 pl-4">
