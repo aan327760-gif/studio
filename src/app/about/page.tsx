@@ -27,7 +27,7 @@ export default function AboutPage() {
       icon: Cpu,
       title: isRtl ? "السيادة الرقمية" : "Digital Sovereignty",
       desc: isRtl 
-        ? "نؤمن بحق الأفراد والمجتمعات في امتلاك وإدارة بياناتهم بعيداً عن الهيمنة التقنية العابرة للحدود." 
+        ? "نؤمن بحق الأفراد والمجتمعات in امتلاك وإدارة بياناتهم بعيداً عن الهيمنة التقنية العابرة للحدود." 
         : "We believe in the right of individuals and communities to own and manage their data, free from cross-border technical dominance."
     },
     {
