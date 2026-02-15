@@ -1,18 +1,42 @@
 
 "use client";
 
-import { useState, useRef, Suspense } from "react";
-import { X, Play, Check, RotateCw, Scissors, Trash2, Columns2, Square } from "lucide-react";
+import { useState, useRef, Suspense, useEffect } from "react";
+import { X, Play, Check, RotateCw, Scissors, Trash2, Columns2, Square, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "@/hooks/use-toast";
 
 function VideoEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [isTooLong, setIsTooLong] = useState(false);
   const videoUrl = searchParams.get("video");
+
+  // الحد الأقصى: 5 دقائق (300 ثانية)
+  const MAX_DURATION = 300;
+
+  useEffect(() => {
+    if (videoRef.current && videoUrl) {
+      videoRef.current.onloadedmetadata = () => {
+        const videoDuration = videoRef.current?.duration || 0;
+        setDuration(videoDuration);
+        if (videoDuration > MAX_DURATION) {
+          setIsTooLong(true);
+          toast({
+            variant: "destructive",
+            title: "فيديو طويل جداً",
+            description: "عذراً يا زعيم، الفيديوهات يجب ألا تتجاوز 5 دقائق.",
+          });
+        }
+      };
+    }
+  }, [videoUrl]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -26,7 +50,21 @@ function VideoEditorContent() {
   };
 
   const handleDone = () => {
+    if (isTooLong) {
+      toast({
+        variant: "destructive",
+        title: "خطأ في المدة",
+        description: "يرجى اختيار فيديو أقصر من 5 دقائق للمتابعة.",
+      });
+      return;
+    }
     router.push(`/finalize-media?video=${encodeURIComponent(videoUrl || "")}`);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (!videoUrl) {
@@ -44,7 +82,7 @@ function VideoEditorContent() {
         <video 
           ref={videoRef}
           src={videoUrl} 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
           onEnded={() => setIsPlaying(false)}
           playsInline
         />
@@ -73,11 +111,24 @@ function VideoEditorContent() {
             variant="ghost" 
             size="icon" 
             onClick={handleDone}
-            className="rounded-full text-white hover:bg-white/10"
+            disabled={isTooLong}
+            className={cn("rounded-full text-white hover:bg-white/10", isTooLong && "opacity-20")}
           >
             <Check className="h-7 w-7" />
           </Button>
         </div>
+
+        {isTooLong && (
+          <div className="absolute bottom-20 left-4 right-4 z-20">
+            <Alert variant="destructive" className="bg-red-950/90 border-red-500 backdrop-blur-md">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>الفيديو طويل جداً</AlertTitle>
+              <AlertDescription>
+                مدة هذا الفيديو ({formatTime(duration)}) تتجاوز الحد المسموح به وهو 5 دقائق.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
         {/* Bottom Right Fullscreen/Crop Icon */}
         <div className="absolute bottom-4 right-4 z-10">
@@ -90,43 +141,46 @@ function VideoEditorContent() {
       {/* Toolbar Section */}
       <div className="bg-black py-8 px-4 border-t border-zinc-900">
         <div className="flex justify-around items-center mb-8">
-          <div className="flex flex-col items-center gap-2 group cursor-pointer">
-            <RotateCw className="h-6 w-6 text-white group-hover:text-zinc-400" />
-            <span className="text-[10px] text-zinc-400">Rotate</span>
+          <div className="flex flex-col items-center gap-2 group cursor-pointer opacity-40">
+            <RotateCw className="h-6 w-6 text-white" />
+            <span className="text-[10px] text-zinc-400">تدوير</span>
+          </div>
+          <div className="flex flex-col items-center gap-2 group cursor-pointer opacity-40">
+            <Columns2 className="h-6 w-6 text-white" />
+            <span className="text-[10px] text-zinc-400">تقسيم</span>
           </div>
           <div className="flex flex-col items-center gap-2 group cursor-pointer">
-            <Columns2 className="h-6 w-6 text-white group-hover:text-zinc-400" />
-            <span className="text-[10px] text-zinc-400">Split</span>
+            <Scissors className="h-6 w-6 text-white group-hover:text-primary" />
+            <span className="text-[10px] text-zinc-400">قص</span>
           </div>
-          <div className="flex flex-col items-center gap-2 group cursor-pointer">
-            <Scissors className="h-6 w-6 text-white group-hover:text-zinc-400" />
-            <span className="text-[10px] text-zinc-400">Trim</span>
-          </div>
-          <div className="flex flex-col items-center gap-2 group cursor-pointer">
-            <Trash2 className="h-6 w-6 text-white group-hover:text-zinc-400" />
-            <span className="text-[10px] text-zinc-400">Delete</span>
+          <div className="flex flex-col items-center gap-2 group cursor-pointer" onClick={() => router.back()}>
+            <Trash2 className="h-6 w-6 text-red-500 group-hover:text-red-400" />
+            <span className="text-[10px] text-zinc-400">حذف</span>
           </div>
         </div>
 
         {/* Timeline Mockup */}
         <div className="relative mt-4">
-          <div className="flex justify-between text-[10px] text-zinc-500 mb-2 font-mono">
+          <div className="flex justify-between text-[10px] text-zinc-500 mb-2 font-mono uppercase tracking-widest">
             <span>0:00.0</span>
-            <span>0:29.5</span>
+            <span className={isTooLong ? "text-red-500 font-bold" : ""}>{formatTime(duration)}</span>
           </div>
-          <div className="h-12 bg-zinc-800 rounded-lg border-2 border-white flex items-center px-1 relative overflow-hidden">
-            <div className="absolute left-0 w-1 h-full bg-white z-10 rounded-l-md" />
-            <div className="flex gap-0.5 opacity-50 h-full w-full">
-               {Array.from({ length: 30 }).map((_, i) => (
+          <div className={cn(
+            "h-12 bg-zinc-900 rounded-lg border-2 flex items-center px-1 relative overflow-hidden transition-colors",
+            isTooLong ? "border-red-500" : "border-white"
+          )}>
+            <div className={cn("absolute left-0 w-1 h-full z-10 rounded-l-md", isTooLong ? "bg-red-500" : "bg-white")} />
+            <div className="flex gap-0.5 opacity-20 h-full w-full">
+               {Array.from({ length: 40 }).map((_, i) => (
                  <div key={i} className="flex-1 bg-zinc-600 h-full" />
                ))}
             </div>
-            <div className="absolute bottom-1 right-2 bg-black/80 text-[8px] px-1 rounded text-white font-mono">
-              0:29.5
+            <div className="absolute bottom-1 right-2 bg-black/80 text-[8px] px-1.5 py-0.5 rounded text-white font-mono border border-white/10">
+              {formatTime(duration)}
             </div>
           </div>
           <div className="flex justify-center mt-2">
-             <div className="w-0.5 h-4 bg-white" />
+             <div className={cn("w-0.5 h-4", isTooLong ? "bg-red-500" : "bg-white")} />
           </div>
         </div>
       </div>
@@ -136,7 +190,7 @@ function VideoEditorContent() {
 
 export default function EditVideoPage() {
   return (
-    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white">Loading...</div>}>
+    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white">جاري تحميل المحرر...</div>}>
       <VideoEditorContent />
     </Suspense>
   );
