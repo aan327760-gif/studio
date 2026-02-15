@@ -12,14 +12,16 @@ import {
   Send,
   Bookmark,
   X,
-  Loader2
+  Loader2,
+  Reply,
+  CornerDownLeft
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
-import { useState, useRef, memo } from "react";
-import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from "@/firebase";
+import { useState, useRef, memo, useEffect } from "react";
+import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { 
   doc, 
   updateDoc, 
@@ -32,7 +34,8 @@ import {
   limit, 
   deleteDoc,
   increment,
-  query
+  query,
+  where
 } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -87,6 +90,7 @@ export const PostCard = memo(({
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
   const [newComment, setNewComment] = useState("");
+  const [replyTo, setReplyTo] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -121,18 +125,23 @@ export const PostCard = memo(({
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user || !id || !allowComments) return;
-    addDoc(collection(db, "posts", id, "comments"), {
+    
+    const commentData = {
       authorId: user.uid, 
       authorName: user.displayName, 
       authorAvatar: user.photoURL, 
       authorHandle: user.email?.split('@')[0], 
-      text: newComment, 
+      text: replyTo ? `@${replyTo.handle} ${newComment}` : newComment, 
       createdAt: serverTimestamp(), 
       likesCount: 0, 
-      likedBy: []
-    });
+      likedBy: [],
+      parentId: replyTo?.id || null
+    };
+
+    addDoc(collection(db, "posts", id, "comments"), commentData);
     updateDoc(doc(db, "posts", id), { commentsCount: increment(1) });
     setNewComment("");
+    setReplyTo(null);
   };
 
   const carouselImages = mediaUrls.length > 0 ? mediaUrls : (image ? [image] : []);
@@ -155,15 +164,13 @@ export const PostCard = memo(({
               </div>
               <span className="text-[10px] text-zinc-600 font-bold uppercase">@{author?.handle || author?.email?.split('@')[0]}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl p-2 shadow-2xl">
-                  <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => e.stopPropagation()}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
-                  {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف سيادي" : "Root Delete"}</DropdownMenuItem>}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white rounded-2xl p-2 shadow-2xl">
+                <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => e.stopPropagation()}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
+                {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف سيادي" : "Root Delete"}</DropdownMenuItem>}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardHeader>
@@ -172,17 +179,12 @@ export const PostCard = memo(({
         <div className="px-5 pb-3">
           {content && (
             <div className="space-y-3">
-              <div className="space-y-1.5">
-                <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{isLongContent ? displayContent : content}</p>
-                {isLongContent && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} 
-                    className="text-primary font-black text-[11px] uppercase tracking-widest mt-1"
-                  >
-                    {isExpanded ? (isRtl ? "عرض أقل" : "Show Less") : (isRtl ? "إقرأ المزيد" : "Read More")}
-                  </button>
-                )}
-              </div>
+              <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{isLongContent ? displayContent : content}</p>
+              {isLongContent && (
+                <button onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} className="text-primary font-black text-[11px] uppercase tracking-widest">
+                  {isExpanded ? (isRtl ? "عرض أقل" : "Show Less") : (isRtl ? "إقرأ المزيد" : "Read More")}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -233,16 +235,25 @@ export const PostCard = memo(({
                 <SheetHeader className="p-4 border-b border-zinc-900">
                   <div className="flex items-center justify-between">
                     <SheetClose asChild><Button variant="ghost" size="icon" className="text-zinc-500 rounded-full hover:bg-zinc-900"><X className="h-5 w-5" /></Button></SheetClose>
-                    <SheetTitle className="text-white font-black text-lg uppercase tracking-widest">{isRtl ? "التعليقات" : "Comments"}</SheetTitle>
+                    <SheetTitle className="text-white font-black text-lg uppercase tracking-widest">{isRtl ? "النقاش السيادي" : "Sovereign Dialogue"}</SheetTitle>
                     <div className="w-10" />
                   </div>
                 </SheetHeader>
-                <CommentsList postId={id} isRtl={isRtl} />
-                <div className="p-4 pb-8 border-t border-zinc-900 bg-black/90 backdrop-blur-xl">
+                <CommentsList postId={id} isRtl={isRtl} onReply={(c: any) => setReplyTo(c)} />
+                <div className="p-4 pb-8 border-t border-zinc-900 bg-black/95 backdrop-blur-xl">
+                  {replyTo && (
+                    <div className="flex items-center justify-between bg-primary/10 p-2 px-4 rounded-t-xl border-x border-t border-primary/20 animate-in slide-in-from-bottom-2">
+                      <div className="flex items-center gap-2">
+                        <CornerDownLeft className="h-3 w-3 text-primary" />
+                        <span className="text-[10px] font-bold text-primary uppercase">الرد على @{replyTo.handle}</span>
+                      </div>
+                      <button onClick={() => setReplyTo(null)}><X className="h-3 w-3 text-zinc-500" /></button>
+                    </div>
+                  )}
                   <div className="flex gap-3 items-center">
                     <Avatar className="h-10 w-10 border border-zinc-800"><AvatarImage src={user?.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
                     <div className="flex-1 flex items-center bg-zinc-900 p-1.5 rounded-full pl-6 pr-1.5 border border-zinc-800 shadow-inner">
-                      <Input placeholder={isRtl ? "إضافة تعليق..." : "Add comment..."} className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" value={newComment} onChange={(e) => setNewComment(e.target.value)} maxLength={100} onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
+                      <Input placeholder={isRtl ? "أضف رؤيتك..." : "Add your insight..."} className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" value={newComment} onChange={(e) => setNewComment(e.target.value)} maxLength={100} onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
                       <Button size="icon" className="rounded-full h-10 w-10 bg-primary shadow-lg" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
                     </div>
                   </div>
@@ -265,26 +276,60 @@ export const PostCard = memo(({
 
 PostCard.displayName = "PostCard";
 
-function CommentsList({ postId, isRtl }: { postId: string, isRtl: boolean }) {
+function CommentsList({ postId, isRtl, onReply }: { postId: string, isRtl: boolean, onReply: (c: any) => void }) {
   const db = useFirestore();
-  const commentsQuery = useMemoFirebase(() => query(collection(db, "posts", postId, "comments"), orderBy("createdAt", "desc"), limit(20)), [db, postId]);
+  const { user } = useUser();
+  const isSuper = user?.email === SUPER_ADMIN_EMAIL;
+
+  const commentsQuery = useMemoFirebase(() => query(collection(db, "posts", postId, "comments"), orderBy("createdAt", "desc"), limit(50)), [db, postId]);
   const { data: comments = [] } = useCollection<any>(commentsQuery);
+
+  const handleLikeComment = (commentId: string, likedBy: string[]) => {
+    if (!user) return;
+    const isLiked = likedBy.includes(user.uid);
+    const commentRef = doc(db, "posts", postId, "comments", commentId);
+    updateDoc(commentRef, isLiked ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) } : { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (confirm(isRtl ? "حذف التعليق؟" : "Delete comment?")) {
+      await deleteDoc(doc(db, "posts", postId, "comments", commentId));
+      updateDoc(doc(db, "posts", postId), { commentsCount: increment(-1) });
+    }
+  };
 
   return (
     <ScrollArea className="flex-1 p-4 pb-32">
       {comments.length > 0 ? comments.map((comment: any) => (
-        <div key={comment.id} className="flex gap-4 mb-6 animate-in fade-in slide-in-from-bottom-2">
-          <Avatar className="h-9 w-9 border border-zinc-900"><AvatarImage src={comment.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
-          <div className="flex-1 space-y-1">
+        <div key={comment.id} className={cn("flex gap-4 mb-6 group animate-in fade-in", comment.parentId && "ml-10 border-l-2 border-zinc-900 pl-4")}>
+          <Avatar className="h-9 w-9 border border-zinc-900 shrink-0"><AvatarImage src={comment.authorAvatar} /><AvatarFallback>U</AvatarFallback></Avatar>
+          <div className="flex-1 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black text-zinc-500 uppercase tracking-tighter">@{comment.authorHandle}</span>
-              <span className="text-[9px] text-zinc-700 font-bold uppercase">{comment.createdAt?.toDate ? 'NOW' : ''}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black text-zinc-400 uppercase tracking-tighter">@{comment.authorHandle}</span>
+                {comment.authorId === SUPER_ADMIN_EMAIL && <VerificationBadge className="h-3 w-3" />}
+              </div>
+              <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                {(isSuper || user?.uid === comment.authorId) && (
+                  <button onClick={() => handleDeleteComment(comment.id)} className="text-zinc-700 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                )}
+              </div>
             </div>
             <p className="text-[14px] text-zinc-200 leading-relaxed font-medium">{comment.text}</p>
+            <div className="flex items-center gap-6 pt-1">
+              <button onClick={() => handleLikeComment(comment.id, comment.likedBy || [])} className={cn("flex items-center gap-1.5 text-[10px] font-black uppercase transition-colors", (comment.likedBy || []).includes(user?.uid) ? "text-red-500" : "text-zinc-600 hover:text-zinc-400")}>
+                <Heart className={cn("h-3 w-3", (comment.likedBy || []).includes(user?.uid) && "fill-red-500")} />
+                {comment.likesCount || 0}
+              </button>
+              <button onClick={() => onReply({ id: comment.id, handle: comment.authorHandle })} className="flex items-center gap-1.5 text-[10px] font-black text-zinc-600 uppercase hover:text-primary transition-colors">
+                <Reply className="h-3 w-3" />
+                {isRtl ? "رد" : "Reply"}
+              </button>
+            </div>
           </div>
         </div>
       )) : (
-        <div className="py-20 text-center opacity-20"><MessageCircle className="h-12 w-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا تعليقات بعد" : "No comments yet"}</p></div>
+        <div className="py-20 text-center opacity-20"><MessageCircle className="h-12 w-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا يوجد نقاش بعد" : "No dialogue yet"}</p></div>
       )}
     </ScrollArea>
   );
