@@ -73,8 +73,6 @@ interface PostCardProps {
   saves?: number;
   commentsCount?: number;
   time: string;
-  mediaSettings?: any;
-  privacy?: string;
   allowComments?: boolean;
 }
 
@@ -185,7 +183,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
 
   const handleDownloadVideo = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || !image || mediaType !== 'video' || isDownloading) return;
+    if (!user || (!image && mediaUrls.length === 0) || mediaType !== 'video' || isDownloading) return;
 
     const isViewerVerified = currentUserProfile?.isVerified || currentUserProfile?.role === 'admin' || user?.email === "adelbenmaza3@gmail.com";
 
@@ -199,7 +197,8 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
 
     try {
       setIsDownloading(true);
-      const response = await fetch(image);
+      const videoUrl = mediaUrls[0] || image;
+      const response = await fetch(videoUrl!);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -299,7 +298,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
                   <CarouselContent>
                     {carouselImages.map((url, idx) => (
                       <CarouselItem key={idx} className="flex justify-center items-center">
-                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto max-h-[600px] object-cover aspect-[4/5] md:aspect-square" />
+                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto max-h-[600px] object-cover aspect-[4/5]" />
                       </CarouselItem>
                     ))}
                   </CarouselContent>

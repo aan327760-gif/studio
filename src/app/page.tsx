@@ -13,8 +13,9 @@ import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import { useMemo } from "react";
 
 /**
- * الخوارزمية السيادية - Sovereign Algorithm v2.1
- * الترتيب بناءً على: سلطة الهوية + قوة التفاعل (إعجاب/تعليق/حفظ) + عامل الزمن.
+ * الخوارزمية السيادية - Sovereign Algorithm v2.2
+ * الترتيب بناءً على: سلطة الهوية + جودة التفاعل (حفظ > تعليق > إعجاب) + عامل الزمن.
+ * المواطن غير الموثق يمكنه التصدر إذا كان محتواه "نوعياً" ويتم حفظه أو مناقشته بكثافة.
  */
 export default function Home() {
   const { isRtl } = useLanguage();
@@ -35,18 +36,21 @@ export default function Home() {
         const author = post.author || {};
         
         // 1. سلطة الهوية (Authority)
+        // الموثقين يحصلون على دفعة للأمام، لكنها دفعة يمكن للمحتوى القوي تجاوزها.
         if (author.isPro) score += 1000;
-        if (author.isVerified) score += 500;
+        if (author.isVerified || author.role === 'admin') score += 500;
         
-        // 2. قوة التفاعل (Interaction Weight)
+        // 2. قوة التفاعل (Engagement Weight)
+        // الحفظ (Save) هو الأقوى لأنه يعني أن المحتوى مرجعي.
         score += (post.likesCount || 0) * 10;
-        score += (post.commentsCount || 0) * 15; // النقاش يعطي قيمة أعلى
-        score += (post.savesCount || 0) * 20;    // الحفظ يعكس أعلى مستويات الاهتمام
+        score += (post.commentsCount || 0) * 15; 
+        score += (post.savesCount || 0) * 20;    
         
         // 3. عامل الزمن (Time Decay)
+        // تنخفض قيمة المنشور بمرور الوقت لضمان حيوية الصفحة الرئيسية.
         const postTime = post.createdAt?.seconds ? post.createdAt.seconds * 1000 : Date.now();
         const hoursPassed = (Date.now() - postTime) / (1000 * 60 * 60);
-        score -= hoursPassed * 20; 
+        score -= hoursPassed * 25; // زيادة طفيفة في سرعة الانخفاض لضمان التجدد
         
         return score;
       };
@@ -166,7 +170,6 @@ export default function Home() {
                     likes={post.likesCount || 0}
                     saves={post.savesCount || 0}
                     time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
-                    mediaSettings={post.mediaSettings}
                   />
                 ))}
               </div>
@@ -219,7 +222,6 @@ export default function Home() {
                     likes={post.likesCount || 0}
                     saves={post.savesCount || 0}
                     time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
-                    mediaSettings={post.mediaSettings}
                   />
                 ))}
               </div>
