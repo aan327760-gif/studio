@@ -20,7 +20,8 @@ import {
   ChevronDown,
   ChevronUp,
   Star,
-  Download
+  Download,
+  Loader2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [newComment, setNewComment] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const CONTENT_LIMIT = 280;
   const shouldTruncate = content.length > CONTENT_LIMIT;
@@ -151,40 +153,49 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     setNewComment("");
   };
 
+  /**
+   * ميزة تحميل الفيديوهات السيادية: متاحة لأي فيديو على المنصة بشرط أن يكون المشاهد موثقاً.
+   */
   const handleDownloadVideo = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || !image || mediaType !== 'video') return;
+    if (!user || !image || mediaType !== 'video' || isDownloading) return;
 
-    const isVerified = currentUserProfile?.isVerified || currentUserProfile?.role === 'admin' || user?.email === "adelbenmaza3@gmail.com";
+    const isViewerVerified = currentUserProfile?.isVerified || currentUserProfile?.role === 'admin' || user?.email === "adelbenmaza3@gmail.com";
 
-    if (!isVerified) {
+    if (!isViewerVerified) {
       toast({
         title: isRtl ? "امتياز سيادي محدود" : "Sovereign Privilege",
         description: isRtl 
-          ? "عذراً، ميزة تحميل الفيديوهات متاحة حصرياً للمواطنين الموثقين والقنوات الإعلامية." 
-          : "Sorry, video downloading is exclusively available to verified citizens and media channels."
+          ? "عذراً، ميزة تحميل أي فيديو متاحة حصرياً للمواطنين الموثقين (أصحاب الروزيتا)." 
+          : "Sorry, video downloading is exclusively available to verified citizens (Rosette holders)."
       });
       return;
     }
 
     try {
-      toast({ title: isRtl ? "جاري بدء التحميل..." : "Starting download..." });
+      setIsDownloading(true);
+      toast({ title: isRtl ? "جاري تحضير الفيديو للتحميل..." : "Preparing video for download..." });
+      
       const response = await fetch(image);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `unbound-video-${id}.mp4`;
+      a.download = `unbound-sovereign-video-${id}.mp4`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      toast({ title: isRtl ? "تم بدء التحميل بنجاح" : "Download started successfully" });
     } catch (error) {
       toast({
         variant: "destructive",
         title: isRtl ? "فشل التحميل" : "Download Failed",
-        description: isRtl ? "حدث خطأ أثناء محاولة حفظ الفيديو." : "An error occurred while trying to save the video."
+        description: isRtl ? "حدث خطأ أثناء معالجة الفيديو." : "An error occurred while processing the video."
       });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -216,7 +227,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <h3 className="font-black text-[15px] truncate tracking-tight">{author?.name || author?.displayName}</h3>
-                  {(author?.isVerified || author?.email === "adelbenmaza3@gmail.com") && <VerificationBadge className="h-4 w-4" />}
+                  {(author?.isVerified || author?.email === "adelbenmaza3@gmail.com" || author?.role === 'admin') && <VerificationBadge className="h-4 w-4" />}
                   {author?.isPro && <div className="flex items-center gap-0.5 bg-yellow-500/10 px-1.5 py-0.5 rounded-full border border-yellow-500/20"><Star className="h-3 w-3 fill-yellow-500 text-yellow-500" /><span className="text-[7px] font-black text-yellow-500 uppercase tracking-widest">{isRtl ? "إعلام" : "Media"}</span></div>}
                 </div>
                 <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">@{author?.handle || author?.email?.split('@')[0]}</span>
@@ -226,8 +237,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-700 hover:text-white rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-900 text-white rounded-2xl shadow-2xl p-2">
                 {mediaType === 'video' && (
-                  <DropdownMenuItem onClick={handleDownloadVideo} className="rounded-xl m-1 h-11 font-black text-xs uppercase">
-                    <Download className="h-4 w-4 mr-2" /> {isRtl ? "تحميل الفيديو" : "Download Video"}
+                  <DropdownMenuItem onClick={handleDownloadVideo} disabled={isDownloading} className="rounded-xl m-1 h-11 font-black text-xs uppercase cursor-pointer">
+                    {isDownloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                    {isRtl ? "تحميل الفيديو" : "Download Video"}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={(e) => { 
@@ -237,8 +249,8 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'reports', operation: 'create', requestResourceData: reportData }));
                   });
                   toast({ title: "Reported" }); 
-                }} className="text-orange-500 rounded-xl m-1 h-11 font-black text-xs uppercase"><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
-                {isAdmin && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); if (confirm("Delete?")) deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl m-1 h-11 font-black text-xs uppercase"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف" : "Delete"}</DropdownMenuItem>}
+                }} className="text-orange-500 rounded-xl m-1 h-11 font-black text-xs uppercase cursor-pointer"><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
+                {isAdmin && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); if (confirm("Delete?")) deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl m-1 h-11 font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف" : "Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -355,9 +367,11 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
   const { data: replies = [] } = useCollection<any>(repliesQuery);
   const isCommentLiked = user && Array.isArray(comment.likedBy) && comment.likedBy.includes(user.uid);
 
-  const handleLike = () => {
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!user || isBanned) return;
     const commentRef = doc(db, "posts", postId, "comments", comment.id);
+    
     const updateData = isCommentLiked 
       ? { likedBy: arrayRemove(user.uid), likesCount: increment(-1) }
       : { likedBy: arrayUnion(user.uid), likesCount: increment(1) };
@@ -402,12 +416,12 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
           </div>
           <p className="text-[14px] text-zinc-100 leading-relaxed font-medium">{comment.text}</p>
           <div className="flex items-center gap-6 pt-3">
-            <div className="flex items-center gap-1.5 text-zinc-500 cursor-pointer" onClick={handleLike}>
+            <div className="flex items-center gap-1.5 text-zinc-500 cursor-pointer hover:text-primary transition-colors" onClick={handleLike}>
               <ThumbsUp className={cn("h-4 w-4 transition-all", isCommentLiked ? "text-primary fill-primary" : "")} />
               <span className={cn("text-[10px] font-black", isCommentLiked ? "text-primary" : "")}>{comment.likesCount || 0}</span>
             </div>
-            <ThumbsDown className="h-4 w-4 text-zinc-500" />
-            <div className="flex items-center gap-1.5 text-zinc-500 cursor-pointer" onClick={() => setIsReplying(!isReplying)}>
+            <ThumbsDown className="h-4 w-4 text-zinc-500 cursor-pointer hover:text-zinc-300" />
+            <div className="flex items-center gap-1.5 text-zinc-500 cursor-pointer hover:text-white transition-colors" onClick={() => setIsReplying(!isReplying)}>
               <MessageSquare className="h-4 w-4" />
               <span className="text-[10px] font-black">{isRtl ? "رد" : "Reply"}</span>
             </div>
@@ -421,20 +435,24 @@ function CommentItem({ comment, postId, isRtl, user, isBanned }: any) {
             </div>
           )}
 
-          <button className="mt-3 flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest" onClick={() => setShowReplies(!showReplies)}>
+          <button className="mt-3 flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors" onClick={() => setShowReplies(!showReplies)}>
             {showReplies ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             {isRtl ? "الردود" : "Replies"}
           </button>
 
-          {showReplies && replies.map((reply: any) => (
-            <div key={reply.id} className="mt-4 flex gap-3 border-l border-zinc-900 pl-4">
-              <Avatar className="h-7 w-7"><AvatarImage src={reply.authorAvatar} /><AvatarFallback className="bg-zinc-900">U</AvatarFallback></Avatar>
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-2"><span className="text-[11px] font-black text-zinc-400 uppercase">@{reply.authorHandle}</span></div>
-                <p className="text-[13px] text-zinc-200 leading-relaxed">{reply.text}</p>
-              </div>
+          {showReplies && (
+            <div className="space-y-4">
+              {replies.map((reply: any) => (
+                <div key={reply.id} className="mt-4 flex gap-3 border-l border-zinc-900 pl-4 animate-in slide-in-from-left-2 duration-300">
+                  <Avatar className="h-7 w-7"><AvatarImage src={reply.authorAvatar} /><AvatarFallback className="bg-zinc-900">U</AvatarFallback></Avatar>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2"><span className="text-[11px] font-black text-zinc-400 uppercase">@{reply.authorHandle}</span></div>
+                    <p className="text-[13px] text-zinc-200 leading-relaxed">{reply.text}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
