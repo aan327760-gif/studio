@@ -2,14 +2,13 @@
 "use client";
 
 import { useState, Suspense, useRef, useEffect } from "react";
-import { X, Loader2, Globe, Plus, ImageIcon } from "lucide-react";
+import { X, Plus, ImageIcon, Loader2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { toast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
@@ -23,6 +22,35 @@ import {
 } from "@/components/ui/select";
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
+
+/**
+ * دالة ضغط الصور سيادياً لتقليل الحجم قبل الرفع.
+ */
+const compressImage = async (url: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 1200;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > MAX_WIDTH) {
+        height = (MAX_WIDTH / width) * height;
+        width = MAX_WIDTH;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.7)); // جودة 70% توازن ممتاز
+    };
+    img.onerror = () => resolve(url);
+  });
+};
 
 function CreatePostContent() {
   const { isRtl } = useLanguage();
@@ -40,6 +68,8 @@ function CreatePostContent() {
   const [privacy, setPrivacy] = useState("public");
   const [allowComments, setAllowComments] = useState(true);
   const [localImages, setLocalImages] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
   const videoUrlFromParams = searchParams.get("video");
   const source = searchParams.get("source");
 
@@ -70,7 +100,7 @@ function CreatePostContent() {
     setLocalImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (isBanned) {
       toast({ variant: "destructive", title: isRtl ? "أنت محظور" : "Account Restricted" });
       return;
@@ -78,19 +108,25 @@ function CreatePostContent() {
 
     if (!content.trim() && localImages.length === 0 && !videoUrlFromParams) return;
 
+    setIsProcessing(true);
+
     const authorInfo = {
       name: profile?.displayName || user?.displayName || "User",
       handle: user?.email?.split('@')[0] || "user",
       avatar: profile?.photoURL || user?.photoURL || "",
       isVerified: user?.email === ADMIN_EMAIL || profile?.isVerified || profile?.role === 'admin',
       isPro: profile?.isPro || false,
-      role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
+      role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user"),
+      uid: user?.uid
     };
 
-    // إطلاق الرفع في الخلفية عبر الـ Context دون انتظار (Non-blocking)
+    // معالجة الصور بالضغط قبل إرسالها للـ Context لتقليل استهلاك الذاكرة
+    const compressedImages = await Promise.all(localImages.map(url => compressImage(url)));
+
+    // إرسال المهمة للـ Background Context
     startUpload({
       content,
-      localImages: [...localImages],
+      localImages: compressedImages,
       videoUrl: videoUrlFromParams,
       userId: user?.uid,
       authorInfo,
@@ -101,30 +137,30 @@ function CreatePostContent() {
 
     toast({ 
       title: isRtl ? "جاري النشر في الخلفية" : "Publishing in background",
-      description: isRtl ? "يمكنك التصفح الآن، سنخبرك عند الاكتمال." : "You can browse now, we'll notify you when done."
+      description: isRtl ? "سنقوم بتنبيهك فور اكتمال السيادة." : "Browsing is safe now."
     });
     
-    // العودة الفورية والقطعية للصفحة الرئيسية
+    // العودة الفورية المطلقة دون انتظار أي رندرة إضافية
     router.replace("/");
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-x-hidden">
-      <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-20 border-b border-zinc-900">
+    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
+      <header className="p-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-20 border-b border-zinc-900">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900">
           <X className="h-6 w-6" />
         </Button>
         <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sovereign Upload</span>
         <Button 
           onClick={handleSubmit} 
-          disabled={isBanned || (!content.trim() && localImages.length === 0 && !videoUrlFromParams)} 
-          className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200"
+          disabled={isBanned || isProcessing || (!content.trim() && localImages.length === 0 && !videoUrlFromParams)} 
+          className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200 min-w-[80px]"
         >
-          {isRtl ? "نشر" : "Post"}
+          {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Post")}
         </Button>
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-32 custom-scrollbar p-4">
+      <main className="flex-1 overflow-y-auto pb-32 p-4 custom-scrollbar">
         <div className="flex gap-4">
           <Avatar className="h-11 w-11 border border-zinc-800">
             <AvatarImage src={user?.photoURL || ""} />
@@ -139,8 +175,8 @@ function CreatePostContent() {
             />
 
             {localImages.length > 0 && (
-              <div className="w-full overflow-hidden mb-6 px-1">
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x max-w-full">
+              <div className="w-full overflow-hidden mb-6">
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
                   {localImages.map((img, i) => (
                     <div key={i} className="relative h-32 w-32 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group snap-center">
                       <img src={img} alt="preview" className="w-full h-full object-cover" />
@@ -157,7 +193,7 @@ function CreatePostContent() {
                   {localImages.length < 4 && (
                     <button 
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-32 w-32 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors snap-center"
+                      className="h-32 w-32 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors"
                     >
                       <Plus className="h-6 w-6 text-zinc-500" />
                       <span className="text-[8px] font-black text-zinc-600 uppercase">Add</span>
@@ -179,19 +215,16 @@ function CreatePostContent() {
             <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleAddImage} />
 
             {videoUrlFromParams && (
-              <div className="relative aspect-video rounded-[2rem] overflow-hidden border border-zinc-800 bg-zinc-900 mb-6 w-full shadow-2xl">
+              <div className="relative aspect-video rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-900 mb-6 shadow-2xl">
                 <video src={videoUrlFromParams} className="w-full h-full object-contain" autoPlay muted loop />
               </div>
             )}
 
             <div className="space-y-4 pt-6 border-t border-zinc-900">
                <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem]">
-                  <div className="flex items-center gap-3">
-                     <Globe className="h-5 w-5 text-zinc-400" />
-                     <span className="text-sm font-bold">{isRtl ? "الجمهور" : "Audience"}</span>
-                  </div>
+                  <span className="text-sm font-bold">{isRtl ? "الجمهور" : "Audience"}</span>
                   <Select value={privacy} onValueChange={setPrivacy}>
-                    <SelectTrigger className="w-[100px] bg-zinc-900 border-none h-8 text-xs font-bold shadow-none"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-[100px] bg-zinc-900 border-none h-8 text-xs font-bold"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
                       <SelectItem value="public">{isRtl ? "عام" : "Public"}</SelectItem>
                       <SelectItem value="followers">{isRtl ? "متابعون" : "Followers"}</SelectItem>
