@@ -1,11 +1,3 @@
-
 {
-  "placeholderImages": [
-    {
-      "id": "sticker-dz-maqam",
-      "description": "مقام الشهيد - الرمز السيادي الجزائري (PNG الشفاف)",
-      "imageUrl": "https://share.google/EAFXPJ3bAsoV7wjir",
-      "imageHint": "algeria monument"
-    }
-  ]
+  "placeholderImages": []
 }
