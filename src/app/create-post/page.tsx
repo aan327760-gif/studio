@@ -1,20 +1,23 @@
-
 "use client";
 
 import { useState, Suspense, useEffect } from "react";
-import { X, Mic, Loader2, Sparkles, Globe, Lock, Ban } from "lucide-react";
+import { X, Mic, Loader2, Sparkles, Globe, Lock, Ban, Wand2, ImagePlus } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { moderateContent } from "@/ai/flows/content-moderation-assistant";
+import { enhancePostText } from "@/ai/flows/creative-assistant";
+import { generateSovereignImage } from "@/ai/flows/image-generator";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, doc } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -41,21 +44,48 @@ function CreatePostContent() {
   
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   
+  const [isImageGenOpen, setIsImageGenOpen] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+
   const isBanned = profile?.isBannedUntil && profile.isBannedUntil.toDate() > new Date();
 
-  const imageUrl = searchParams.get("image");
+  const [localImageUrl, setLocalImageUrl] = useState<string | null>(searchParams.get("image"));
   const videoUrl = searchParams.get("video");
   const audioUrl = searchParams.get("audio");
   const filterClass = searchParams.get("filter") || "filter-none";
-  const textOverlay = searchParams.get("textOverlay") || "";
-  const textColor = searchParams.get("textColor") || "text-white";
-  const textBg = searchParams.get("textBg") === "true";
-  const textEffect = searchParams.get("textEffect") || "";
-  const textX = parseFloat(searchParams.get("textX") || "50");
-  const textY = parseFloat(searchParams.get("textY") || "50");
-  const stickersRaw = searchParams.get("stickers");
-  const stickers = stickersRaw ? JSON.parse(stickersRaw) : [];
+  
+  const handleAiEnhance = async () => {
+    if (!content.trim()) return;
+    setIsAiLoading(true);
+    try {
+      const result = await enhancePostText({ text: content, tone: 'sovereign' });
+      setContent(result.enhancedText);
+      toast({ title: isRtl ? "تم تحسين النص ذكياً" : "AI Enhanced Text" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "AI Error" });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!imagePrompt.trim()) return;
+    setIsAiLoading(true);
+    try {
+      const result = await generateSovereignImage({ prompt: imagePrompt });
+      setGeneratedImageUrl(result.imageUrl);
+      setLocalImageUrl(result.imageUrl);
+      setIsImageGenOpen(false);
+      toast({ title: isRtl ? "تم توليد الصورة" : "Image Generated" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Generation Failed" });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (isBanned) {
@@ -67,7 +97,7 @@ function CreatePostContent() {
       return;
     }
 
-    if (!content.trim() && !imageUrl && !videoUrl && !audioUrl) return;
+    if (!content.trim() && !localImageUrl && !videoUrl && !audioUrl) return;
 
     setIsSubmitting(true);
     try {
@@ -87,8 +117,8 @@ function CreatePostContent() {
       let mediaType: "image" | "video" | "audio" | null = null;
 
       try {
-        if (imageUrl) {
-          const base64 = await urlToBlob(imageUrl);
+        if (localImageUrl) {
+          const base64 = localImageUrl.startsWith('data:') ? localImageUrl : await urlToBlob(localImageUrl);
           finalMediaUrl = await uploadToCloudinary(base64, 'image');
           mediaType = 'image';
         } else if (videoUrl) {
@@ -114,16 +144,6 @@ function CreatePostContent() {
         content,
         mediaUrl: finalMediaUrl,
         mediaType: mediaType,
-        mediaSettings: {
-          filter: filterClass,
-          textOverlay: textOverlay,
-          textColor: textColor,
-          textBg: textBg,
-          textEffect: textEffect,
-          textX: textX,
-          textY: textY,
-          stickers: stickers
-        },
         authorId: user?.uid || "anonymous",
         author: {
           name: user?.displayName || "User",
@@ -160,10 +180,10 @@ function CreatePostContent() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900"><X className="h-6 w-6" /></Button>
         <Button 
           onClick={handleSubmit} 
-          disabled={isSubmitting || isBanned || (!content.trim() && !imageUrl && !videoUrl && !audioUrl)} 
+          disabled={isSubmitting || isBanned || (!content.trim() && !localImageUrl && !videoUrl && !audioUrl)} 
           className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200 shadow-xl transition-all active:scale-95 disabled:opacity-20"
         >
-          {isRtl ? "نشر" : "Post"}
+          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Post")}
         </Button>
       </header>
 
@@ -175,29 +195,96 @@ function CreatePostContent() {
               <AlertTitle>{isRtl ? "تنبيه الحظر" : "Account Restriction"}</AlertTitle>
               <AlertDescription>
                 {isRtl 
-                  ? `أنت محظور من النشر حالياً. سينتهي الحظر في: ${profile?.isBannedUntil.toDate().toLocaleString()}`
-                  : `You are restricted from posting. Ban expires on: ${profile?.isBannedUntil.toDate().toLocaleString()}`
+                  ? `أنت محظور من النشر حالياً.`
+                  : `You are restricted from posting.`
                 }
               </AlertDescription>
             </Alert>
           </div>
         )}
+
         <div className="p-4 flex gap-4">
           <Avatar className="h-11 w-11 border border-zinc-800">
             <AvatarImage src={user?.photoURL || ""} />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-4">
-            <Textarea 
-              placeholder={isRtl ? "ماذا يدور في ذهنك؟" : "What's on your mind?"} 
-              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[140px] placeholder:text-zinc-700" 
-              value={content} 
-              onChange={(e) => setContent(e.target.value)} 
-              disabled={isBanned}
-            />
+            <div className="relative">
+              <Textarea 
+                placeholder={isRtl ? "ماذا يدور في ذهنك؟" : "What's on your mind?"} 
+                className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[140px] placeholder:text-zinc-700" 
+                value={content} 
+                onChange={(e) => setContent(e.target.value)} 
+                disabled={isBanned || isAiLoading}
+              />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="absolute bottom-0 right-0 rounded-full h-8 gap-1.5 text-primary bg-primary/10 border border-primary/20"
+                onClick={handleAiEnhance}
+                disabled={isAiLoading || !content.trim()}
+              >
+                {isAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                <span className="text-[10px] font-black uppercase tracking-widest">{isRtl ? "تحسين ذكي" : "AI Enhance"}</span>
+              </Button>
+            </div>
+
+            {localImageUrl && (
+              <div className="relative group rounded-2xl overflow-hidden border border-zinc-800">
+                <img src={localImageUrl} alt="Preview" className={cn("w-full h-auto", filterClass)} />
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  className="absolute top-2 right-2 rounded-full h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => setLocalImageUrl(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </main>
+
+      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-black border-t border-zinc-900 max-w-md mx-auto z-30">
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            className="flex-1 rounded-2xl h-12 bg-zinc-900 border border-zinc-800 gap-2 text-zinc-400 hover:text-white"
+            onClick={() => setIsImageGenOpen(true)}
+            disabled={isAiLoading}
+          >
+            <ImagePlus className="h-5 w-5" />
+            <span className="text-xs font-bold">{isRtl ? "توليد صورة بالذكاء" : "AI Image Gen"}</span>
+          </Button>
+        </div>
+      </footer>
+
+      <Dialog open={isImageGenOpen} onOpenChange={setIsImageGenOpen}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-white rounded-[2rem] w-[90%] max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center font-black">{isRtl ? "توليد صورة سيادية" : "Sovereign AI Art"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Input 
+              placeholder={isRtl ? "صف ما تتخيله..." : "Describe what you imagine..."} 
+              className="bg-zinc-900 border-none rounded-xl h-12"
+              value={imagePrompt}
+              onChange={(e) => setImagePrompt(e.target.value)}
+            />
+            <Button 
+              className="w-full bg-white text-black hover:bg-zinc-200 font-black h-12 rounded-xl"
+              onClick={handleGenerateImage}
+              disabled={isAiLoading || !imagePrompt.trim()}
+            >
+              {isAiLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (isRtl ? "توليد الآن" : "Generate Now")}
+            </Button>
+            <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest px-4 leading-relaxed">
+              {isRtl ? "سيقوم الذكاء الاصطناعي بتحويل وصفك إلى لوحة فنية فريدة لمنشورك" : "AI will transform your description into unique art for your post"}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
