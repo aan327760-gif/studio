@@ -17,6 +17,8 @@ import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
+const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
+
 interface PostCardProps {
   id: string;
   author: {
@@ -26,6 +28,7 @@ interface PostCardProps {
     uid?: string;
     isVerified?: boolean;
     role?: string;
+    email?: string;
   };
   content: string;
   image?: string;
@@ -131,6 +134,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
     setNewComment("");
   };
 
+  // التحقق من التوثيق (لا تظهر للمدير كما طلب المستخدم)
+  const showVerification = author.isVerified && author.email !== ADMIN_EMAIL;
+
   return (
     <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/50 cursor-pointer active:bg-zinc-950/50 transition-colors" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-4 pb-2 flex flex-row items-center space-y-0 gap-3" onClick={(e) => e.stopPropagation()}>
@@ -145,7 +151,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
             <div className="flex flex-col">
               <div className="flex items-center gap-1">
                 <h3 className="font-bold text-sm truncate hover:underline">{author.name}</h3>
-                {(author.isVerified || author.role === 'admin') && (
+                {showVerification && (
                   <CheckCircle2 className="h-3.5 w-3.5 text-[#1DA1F2] fill-[#1DA1F2] text-black" />
                 )}
               </div>

@@ -14,9 +14,6 @@ import {
   Grid3X3,
   Heart,
   FileText,
-  MessageSquare,
-  Share2,
-  Trash2,
   ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +24,6 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import Link from "next/link";
 import { PostCard } from "@/components/feed/PostCard";
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { signOut } from "firebase/auth";
 import { toast } from "@/hooks/use-toast";
 import { collection, query, where, orderBy, limit, doc, setDoc, deleteDoc, serverTimestamp, increment, updateDoc, addDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
@@ -129,6 +125,10 @@ export default function UserProfilePage() {
   }
 
   const isProfileAdmin = profile?.email === ADMIN_EMAIL || profile?.role === 'admin';
+  const isVisitingAdmin = currentUser?.email === ADMIN_EMAIL;
+  
+  // علامة التوثيق (لا تظهر للمدير كما طلب)
+  const showCheckmark = profile?.isVerified && profile?.email !== ADMIN_EMAIL;
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20 overflow-x-hidden">
@@ -177,7 +177,7 @@ export default function UserProfilePage() {
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
               <h2 className="text-2xl font-black tracking-tight">{profile?.displayName}</h2>
-              {(profile?.isVerified || isProfileAdmin) && (
+              {showCheckmark && (
                 <CheckCircle2 className="h-5 w-5 text-[#1DA1F2] fill-[#1DA1F2] text-black" />
               )}
             </div>
@@ -270,8 +270,9 @@ export default function UserProfilePage() {
                     handle: profile.email?.split('@')[0],
                     avatar: profile.photoURL,
                     uid: profile.uid,
-                    isVerified: profile.isVerified || isProfileAdmin,
-                    role: profile.role
+                    isVerified: profile.isVerified,
+                    role: profile.role,
+                    email: profile.email
                   }}
                   content={post.content}
                   image={post.mediaUrl}

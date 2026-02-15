@@ -1,14 +1,14 @@
 
 "use client";
 
-import { Home, Search, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, X, StopCircle, MessageSquare, ShieldCheck } from "lucide-react";
+import { Home, Search, Plus, Bell, User, Video, Mic, ImageIcon, PenLine, StopCircle, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Sheet,
   SheetContent,
@@ -17,10 +17,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
-import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, doc } from "firebase/firestore";
-
-const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
+import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
 
 export function AppSidebar() {
   const { isRtl } = useLanguage();
@@ -37,11 +35,6 @@ export function AppSidebar() {
   const [recordingTime, setRecordingTime] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // جلب بيانات المستخدم لمعرفة الدور
-  const userRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
-  const { data: profile } = useDoc<any>(userRef);
-  const isAdmin = user?.email === ADMIN_EMAIL || profile?.role === 'admin';
 
   const unreadNotifsQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -61,11 +54,6 @@ export function AppSidebar() {
       isAvatar: true 
     },
   ];
-
-  // إضافة رابط الإدارة للمدير
-  if (isAdmin) {
-    navItems.splice(4, 0, { icon: ShieldCheck, href: "/admin", label: "Management" });
-  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
