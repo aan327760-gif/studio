@@ -177,12 +177,12 @@ function FinalizeMediaContent() {
       onTouchEnd={() => { setIsDraggingText(false); setIsDraggingSticker(null); }}
       onClick={() => setActiveStickerId(null)}
     >
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 bg-black flex items-center justify-center">
         {imageUrl && (
           <img 
             src={imageUrl} 
             alt="Finalize" 
-            className={cn("w-full h-full object-cover", filterClass)} 
+            className={cn("w-full h-full object-contain", filterClass)} 
             style={{ 
               transform: `rotate(${rotation}deg)`,
               filter: `brightness(${brightness}%) contrast(${contrast}%) ${filterClass === 'filter-none' ? '' : filterClass === 'grayscale' ? 'grayscale(1)' : filterClass === 'sepia' ? 'sepia(1)' : ''}`
@@ -192,7 +192,7 @@ function FinalizeMediaContent() {
         {videoUrl && (
           <video 
             src={videoUrl} 
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-contain" 
             style={{ transform: `rotate(${rotation}deg)` }}
             autoPlay 
             muted={isMuted} 
@@ -200,7 +200,7 @@ function FinalizeMediaContent() {
             playsInline 
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/40 pointer-events-none" />
       </div>
 
       <div className="absolute inset-0 z-10 pointer-events-none">

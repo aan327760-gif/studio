@@ -84,11 +84,11 @@ function ImageEditorContent() {
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="relative w-full aspect-[3/4] overflow-hidden rounded-[2rem] transition-all duration-500 shadow-2xl border border-white/5 flex items-center justify-center bg-zinc-900">
+        <div className="relative w-full aspect-[3/4] overflow-hidden rounded-3xl transition-all duration-500 shadow-2xl border border-white/5 flex items-center justify-center bg-zinc-950">
           <img 
             src={selectedImage} 
             alt="Preview" 
-            className={cn("w-full h-full object-cover transition-all duration-300", activeFilter.class)}
+            className={cn("w-full h-full object-contain transition-all duration-300", activeFilter.class)}
             style={{ 
               transform: `rotate(${rotation}deg)`,
               filter: `brightness(${brightness}%) contrast(${contrast}%) ${activeFilter.class === 'filter-none' ? '' : activeFilter.class === 'grayscale' ? 'grayscale(1)' : activeFilter.class === 'sepia' ? 'sepia(1)' : ''}`
