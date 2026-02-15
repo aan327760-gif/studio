@@ -22,17 +22,14 @@ import {
   Loader2,
   Search,
   Ban,
-  ShieldCheck,
-  Flag,
-  CheckCircle,
   Users,
   MessageSquare,
   AlertTriangle,
   Activity,
   Megaphone,
-  BrainCircuit,
   Star,
-  Radio
+  Radio,
+  CheckCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -48,6 +45,9 @@ import { VerificationBadge } from "@/components/ui/verification-badge";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
+/**
+ * مركز القيادة - تم نزع ميزات التحليل الآلي ليبقى القرار للمدير العام فقط.
+ */
 export default function AdminDashboard() {
   const { user, loading: userLoading } = useUser();
   const { isRtl } = useLanguage();
@@ -149,9 +149,6 @@ export default function AdminDashboard() {
             </Badge>
           </div>
         </div>
-        <div className="h-10 w-10 rounded-xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
-           <BrainCircuit className="h-5 w-5 text-primary animate-pulse" />
-        </div>
       </header>
 
       <main className="p-6 space-y-8">
@@ -218,7 +215,6 @@ export default function AdminDashboard() {
                   <div className="flex gap-2">
                      {isSuperAdmin && (
                        <div className="flex gap-1">
-                          {/* توثيق الهوية (Blue Rosette) */}
                           <Button 
                             variant="ghost" size="icon" 
                             className={cn("h-10 w-10", member.isVerified ? "text-primary" : "text-zinc-800")}
@@ -227,7 +223,6 @@ export default function AdminDashboard() {
                           >
                             <VerificationBadge className="h-5 w-5" />
                           </Button>
-                          {/* توثيق قناة إعلامية (Media Pro) */}
                           <Button 
                             variant="ghost" size="icon" 
                             className={cn("h-10 w-10", member.isPro ? "text-yellow-500" : "text-zinc-800")}
@@ -259,7 +254,7 @@ export default function AdminDashboard() {
                  <div key={report.id} className="p-6 bg-zinc-950 border border-zinc-900 rounded-[2rem] space-y-4">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-4">
-                        <div className="p-4 bg-red-500/10 rounded-2xl"><Flag className="h-6 w-6 text-red-500" /></div>
+                        <div className="p-4 bg-red-500/10 rounded-2xl"><AlertTriangle className="h-6 w-6 text-red-500" /></div>
                         <div>
                           <p className="text-sm font-black">{isRtl ? "بلاغ عن " : "Report on "}{report.targetType}</p>
                           <p className="text-xs text-zinc-500 font-bold mt-1">السبب: {report.reason}</p>

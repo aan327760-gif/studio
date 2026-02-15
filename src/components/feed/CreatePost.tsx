@@ -1,17 +1,22 @@
+
 "use client";
 
 import { useState } from "react";
-import { Image, Video, Send, X } from "lucide-react";
+import { Image, Video, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLanguage } from "@/context/LanguageContext";
-import { moderateContent } from "@/ai/flows/content-moderation-assistant";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/firebase";
 
+/**
+ * مكون إنشاء المنشور - تم نزع الذكاء الاصطناعي منه ليعتمد على التعبير البشري الصرف.
+ */
 export function CreatePost() {
-  const { t, isRtl } = useLanguage();
+  const { isRtl } = useLanguage();
   const { toast } = useToast();
+  const { user } = useUser();
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -20,24 +25,12 @@ export function CreatePost() {
 
     setIsSubmitting(true);
     try {
-      const result = await moderateContent({ text: content });
-      
-      if (!result.isAppropriate) {
-        toast({
-          title: isRtl ? "محتوى غير لائق" : "Inappropriate Content",
-          description: isRtl 
-            ? "تم اكتشاف محتوى قد ينتهك سياساتنا: " + result.moderationFlags.join(", ")
-            : "Content detected that might violate our policies: " + result.moderationFlags.join(", "),
-          variant: "destructive",
-        });
-      } else {
-        // Success logic here
-        toast({
-          title: isRtl ? "تم النشر" : "Posted",
-          description: isRtl ? "تم نشر منشورك بنجاح" : "Your post has been published successfully.",
-        });
-        setContent("");
-      }
+      // هنا يتم النشر مباشرة دون رقابة آلية، الاعتماد الآن على المشرفين
+      toast({
+        title: isRtl ? "تم النشر" : "Posted",
+        description: isRtl ? "تم نشر فكرتك بنجاح في مجتمع بلا قيود" : "Your thought has been shared with the community.",
+      });
+      setContent("");
     } catch (error) {
       toast({
         title: "Error",
@@ -50,36 +43,32 @@ export function CreatePost() {
   };
 
   return (
-    <div className="bg-white border-b p-4 md:rounded-2xl md:border md:mb-6 shadow-sm">
-      <div className="flex gap-4">
-        <Avatar className="h-10 w-10">
-          <AvatarImage src="https://picsum.photos/seed/me/100/100" />
+    <div className="bg-zinc-950 border-b border-zinc-900 p-6 md:rounded-[2rem] md:border md:mb-6 shadow-xl relative overflow-hidden group">
+      <div className="flex gap-4 relative z-10">
+        <Avatar className="h-12 w-12 border border-zinc-800">
+          <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/me/100/100"} />
           <AvatarFallback>U</AvatarFallback>
         </Avatar>
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 space-y-4">
           <Textarea
-            placeholder={t("createPost")}
+            placeholder={isRtl ? "شارك فكرة حرة..." : "Share a free thought..."}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="min-h-[80px] resize-none border-none focus-visible:ring-0 p-0 text-base"
+            className="min-h-[100px] resize-none border-none focus-visible:ring-0 p-0 text-lg bg-transparent placeholder:text-zinc-700 font-medium"
           />
-          <div className="flex items-center justify-between pt-2 border-t">
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full">
-                <Image className="h-5 w-5 mr-1.5" />
-                <span className="text-xs font-medium">{isRtl ? "صورة" : "Image"}</span>
-              </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary rounded-full">
-                <Video className="h-5 w-5 mr-1.5" />
-                <span className="text-xs font-medium">{isRtl ? "فيديو" : "Video"}</span>
+          <div className="flex items-center justify-between pt-4 border-t border-zinc-900/50">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-white rounded-xl hover:bg-white/5 h-10 px-4">
+                <Image className="h-5 w-5 mr-2" />
+                <span className="text-xs font-black uppercase tracking-widest">{isRtl ? "صورة" : "Image"}</span>
               </Button>
             </div>
             <Button 
               onClick={handleSubmit} 
               disabled={!content.trim() || isSubmitting}
-              className="rounded-full px-6 bg-primary hover:bg-primary/90"
+              className="rounded-full px-10 h-12 bg-white text-black hover:bg-zinc-200 font-black shadow-xl active:scale-95 transition-all"
             >
-              {isSubmitting ? "..." : t("post")}
+              {isSubmitting ? "..." : (isRtl ? "نشر" : "Post")}
             </Button>
           </div>
         </div>

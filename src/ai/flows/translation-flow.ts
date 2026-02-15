@@ -1,7 +1,9 @@
+
 'use server';
 
 /**
- * @fileOverview تدفق الترجمة السيادي - يكسر حواجز اللغة في Unbound.
+ * @fileOverview تدفق الترجمة السيادي - كاسر الحواجز اللغوية.
+ * يستخدم Gemini لترجمة النصوص مع الحفاظ على الروح، التنسيق، والرموز التعبيرية.
  */
 
 import { ai } from '@/ai/genkit';
@@ -13,16 +15,27 @@ const TranslateInputSchema = z.object({
 });
 
 const TranslateOutputSchema = z.object({
-  translatedText: z.string().describe('النص بعد الترجمة.'),
+  translatedText: z.string().describe('النص بعد الترجمة الاحترافية.'),
 });
 
+/**
+ * ترجمة المحتوى بذكاء سيادي.
+ */
 export async function translateContent(input: { text: string, targetLang: string }): Promise<string> {
+  // استخدام ai.generate مباشرة للحصول على أدق النتائج في الترجمة
   const { output } = await ai.generate({
-    prompt: `Translate the following text to ${input.targetLang}. 
-    Maintain the original tone, formatting, and emojis. 
-    If the text is already in the target language, return it as is.
+    prompt: `أنت مترجم سيادي محترف في منصة Unbound. 
+    مهمتك ترجمة النص التالي إلى ${input.targetLang}.
     
-    Text: ${input.text}`,
+    القواعد المطلقة:
+    1. حافظ على النبرة الأصلية (رسمية، ودية، حماسية).
+    2. لا تقم بتغيير الرموز التعبيرية (Emojis) أو أماكنها.
+    3. إذا كان النص يحتوي على وسوم (#Hashtags) اتركها كما هي.
+    4. إذا كان النص بالفعل باللغة الهدف، أعده كما هو.
+    5. قدم ترجمة بشرية طبيعية، وليست ترجمة آلية حرفية.
+    
+    النص المراد ترجمته: 
+    "${input.text}"`,
     output: { schema: TranslateOutputSchema }
   });
 

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Heart, MessageCircle, MoreHorizontal, Send, Trash2, Flag, Languages, Loader2 } from "lucide-react";
@@ -48,6 +49,9 @@ interface PostCardProps {
   mediaSettings?: any;
 }
 
+/**
+ * مكون بطاقة المنشور - يدعم الترجمة السيادية بلمسة واحدة.
+ */
 export function PostCard({ id, author, content, image, mediaType, likes: initialLikes, time, mediaSettings }: PostCardProps) {
   const { isRtl, language } = useLanguage();
   const { user } = useUser();
@@ -63,7 +67,7 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
   const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
   
-  // Translation states
+  // حالات الترجمة
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [showOriginal, setShowOriginal] = useState(true);
@@ -208,19 +212,26 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
 
       <CardContent className="p-0">
         <div className="px-4 pb-2 text-[15px] leading-snug">
-          <p className="whitespace-pre-wrap">
-            {showOriginal ? content : translatedText}
-          </p>
+          <div className="relative">
+            <p className={cn("whitespace-pre-wrap transition-all", !showOriginal && "text-primary font-medium")}>
+              {showOriginal ? content : translatedText}
+            </p>
+            {!showOriginal && (
+              <span className="text-[8px] font-black text-primary/40 uppercase tracking-widest mt-1 block">
+                {isRtl ? "تمت الترجمة آلياً" : "Translated by AI"}
+              </span>
+            )}
+          </div>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-6 px-0 mt-2 text-primary hover:bg-transparent font-black text-[10px] uppercase tracking-widest gap-1"
+            className="h-7 px-0 mt-3 text-primary hover:bg-transparent font-black text-[10px] uppercase tracking-widest gap-2"
             onClick={handleTranslate}
             disabled={isTranslating}
           >
-            {isTranslating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />}
+            {isTranslating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3.5 w-3.5" />}
             {isTranslating ? (isRtl ? "جاري الترجمة..." : "Translating...") : 
-             (showOriginal ? (isRtl ? "ترجمة" : "Translate") : (isRtl ? "إظهار الأصل" : "Show Original"))}
+             (showOriginal ? (isRtl ? "ترجمة المنشور" : "Translate Post") : (isRtl ? "إظهار النص الأصلي" : "Show Original Text"))}
           </Button>
         </div>
 
