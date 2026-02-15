@@ -249,9 +249,9 @@ export function PostCard({ id, author, content, image, mediaType, likes: initial
                 </div>
               ) : mediaType === 'audio' ? (
                 <div className="p-6 bg-zinc-900/50 flex flex-col gap-4">
-                  <audio ref={audioRef} src={image} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} className="hidden" />
+                  <audio ref={audioRef} src={image} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} className="hidden" />
                   <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-primary text-white hover:bg-primary/90" onClick={toggleMedia}>
+                    <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-primary text-white hover:bg-primary/90 shadow-lg" onClick={toggleMedia}>
                       {isPlaying ? <Pause className="h-6 w-6 fill-white" /> : <Play className="h-6 w-6 fill-white" />}
                     </Button>
                     <div className="flex-1 space-y-1">

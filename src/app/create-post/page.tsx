@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
-import { X, Loader2, Globe, Lock, Ban, MessageSquare, ShieldCheck, Users } from "lucide-react";
+import { useState, Suspense, useEffect, useRef } from "react";
+import { X, Loader2, Globe, Lock, Ban, MessageSquare, ShieldCheck, Users, Mic, Play, Pause, Volume2 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,12 +43,14 @@ function CreatePostContent() {
   const searchParams = useSearchParams();
   const db = useFirestore();
   const { user } = useUser();
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const userRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userRef);
   
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   
   const [privacy, setPrivacy] = useState("public");
   const [allowComments, setAllowComments] = useState(true);
@@ -72,6 +74,14 @@ function CreatePostContent() {
   const textY = searchParams.get("textY");
   const stickersRaw = searchParams.get("stickers");
   const stickers = stickersRaw ? JSON.parse(stickersRaw) : [];
+
+  const toggleAudio = () => {
+    if (audioRef.current) {
+      if (isPlayingAudio) audioRef.current.pause();
+      else audioRef.current.play();
+      setIsPlayingAudio(!isPlayingAudio);
+    }
+  };
 
   const handleSubmit = async () => {
     if (isBanned) {
@@ -186,6 +196,24 @@ function CreatePostContent() {
                 )}
                 <div className="absolute top-3 right-3 bg-primary px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
                    {isRtl ? "تمت المعالجة" : "Processed"}
+                </div>
+              </div>
+            )}
+
+            {audioUrl && (
+              <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-[2rem] flex flex-col gap-4 shadow-xl">
+                <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlayingAudio(false)} className="hidden" />
+                <div className="flex items-center gap-4">
+                  <Button variant="ghost" size="icon" className="h-14 w-14 rounded-2xl bg-primary text-white hover:bg-primary/90 shadow-lg" onClick={toggleAudio}>
+                    {isPlayingAudio ? <Pause className="h-6 w-6 fill-white" /> : <Play className="h-6 w-6 fill-white" />}
+                  </Button>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">{isRtl ? "معاينة البصمة الصوتية" : "Voice Note Preview"}</p>
+                    <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                      <div className={cn("h-full bg-primary transition-all duration-300", isPlayingAudio ? "w-full" : "w-0")} />
+                    </div>
+                  </div>
+                  <Volume2 className="h-5 w-5 text-zinc-700" />
                 </div>
               </div>
             )}

@@ -84,6 +84,9 @@ export function AppSidebar() {
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
         const audioUrl = URL.createObjectURL(blob);
+        
+        // تحويل الـ blob إلى Base64 لنقله عبر الرابط بشكل مؤقت (لأغراض المعاينة فقط)
+        // أو الأفضل تمريره كـ blob URL ومعالجته في الصفحة التالية
         setIsSheetOpen(false);
         router.push(`/create-post?audio=${encodeURIComponent(audioUrl)}`);
         stream.getTracks().forEach(track => track.stop());
@@ -105,8 +108,8 @@ export function AppSidebar() {
     } catch (err) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Could not access microphone.",
+        title: isRtl ? "خطأ في الميكروفون" : "Microphone Error",
+        description: isRtl ? "يرجى السماح بالوصول للميكروفون للتسجيل." : "Please allow microphone access to record.",
       });
     }
   };
@@ -188,7 +191,7 @@ export function AppSidebar() {
                     </div>
                     <Button variant="destructive" size="lg" className="rounded-full h-14 px-8 font-bold gap-3" onClick={handleStopRecording}>
                       <StopCircle className="h-6 w-6" />
-                      {isRtl ? "إيقاف وحفظ" : "Stop Recording"}
+                      {isRtl ? "إيقاف وحفظ" : "Stop & Save"}
                     </Button>
                   </div>
                 ) : (
