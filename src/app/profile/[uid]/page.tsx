@@ -87,7 +87,8 @@ export default function UserProfilePage() {
   const isProfileAdmin = profile?.role === "admin" || profile?.email === SUPER_ADMIN_EMAIL;
   const isVisitorAdmin = currentUserProfile?.role === "admin" || currentUser?.email === SUPER_ADMIN_EMAIL;
   
-  const showCheckmark = profile?.isVerified;
+  // التأكد من ظهور علامة التوثيق للمدير العام دائماً
+  const showCheckmark = profile?.isVerified || profile?.email === SUPER_ADMIN_EMAIL;
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-800 pb-20 overflow-x-hidden">

@@ -47,8 +47,8 @@ export default function AuthPage() {
         const user = userCredential.user;
         
         const userRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userRef);
         
+        // التوثيق التلقائي للمدير العام عند الدخول
         if (user.email === SUPER_ADMIN_EMAIL) {
           await updateDoc(userRef, {
             role: "admin",
@@ -82,7 +82,7 @@ export default function AuthPage() {
           photoURL: "https://picsum.photos/seed/" + user.uid + "/200/200",
           createdAt: serverTimestamp(),
           isPro: isSuper,
-          isVerified: isSuper,
+          isVerified: isSuper, // توثيق تلقائي إذا كان الإيميل هو إيميل المدير
           role: isSuper ? "admin" : "user",
           followersCount: 0,
           followingCount: 0,

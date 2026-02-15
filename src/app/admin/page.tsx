@@ -392,6 +392,9 @@ export default function AdminDashboard() {
                   u.email?.toLowerCase().includes(searchQuery.toLowerCase())
                 ).map((member: any) => {
                const isBanned = member.isBannedUntil && member.isBannedUntil.toDate() > new Date();
+               // التأكد من توثيق حساب المدير العام في القائمة
+               const isMemberVerified = member.isVerified || member.email === SUPER_ADMIN_EMAIL;
+               
                return (
                  <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-3xl hover:bg-zinc-900/50 transition-colors">
                     <div className="flex items-center gap-3">
@@ -402,7 +405,7 @@ export default function AdminDashboard() {
                       <div>
                          <div className="flex items-center gap-1.5">
                             <p className="text-sm font-black">{member.displayName}</p>
-                            {member.isVerified && <CheckCircle2 className="h-3.5 w-3.5 text-[#1DA1F2] fill-[#1DA1F2]" />}
+                            {isMemberVerified && <CheckCircle2 className="h-3.5 w-3.5 text-[#1DA1F2] fill-[#1DA1F2]" />}
                             {member.role === "admin" && member.email !== SUPER_ADMIN_EMAIL && <ShieldCheck className="h-3.5 w-3.5 text-primary fill-primary" />}
                             {isBanned && <Clock className="h-3.5 w-3.5 text-orange-500 animate-pulse" />}
                          </div>
@@ -416,7 +419,7 @@ export default function AdminDashboard() {
                              <Button 
                                variant="ghost" 
                                size="icon" 
-                               className={cn("h-10 w-10 transition-colors", member.isVerified ? "text-[#1DA1F2]" : "text-zinc-800 hover:text-[#1DA1F2]")}
+                               className={cn("h-10 w-10 transition-colors", isMemberVerified ? "text-[#1DA1F2]" : "text-zinc-800 hover:text-[#1DA1F2]")}
                                onClick={() => handleToggleVerification(member.id, !!member.isVerified)}
                              >
                                <CheckCircle2 className="h-5 w-5" />
