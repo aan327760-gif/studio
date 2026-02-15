@@ -177,7 +177,6 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
     });
     
     updateDoc(postRef, { commentsCount: increment(1) });
-    
     setNewComment("");
   };
 
@@ -277,11 +276,11 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
         </div>
 
         {carouselImages.length > 0 && (
-          <div className="w-full mb-4">
-            <div className="relative overflow-hidden bg-black group w-full">
+          <div className="px-4 mb-4">
+            <div className="relative overflow-hidden bg-zinc-950 group w-full rounded-[2rem] border border-zinc-900/50">
               {mediaType === 'video' ? (
-                <div className="relative w-full bg-black flex items-center justify-center">
-                  <video ref={videoRef} src={carouselImages[0]} className="w-full h-auto object-contain" onClick={toggleMedia} playsInline loop />
+                <div className="relative w-full flex items-center justify-center bg-black">
+                  <video ref={videoRef} src={carouselImages[0]} className="w-full h-auto max-h-[70vh] object-contain" onClick={toggleMedia} playsInline loop />
                   {!isPlaying && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="h-16 w-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center"><Play className="h-8 w-8 text-white fill-white" /></div></div>}
                 </div>
               ) : mediaType === 'audio' ? (
@@ -298,7 +297,7 @@ export function PostCard({ id, author, content, image, mediaUrls = [], mediaType
                   <CarouselContent>
                     {carouselImages.map((url, idx) => (
                       <CarouselItem key={idx} className="flex justify-center items-center bg-black">
-                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto object-contain" />
+                        <img src={url} alt={`Media ${idx}`} className="w-full h-auto max-h-[70vh] object-contain" />
                       </CarouselItem>
                     ))}
                   </CarouselContent>

@@ -83,9 +83,6 @@ function CreatePostContent() {
     setLocalImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  /**
-   * دالة النشر في الخلفية لضمان عدم تعطيل تصفح المستخدم
-   */
   const processPostInBackground = async (
     postContent: string, 
     images: string[], 
@@ -128,8 +125,7 @@ function CreatePostContent() {
       });
 
       toast({ 
-        title: isRtl ? "تم النشر بنجاح" : "Post Published Successfully",
-        description: isRtl ? "فكرتك الآن متاحة للجميع." : "Your thought is now live."
+        title: isRtl ? "تم النشر بنجاح" : "Post Published Successfully"
       });
     } catch (error: any) {
       toast({ 
@@ -150,7 +146,6 @@ function CreatePostContent() {
 
     setIsSubmitting(true);
     
-    // إعداد بيانات المؤلف قبل التوجيه
     const authorInfo = {
       name: profile?.displayName || user?.displayName || "User",
       handle: user?.email?.split('@')[0] || "user",
@@ -160,10 +155,8 @@ function CreatePostContent() {
       role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user")
     };
 
-    // بدء المعالجة في الخلفية
     processPostInBackground(content, [...localImages], videoUrlFromParams, authorInfo);
 
-    // توجيه فوري للمستخدم لإكمال التصفح
     toast({ 
       title: isRtl ? "جاري النشر في الخلفية..." : "Posting in background...",
       description: isRtl ? "يمكنك الاستمرار في التصفح بحرية." : "You can keep browsing freely."
@@ -202,7 +195,7 @@ function CreatePostContent() {
             />
 
             {localImages.length > 0 && (
-              <div className="w-full overflow-hidden mb-6">
+              <div className="w-full overflow-hidden mb-6 px-1">
                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x max-w-full">
                   {localImages.map((img, i) => (
                     <div key={i} className="relative h-32 w-32 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group snap-center">
@@ -242,13 +235,13 @@ function CreatePostContent() {
             <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleAddImage} />
 
             {videoUrlFromParams && (
-              <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 mb-6 w-full">
+              <div className="relative aspect-video rounded-[2.5rem] overflow-hidden border border-zinc-800 bg-zinc-900 mb-6 w-full shadow-2xl">
                 <video src={videoUrlFromParams} className="w-full h-full object-contain" autoPlay muted loop />
               </div>
             )}
 
             <div className="space-y-4 pt-6 border-t border-zinc-900">
-               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl">
+               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem]">
                   <div className="flex items-center gap-3">
                      <Globe className="h-5 w-5 text-zinc-400" />
                      <span className="text-sm font-bold">{isRtl ? "الجمهور" : "Audience"}</span>
@@ -261,7 +254,7 @@ function CreatePostContent() {
                     </SelectContent>
                   </Select>
                </div>
-               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-2xl">
+               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem]">
                   <span className="text-sm font-bold">{isRtl ? "السماح بالتعليق" : "Allow Comments"}</span>
                   <Switch checked={allowComments} onCheckedChange={setAllowComments} />
                </div>
