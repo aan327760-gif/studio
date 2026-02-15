@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -31,7 +30,9 @@ import {
   Github,
   Rocket,
   Lock,
-  Globe
+  Globe,
+  ExternalLink,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -215,33 +216,46 @@ export default function AdminDashboard() {
                 <div className="absolute top-0 right-0 p-6 opacity-5"><Github className="h-24 w-24" /></div>
                 <div className="flex items-center gap-3 mb-6">
                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10"><Github className="h-5 w-5 text-white" /></div>
-                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "مزامنة GitHub السيادية" : "Sovereign GitHub Sync"}</h3>
+                   <h3 className="font-black text-sm uppercase tracking-widest">{isRtl ? "المزامنة والنشر السيادي" : "Sovereign Deploy"}</h3>
                 </div>
                 
                 <div className="space-y-5">
                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 px-1"><Globe className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">{isRtl ? "رابط المستودع" : "Repository URL"}</span></div>
+                      <div className="flex items-center gap-2 px-1"><Globe className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">{isRtl ? "رابط GitHub" : "GitHub Repo"}</span></div>
                       <Input placeholder="https://github.com/user/unbound-os.git" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} />
                    </div>
                    
                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 px-1"><Lock className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">{isRtl ? "رمز الوصول (Token)" : "Access Token"}</span></div>
+                      <div className="flex items-center gap-2 px-1"><Lock className="h-3 w-3 text-zinc-500" /><span className="text-[10px] font-black uppercase text-zinc-500">{isRtl ? "رمز الوصول (PAT)" : "Personal Access Token"}</span></div>
                       <Input type="password" placeholder="ghp_xxxxxxxxxxxx" className="bg-zinc-900 border-zinc-800 h-12 rounded-xl text-xs" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} />
                    </div>
 
-                   <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl space-y-2">
-                      <p className="text-[9px] font-black text-primary uppercase leading-relaxed">
-                         {isRtl ? "سيقوم هذا الإجراء برفع النسخة الحالية من الكود إلى GitHub مباشرة. تأكد من أن ملف .gitignore يحمي مفاتيحك السرية." : "This action will push current source code to GitHub. Ensure .gitignore protects your secrets."}
-                      </p>
-                   </div>
-
                    <Button 
-                     className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-lg gap-3 shadow-xl active:scale-95 transition-all"
+                     className="w-full h-14 rounded-2xl bg-white text-black hover:bg-zinc-200 font-black text-lg gap-3 shadow-xl active:scale-95 transition-all"
                      disabled={isSyncing || !repoUrl || !githubToken}
                      onClick={handleGitHubSync}
                    >
-                     {isSyncing ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Rocket className="h-5 w-5" /> {isRtl ? "نشر الكود الآن" : "Push Source Now"}</>}
+                     {isSyncing ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Rocket className="h-5 w-5" /> {isRtl ? "رفع الكود إلى GitHub" : "Push to GitHub"}</>}
                    </Button>
+
+                   <div className="h-[1px] bg-zinc-900 my-4" />
+
+                   <div className="space-y-4">
+                      <div className="flex items-center gap-2"><Zap className="h-4 w-4 text-blue-500" /><h4 className="font-black text-xs uppercase tracking-widest">{isRtl ? "خطوة Vercel النهائية" : "Final Vercel Step"}</h4></div>
+                      <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
+                         {isRtl 
+                           ? "بمجرد رفع الكود إلى GitHub، اذهب إلى Vercel واربط المستودع. تأكد من إضافة كافة مفاتيح البيئة (Environment Variables) من ملف .env ليعمل التطبيق." 
+                           : "Once pushed to GitHub, go to Vercel and link the repo. Don't forget to add all .env variables to Vercel project settings."}
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-12 rounded-xl border-zinc-800 hover:bg-zinc-900 font-bold gap-2 text-xs"
+                        onClick={() => window.open('https://vercel.com/new', '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        {isRtl ? "فتح Vercel الآن" : "Open Vercel Now"}
+                      </Button>
+                   </div>
                 </div>
              </Card>
           </TabsContent>
