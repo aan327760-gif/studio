@@ -15,13 +15,20 @@ cloudinary.config({
  */
 export async function uploadToCloudinary(fileData: string, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<string> {
   try {
+    // التحقق من حجم البيانات قبل الرفع لتجنب الأخطاء
+    if (!fileData) throw new Error('No data provided for upload.');
+
     const result = await cloudinary.uploader.upload(fileData, {
       resource_type: resourceType,
       folder: 'unbound_media',
+      // تحسين جودة الضغط لزيادة سرعة الرفع والعرض لاحقاً
+      quality: 'auto:eco',
+      fetch_format: 'auto',
     });
+    
     return result.secure_url;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Cloudinary upload error:', error);
-    throw new Error('Failed to upload media to cloud storage.');
+    throw new Error(error.message || 'Failed to upload media to cloud storage.');
   }
 }

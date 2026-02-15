@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { X, Mic } from "lucide-react";
+import { X, Mic, Loader2, Sparkles, Globe, Lock } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -109,8 +109,8 @@ function CreatePostContent() {
       });
 
       toast({
-        title: isRtl ? "تم النشر" : "Posted",
-        description: isRtl ? "تم نشر منشورك بنجاح" : "Your post has been published successfully.",
+        title: isRtl ? "تم النشر بنجاح" : "Success",
+        description: isRtl ? "منشورك الآن متاح للجميع" : "Your post is now live.",
       });
       
       router.push("/");
@@ -118,7 +118,7 @@ function CreatePostContent() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Something went wrong during upload.",
+        description: error.message || "Upload failed.",
       });
     } finally {
       setIsSubmitting(false);
@@ -127,60 +127,99 @@ function CreatePostContent() {
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
+      {isSubmitting && (
+        <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center gap-6 animate-in fade-in duration-300">
+           <div className="relative">
+             <div className="h-20 w-20 rounded-full border-t-2 border-primary animate-spin" />
+             <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-primary animate-pulse" />
+           </div>
+           <div className="text-center space-y-1">
+             <h3 className="text-xl font-black">{isRtl ? "جاري النشر..." : "Publishing..."}</h3>
+             <p className="text-[10px] text-zinc-500 uppercase tracking-[0.3em]">{isRtl ? "تحميل الوسائط وتأمين البيانات" : "Uploading media & securing data"}</p>
+           </div>
+        </div>
+      )}
+
       <header className="p-4 flex items-center justify-between sticky top-0 bg-black z-20 border-b border-zinc-900">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><X className="h-6 w-6" /></Button>
-        <h1 className="text-sm font-bold opacity-70">New post</h1>
-        <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6 font-bold bg-white text-black hover:bg-zinc-200">
-          {isSubmitting ? "Uploading..." : "Post"}
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900"><X className="h-6 w-6" /></Button>
+        <div className="flex items-center gap-2">
+           <div className="flex items-center gap-1 bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-800">
+              <Globe className="h-3 w-3 text-zinc-500" />
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{isRtl ? "عام" : "Public"}</span>
+           </div>
+        </div>
+        <Button onClick={handleSubmit} disabled={isSubmitting || (!content.trim() && !imageUrl && !videoUrl && !audioUrl)} className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200 shadow-xl transition-all active:scale-95 disabled:opacity-20">
+          {isRtl ? "نشر" : "Post"}
         </Button>
       </header>
 
       <main className="flex-1 overflow-y-auto pb-32">
-        <div className="p-4 flex gap-3">
-          <Avatar className="h-10 w-10">
+        <div className="p-4 flex gap-4">
+          <Avatar className="h-11 w-11 border border-zinc-800">
             <AvatarImage src={user?.photoURL || ""} />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
-          <Textarea 
-            placeholder="Say something..." 
-            className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg min-h-[120px]" 
-            value={content} 
-            onChange={(e) => setContent(e.target.value)} 
-          />
-        </div>
-
-        {(imageUrl || videoUrl || audioUrl) && (
-          <div className="px-4 pb-6">
-            <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video w-full">
-              {imageUrl && (
-                <div className="relative w-full h-full">
-                  <img src={imageUrl} alt="Preview" className={cn("w-full h-full object-cover", filterClass)} />
-                  {textOverlay && (
-                    <div className={cn("absolute", textEffect)} style={{ left: `${textX}%`, top: `${textY}%`, transform: 'translate(-50%, -50%)' }}>
-                      <span className={cn("text-sm font-black px-2 py-1 rounded-md", textColor, textBg ? "bg-black/50" : "")}>{textOverlay}</span>
+          <div className="flex-1 space-y-4">
+            <Textarea 
+              placeholder={isRtl ? "ماذا يدور في ذهنك؟" : "What's on your mind?"} 
+              className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[140px] placeholder:text-zinc-700" 
+              value={content} 
+              onChange={(e) => setContent(e.target.value)} 
+            />
+            
+            {(imageUrl || videoUrl || audioUrl) && (
+              <div className="relative group">
+                <div className="relative rounded-[2.5rem] overflow-hidden border border-zinc-800 bg-zinc-900 aspect-video w-full shadow-2xl">
+                  {imageUrl && (
+                    <div className="relative w-full h-full">
+                      <img src={imageUrl} alt="Preview" className={cn("w-full h-full object-cover", filterClass)} />
+                      {textOverlay && (
+                        <div className={cn("absolute", textEffect)} style={{ left: `${textX}%`, top: `${textY}%`, transform: 'translate(-50%, -50%)' }}>
+                          <span className={cn("text-lg font-black px-3 py-1.5 rounded-xl shadow-2xl", textColor, textBg ? "bg-black/60 backdrop-blur-md" : "")}>{textOverlay}</span>
+                        </div>
+                      )}
+                      {stickers.map((s: any) => (
+                        <div 
+                          key={s.id} 
+                          className="absolute" 
+                          style={{ 
+                            left: `${s.x}%`, 
+                            top: `${s.y}%`, 
+                            transform: `translate(-50%, -50%) scale(${s.scale * 0.5}) rotate(${s.rotation}deg)` 
+                          }}
+                        >
+                          <img src={s.imageUrl} className="w-20 h-20 object-contain drop-shadow-2xl" alt="Sticker" />
+                        </div>
+                      ))}
                     </div>
                   )}
-                  {stickers.map((s: any) => (
-                    <div 
-                      key={s.id} 
-                      className="absolute" 
-                      style={{ 
-                        left: `${s.x}%`, 
-                        top: `${s.y}%`, 
-                        transform: `translate(-50%, -50%) scale(${s.scale * 0.5}) rotate(${s.rotation}deg)` 
-                      }}
-                    >
-                      <img src={s.imageUrl} className="w-20 h-20 object-contain drop-shadow-xl" alt="Sticker" />
+                  {videoUrl && <video src={videoUrl} className="w-full h-full object-cover" autoPlay muted loop />}
+                  {audioUrl && (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-zinc-950">
+                      <div className="h-16 w-16 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse">
+                        <Mic className="h-8 w-8" />
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{isRtl ? "مقطع صوتي جاهز" : "Voice clip ready"}</p>
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-              {videoUrl && <video src={videoUrl} className="w-full h-full object-cover" />}
-              {audioUrl && <div className="w-full h-full flex flex-col items-center justify-center gap-2"><Mic className="h-10 w-10 text-primary" /><span className="text-xs">Voice clip ready</span></div>}
-            </div>
+                <Button variant="ghost" size="icon" onClick={() => router.back()} className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-red-500 text-white shadow-xl hover:bg-red-600 border-2 border-black">
+                   <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </main>
+
+      <footer className="p-4 border-t border-zinc-900 bg-black/50 backdrop-blur-md sticky bottom-0">
+         <div className="flex items-center gap-4 text-zinc-500">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-900 bg-zinc-950">
+               <Lock className="h-3 w-3" />
+               <span className="text-[9px] font-bold uppercase tracking-wider">{isRtl ? "مشفر تماماً" : "Fully Encrypted"}</span>
+            </div>
+         </div>
+      </footer>
     </div>
   );
 }
