@@ -1,9 +1,8 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { X, Newspaper, Loader2, Globe, Award, Type } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { toast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, collection, addDoc, serverTimestamp, increment, updateDoc } from "firebase/firestore";
+import { cn } from "@/lib/utils";
 import { 
   Select,
   SelectContent,
@@ -72,7 +72,7 @@ export default function CreateArticlePage() {
       // Deduct 20 points
       await updateDoc(userRef!, { points: increment(-20) });
 
-      toast({ title: isRtl ? "تم نشر المقال" : "Article Published", description: isRtl ? "تم خصم 20 نقطة من رصيدك السيادي." : "20 points deducted." });
+      toast({ title: isRtl ? "تم نشر المقال" : "Article Published", description: isRtl ? "تم خصم 20 نقطة من رصيدك القومي." : "20 points deducted from your sovereign balance." });
       router.push("/");
     } catch (e) {
       toast({ variant: "destructive", title: "Publish Error" });
@@ -89,7 +89,7 @@ export default function CreateArticlePage() {
            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Al-Qaumiyun</span>
            <div className="flex items-center gap-1">
               <Award className="h-2 w-2 text-zinc-500" />
-              <span className="text-[8px] font-black text-zinc-500 uppercase">{profile?.points} Points</span>
+              <span className="text-[8px] font-black text-zinc-500 uppercase">{profile?.points || 0} Points</span>
            </div>
         </div>
         <Button 
@@ -149,7 +149,7 @@ export default function CreateArticlePage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "رابط الوسائط" : "Media URL"}</label>
+            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "رابط الصورة" : "Image URL"}</label>
             <Input 
               placeholder="https://..." 
               className="bg-zinc-950 border-zinc-900 h-12 rounded-xl"

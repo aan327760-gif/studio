@@ -7,18 +7,18 @@ import { useUser } from "@/firebase";
 import { Loader2 } from "lucide-react";
 
 export default function ProfileRedirect() {
-  const { user, loading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
+    if (!isUserLoading) {
       if (user) {
         router.replace(`/profile/${user.uid}`);
       } else {
         router.replace("/auth");
       }
     }
-  }, [user, loading, router]);
+  }, [user, isUserLoading, router]);
 
   return (
     <div className="h-screen bg-black flex items-center justify-center">

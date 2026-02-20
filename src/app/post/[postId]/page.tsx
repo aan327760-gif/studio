@@ -17,9 +17,9 @@ export default function PostDetailPage() {
   const db = useFirestore();
 
   const postRef = useMemoFirebase(() => postId ? doc(db, "posts", postId as string) : null, [db, postId]);
-  const { data: post, loading } = useDoc<any>(postRef);
+  const { data: post, isLoading } = useDoc<any>(postRef);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -30,7 +30,7 @@ export default function PostDetailPage() {
   if (!post) {
     return (
       <div className="h-screen bg-black text-white flex flex-col items-center justify-center p-4">
-        <p className="text-zinc-500 mb-4">{isRtl ? "المنشور غير موجود" : "Post not found"}</p>
+        <p className="text-zinc-500 mb-4">{isRtl ? "المقال غير موجود" : "Article not found"}</p>
         <Button variant="outline" className="rounded-full" onClick={() => router.back()}>
           {isRtl ? "العودة" : "Go Back"}
         </Button>
@@ -44,7 +44,7 @@ export default function PostDetailPage() {
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.back()}>
           <ArrowLeft className={isRtl ? "rotate-180" : ""} />
         </Button>
-        <h1 className="text-lg font-bold">{isRtl ? "منشور" : "Post"}</h1>
+        <h1 className="text-lg font-bold">{isRtl ? "عرض المقال" : "View Article"}</h1>
       </header>
 
       <main className="pb-24">
@@ -55,8 +55,7 @@ export default function PostDetailPage() {
           image={post.mediaUrl}
           mediaType={post.mediaType}
           likes={post.likesCount || 0}
-          comments={0}
-          reposts={0}
+          commentsCount={post.commentsCount || 0}
           time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
         />
         
