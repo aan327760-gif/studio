@@ -6,7 +6,6 @@ import {
   MoreHorizontal, 
   Trash2, 
   Flag, 
-  Play, 
   Share2,
   Send,
   Bookmark,
@@ -91,13 +90,11 @@ export const PostCard = memo(({
   const { user } = useUser();
   const db = useFirestore();
   const router = useRouter();
-  const videoRef = useRef<HTMLVideoElement>(null);
   
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<any>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [sortType, setSortType] = useState<'top' | 'latest'>('top');
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
@@ -108,16 +105,16 @@ export const PostCard = memo(({
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id) return;
-    const postRef = doc(db, "articles", id);
+    const articleRef = doc(db, "articles", id);
     const authorRef = doc(db, "users", author.uid || author.id);
     
     if (isLiked) {
-      updateDoc(postRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
+      updateDoc(articleRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
       updateDoc(authorRef, { points: increment(-2) });
     } else {
-      updateDoc(postRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
+      updateDoc(articleRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
       updateDoc(authorRef, { points: increment(2) });
-      if (author?.uid !== user.uid) {
+      if ((author?.uid || author?.id) !== user.uid) {
         addDoc(collection(db, "notifications"), {
           userId: author.uid || author.id,
           type: "like",
@@ -135,8 +132,14 @@ export const PostCard = memo(({
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id) return;
-    updateDoc(doc(db, "articles", id), isSaved ? { savedBy: arrayRemove(user.uid), savesCount: increment(-1) } : { savedBy: arrayUnion(user.uid), savesCount: increment(1) });
-    toast({ title: isSaved ? (isRtl ? "تمت الإزالة" : "Unsaved") : (isRtl ? "تم الحفظ في الأرشيف" : "Saved to Archive") });
+    const articleRef = doc(db, "articles", id);
+    if (isSaved) {
+      updateDoc(articleRef, { savedBy: arrayRemove(user.uid), savesCount: increment(-1) });
+      toast({ title: isRtl ? "تمت الإزالة من الأرشيف" : "Removed from Archive" });
+    } else {
+      updateDoc(articleRef, { savedBy: arrayUnion(user.uid), savesCount: increment(1) });
+      toast({ title: isRtl ? "تم الحفظ في الأرشيف" : "Saved to Archive" });
+    }
   };
 
   const handleReport = async (reason: string) => {
@@ -311,7 +314,7 @@ export const PostCard = memo(({
 
           <div className="flex items-center gap-2 group cursor-pointer" onClick={handleSave}>
             <Bookmark className={cn("h-5 w-5 transition-all", isSaved ? "fill-primary text-primary" : "text-zinc-700")} />
-            {saves > 0 && <span className={cn("text-xs font-black", isSaved ? "text-primary" : "text-zinc-700")}>{saves}</span>}
+            {(saves > 0) && <span className={cn("text-xs font-black", isSaved ? "text-primary" : "text-zinc-700")}>{saves}</span>}
           </div>
         </div>
       </CardContent>
@@ -353,8 +356,9 @@ function CommentsList({ postId, isRtl, sortType, onReply }: any) {
   const { data: rawComments = [] } = useCollection<any>(commentsQuery);
 
   const organized = useMemo(() => {
-    const main = (rawComments || []).filter(c => !c.parentId);
-    const replies = (rawComments || []).filter(c => c.parentId);
+    if (!rawComments) return { main: [], replies: [] };
+    const main = (rawComments).filter(c => !c.parentId);
+    const replies = (rawComments).filter(c => c.parentId);
     return { main, replies };
   }, [rawComments]);
 

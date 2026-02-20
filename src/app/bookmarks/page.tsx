@@ -13,16 +13,16 @@ export default function BookmarksPage() {
   const db = useFirestore();
   const { user } = useUser();
 
-  const savedPostsQuery = useMemoFirebase(() => {
+  const savedArticlesQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(
-      collection(db, "posts"),
+      collection(db, "articles"),
       where("savedBy", "array-contains", user.uid),
       limit(50)
     );
   }, [db, user]);
 
-  const { data: savedPosts = [], isLoading } = useCollection<any>(savedPostsQuery);
+  const { data: savedArticles = [], isLoading } = useCollection<any>(savedArticlesQuery);
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
@@ -37,30 +37,27 @@ export default function BookmarksPage() {
         </div>
         <div className="flex items-center gap-1">
            <Zap className="h-3 w-3 text-zinc-600 fill-zinc-600" />
-           <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Editor Core</span>
+           <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Sovereign Record</span>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto pb-32">
         {isLoading ? (
           <div className="flex justify-center py-40"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div>
-        ) : savedPosts && savedPosts.length > 0 ? (
+        ) : savedArticles && savedArticles.length > 0 ? (
           <div className="flex flex-col">
-            {savedPosts.map((post: any) => (
+            {savedArticles.map((article: any) => (
               <PostCard 
-                key={post.id} 
-                id={post.id} 
-                author={post.author} 
-                content={post.content} 
-                image={post.mediaUrl} 
-                mediaUrls={post.mediaUrls} 
-                mediaType={post.mediaType} 
-                likes={post.likesCount || 0} 
-                saves={post.savesCount || 0} 
-                likedBy={post.likedBy} 
-                savedBy={post.savedBy}
-                commentsCount={post.commentsCount}
-                time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
+                key={article.id} 
+                id={article.id} 
+                author={{name: article.authorName, uid: article.authorId, nationality: article.authorNationality}} 
+                content={article.content} 
+                image={article.mediaUrl} 
+                likes={article.likesCount || 0} 
+                likedBy={article.likedBy} 
+                savedBy={article.savedBy}
+                commentsCount={article.commentsCount}
+                time={article.createdAt?.toDate ? article.createdAt.toDate().toLocaleString() : ""} 
               />
             ))}
           </div>

@@ -8,14 +8,11 @@ import {
   Loader2,
   Settings,
   ShieldCheck,
-  Star,
-  Calendar,
-  MapPin,
   MessageSquare,
-  Lock,
+  TrendingUp,
   Bookmark,
-  Award,
-  TrendingUp
+  Heart,
+  Newspaper
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -61,11 +58,18 @@ export default function UserProfilePage() {
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
 
-  // استعلام المقالات الأصلية
-  const userPostsQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("authorId", "==", uid), limit(30)) : null, [db, uid]);
-  const { data: userPosts, isLoading: postsLoading } = useCollection<any>(userPostsQuery);
+  // 1. مقالاتي (التي كتبتها)
+  const userArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("authorId", "==", uid), limit(30)) : null, [db, uid]);
+  const { data: userArticles = [], isLoading: articlesLoading } = useCollection<any>(userArticlesQuery);
 
-  // حساب الرتبة القومية
+  // 2. الإعجابات (المقالات التي أعجبتني)
+  const likedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("likedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
+  const { data: likedArticles = [], isLoading: likesLoading } = useCollection<any>(likedArticlesQuery);
+
+  // 3. الأرشيف (المقالات التي حفظتها)
+  const savedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("savedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
+  const { data: savedArticles = [], isLoading: savesLoading } = useCollection<any>(savedArticlesQuery);
+
   const userRank = useMemo(() => {
     const points = profile?.points || 0;
     if (points >= 500) return { label: isRtl ? "متميز" : "Distinguished", color: "text-orange-500 bg-orange-500/10 border-orange-500/20" };
@@ -109,7 +113,7 @@ export default function UserProfilePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
         <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
           <Button variant="ghost" size="icon" className="rounded-full bg-black/40 backdrop-blur-md" onClick={() => router.back()}>
-            <ArrowLeft className={isRtl ? "rotate-180" : ""} />
+            <ArrowLeft className={cn("h-5 w-5", isRtl ? "rotate-180" : "")} />
           </Button>
           <div className="flex gap-2">
             {isOwnProfile && isSuper && (
@@ -183,35 +187,90 @@ export default function UserProfilePage() {
             <span className="text-[10px] text-zinc-500 font-black uppercase">{isRtl ? "متابع" : "Followers"}</span>
           </button>
           <div className="flex flex-col items-center flex-1">
-            <span className="font-black text-lg">{userPosts?.length || 0}</span>
+            <span className="font-black text-lg">{(userArticles?.length) || 0}</span>
             <span className="text-[10px] text-zinc-500 font-black uppercase">{isRtl ? "مقال" : "Articles"}</span>
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="posts" className="mt-2 w-full">
+      <Tabs defaultValue="articles" className="mt-2 w-full">
         <TabsList className="w-full bg-black h-14 p-0 border-b border-zinc-900 flex">
-          <TabsTrigger value="posts" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">{isRtl ? "المقالات" : "Articles"}</TabsTrigger>
-          <TabsTrigger value="likes" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">{isRtl ? "الإعجابات" : "Likes"}</TabsTrigger>
+          <TabsTrigger value="articles" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
+            <Newspaper className="h-3 w-3 mr-2" /> {isRtl ? "مقالاتي" : "Articles"}
+          </TabsTrigger>
+          <TabsTrigger value="likes" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
+            <Heart className="h-3 w-3 mr-2" /> {isRtl ? "إعجابات" : "Likes"}
+          </TabsTrigger>
+          <TabsTrigger value="archive" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
+            <Bookmark className="h-3 w-3 mr-2" /> {isRtl ? "الأرشيف" : "Archive"}
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="posts" className="m-0">
-          {postsLoading ? <div className="p-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div> :
-            (userPosts && userPosts.length > 0) ? userPosts.map((post: any) => (
+        <TabsContent value="articles" className="m-0">
+          {articlesLoading ? <div className="p-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div> :
+            (userArticles && userArticles.length > 0) ? userArticles.map((article: any) => (
               <PostCard 
-                key={post.id} 
-                id={post.id} 
-                author={{...profile, handle: profile.email?.split('@')[0], id: uid}} 
-                content={post.content} 
-                image={post.mediaUrl} 
-                likes={post.likesCount || 0} 
-                commentsCount={post.commentsCount} 
-                time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleDateString() : ""} 
+                key={article.id} 
+                id={article.id} 
+                author={{name: article.authorName, handle: article.authorName?.toLowerCase(), photoURL: profile?.photoURL, uid: article.authorId, nationality: article.authorNationality}} 
+                content={article.content} 
+                image={article.mediaUrl} 
+                likes={article.likesCount || 0} 
+                commentsCount={article.commentsCount} 
+                likedBy={article.likedBy}
+                savedBy={article.savedBy}
+                time={article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString() : ""} 
               />
             )) : (
               <div className="py-24 text-center opacity-20 flex flex-col items-center gap-4">
-                 <TrendingUp className="h-12 w-12" />
-                 <p className="text-xs font-black uppercase">{isRtl ? "لا توجد مقالات" : "No articles yet"}</p>
+                 <Newspaper className="h-12 w-12" />
+                 <p className="text-xs font-black uppercase">{isRtl ? "لا توجد مقالات منشورة" : "No articles published"}</p>
+              </div>
+            )}
+        </TabsContent>
+
+        <TabsContent value="likes" className="m-0">
+          {likesLoading ? <div className="p-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div> :
+            (likedArticles && likedArticles.length > 0) ? likedArticles.map((article: any) => (
+              <PostCard 
+                key={article.id} 
+                id={article.id} 
+                author={{name: article.authorName, uid: article.authorId, nationality: article.authorNationality}} 
+                content={article.content} 
+                image={article.mediaUrl} 
+                likes={article.likesCount || 0} 
+                commentsCount={article.commentsCount}
+                likedBy={article.likedBy}
+                savedBy={article.savedBy}
+                time={article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString() : ""} 
+              />
+            )) : (
+              <div className="py-24 text-center opacity-20 flex flex-col items-center gap-4">
+                 <Heart className="h-12 w-12" />
+                 <p className="text-xs font-black uppercase">{isRtl ? "لا توجد مقالات معجب بها" : "No likes yet"}</p>
+              </div>
+            )}
+        </TabsContent>
+
+        <TabsContent value="archive" className="m-0">
+          {savesLoading ? <div className="p-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div> :
+            (savedArticles && savedArticles.length > 0) ? savedArticles.map((article: any) => (
+              <PostCard 
+                key={article.id} 
+                id={article.id} 
+                author={{name: article.authorName, uid: article.authorId, nationality: article.authorNationality}} 
+                content={article.content} 
+                image={article.mediaUrl} 
+                likes={article.likesCount || 0} 
+                commentsCount={article.commentsCount}
+                likedBy={article.likedBy}
+                savedBy={article.savedBy}
+                time={article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString() : ""} 
+              />
+            )) : (
+              <div className="py-24 text-center opacity-20 flex flex-col items-center gap-4">
+                 <Bookmark className="h-12 w-12" />
+                 <p className="text-xs font-black uppercase">{isRtl ? "الأرشيف فارغ" : "Archive is empty"}</p>
               </div>
             )}
         </TabsContent>
@@ -236,7 +295,7 @@ function FollowListDialog({ open, onOpenChange, userId, type, isRtl }: any) {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      if (followDocs.length === 0) { setUsers([]); return; }
+      if (!followDocs || followDocs.length === 0) { setUsers([]); return; }
       setFetching(true);
       const results = [];
       for (const docSnap of followDocs) {
@@ -256,7 +315,7 @@ function FollowListDialog({ open, onOpenChange, userId, type, isRtl }: any) {
           <DialogTitle className="text-center font-black uppercase text-sm">{type === 'followers' ? (isRtl ? "المتابعون" : "Followers") : (isRtl ? "يتابع" : "Following")}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 p-4">
-          {isLoading || fetching ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin opacity-20" /></div> : users.map((u) => (
+          {(isLoading || fetching) ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin opacity-20" /></div> : users.map((u) => (
             <Link key={u.id} href={`/profile/${u.id}`} onClick={() => onOpenChange(false)}>
               <div className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl transition-all">
                 <Avatar className="h-10 w-10 border border-zinc-800"><AvatarImage src={u.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
