@@ -56,10 +56,8 @@ export default function CreateArticlePage() {
 
     setIsPublishing(true);
     try {
-      // معالجة الوسوم
       const tagsArray = tags.split(' ').map(t => t.replace('#', '').trim()).filter(t => t.length > 0);
 
-      // Create Article
       await addDoc(collection(db, "articles"), {
         title,
         content,
@@ -71,15 +69,16 @@ export default function CreateArticlePage() {
         authorNationality: profile.nationality,
         likesCount: 0,
         commentsCount: 0,
+        savesCount: 0,
         createdAt: serverTimestamp(),
         likedBy: [],
         savedBy: []
       });
 
-      // Deduct 20 points
+      // خصم النقاط فوراً
       await updateDoc(userRef!, { points: increment(-20) });
 
-      toast({ title: isRtl ? "تم نشر المقال" : "Article Published", description: isRtl ? "تم خصم 20 نقطة من رصيدك القومي." : "20 points deducted from your sovereign balance." });
+      toast({ title: isRtl ? "تم نشر المقال" : "Article Published", description: isRtl ? "تم خصم 20 نقطة من رصيدك القومي." : "20 points deducted." });
       router.push("/");
     } catch (e) {
       toast({ variant: "destructive", title: "Publish Error" });
@@ -118,7 +117,7 @@ export default function CreateArticlePage() {
           </div>
           <Input 
             placeholder={isRtl ? "اكتب عنواناً جذاباً..." : "Enter a catchy title..."}
-            className="bg-zinc-950 border-zinc-900 h-14 text-lg font-black rounded-2xl focus-visible:ring-primary"
+            className="bg-zinc-950 border-zinc-900 h-14 text-lg font-black rounded-2xl"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
@@ -136,7 +135,7 @@ export default function CreateArticlePage() {
           </div>
           <Textarea 
             placeholder={isRtl ? "اكتب مقالك هنا (1000 حرف كحد أقصى)..." : "Write your article (max 1000 chars)..."}
-            className="bg-zinc-950 border-zinc-900 min-h-[250px] rounded-[2rem] p-6 text-base font-medium resize-none focus-visible:ring-primary"
+            className="bg-zinc-950 border-zinc-900 min-h-[250px] rounded-[2rem] p-6 text-base font-medium resize-none"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             maxLength={1000}
@@ -151,8 +150,8 @@ export default function CreateArticlePage() {
              <h2 className="text-sm font-black uppercase tracking-widest">{isRtl ? "الوسوم (اختياري)" : "Tags (Optional)"}</h2>
           </div>
           <Input 
-            placeholder={isRtl ? "مثال: سيادة الجزائر القوميون (بدون #)" : "e.g. Sovereign Algeria News"}
-            className="bg-zinc-950 border-zinc-900 h-12 rounded-xl focus-visible:ring-primary"
+            placeholder={isRtl ? "مثال: سيادة الجزائر القوميون" : "e.g. Sovereign Algeria"}
+            className="bg-zinc-950 border-zinc-900 h-12 rounded-xl"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
           />
@@ -171,7 +170,7 @@ export default function CreateArticlePage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "رابط الصورة" : "Image URL"}</label>
+            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "رابط صورة" : "Image URL"}</label>
             <Input 
               placeholder="https://..." 
               className="bg-zinc-950 border-zinc-900 h-12 rounded-xl"
@@ -188,7 +187,7 @@ export default function CreateArticlePage() {
               </div>
               <div className="flex flex-col">
                  <span className="text-xs font-black uppercase tracking-tight">{isRtl ? "النشر القومي" : "National Publish"}</span>
-                 <span className="text-[9px] text-zinc-500 font-bold uppercase">{isRtl ? "يمثل:" : "Representing:"} {profile?.nationality}</span>
+                 <span className="text-[9px] text-zinc-500 font-bold uppercase">{profile?.nationality}</span>
               </div>
            </div>
            <div className="text-right">

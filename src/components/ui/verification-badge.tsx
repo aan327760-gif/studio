@@ -4,8 +4,8 @@
 import { cn } from "@/lib/utils";
 
 /**
- * شارة التوثيق السيادية المحدثة (Rosette Badge)
- * مطابقة تماماً للصورة المطلوبة: نجمة زرقاء متعرجة مع علامة صح بيضاء.
+ * شارة التوثيق القومية (The Rosette)
+ * نجمة زرقاء متعرجة مع علامة صح بيضاء - مطابقة للصورة المطلوبة.
  */
 export function VerificationBadge({ className }: { className?: string }) {
   return (
