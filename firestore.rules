@@ -14,20 +14,21 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isSignedIn() && request.auth.uid == userId;
-      // التوثيق وتغيير الرتب محصور بالمدير العام (Adel) فقط لا غير
-      allow update: if isSuperAdmin() || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isVerified', 'points']));
+      // التوثيق وتغيير الرتب محصور بالمدير العام (Adel) فقط
+      allow update: if isSuperAdmin() || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isVerified', 'points', 'email']));
     }
 
     // أرشيف المقالات
     match /articles/{articleId} {
-      allow read: if true;
+      // السماح بالقراءة الفردية والجماعية للجميع
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.content.size() <= 1000;
       // المشرف والمدير يمكنهم الحذف، الكاتب والمدير يمكنهم التعديل
       allow delete: if isModerator();
-      allow update: if isOwner(resource.data.authorId) || isSuperAdmin() || isSignedIn(); // تمكين التفاعلات (Likes/Saves)
+      allow update: if isSignedIn(); // تمكين التفاعلات (Likes/Saves) من قبل أي مستخدم مسجل
       
       match /comments/{commentId} {
-        allow read: if true;
+        allow get, list: if true;
         allow create: if isSignedIn();
         allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       }
@@ -51,6 +52,24 @@ service cloud.firestore {
     match /follows/{followId} {
       allow read: if true;
       allow write: if isSignedIn();
+    }
+
+    // المجموعات (اللمة)
+    match /groups/{groupId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+      match /messages/{msgId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    // المحادثات الخاصة
+    match /direct_conversations/{chatId} {
+      allow read, write: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn();
+      match /messages/{msgId} {
+        allow read, write: if isSignedIn();
+      }
     }
   }
 }

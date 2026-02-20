@@ -16,7 +16,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFirestore, useUser } from "@/firebase";
-import { doc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, updateDoc, increment, arrayUnion, arrayRemove, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { VerificationBadge } from "@/components/ui/verification-badge";
@@ -69,7 +69,19 @@ export function ArticleCard({
     } else {
       updateDoc(articleRef, { likesCount: increment(1), likedBy: arrayUnion(user.uid) });
       updateDoc(authorRef, { points: increment(2) });
-      toast({ title: isRtl ? "أعجبك المقال" : "Article Liked", description: isRtl ? "+2 نقطة للكاتب" : "+2 points for author" });
+      
+      if (author.uid !== user.uid) {
+        addDoc(collection(db, "notifications"), {
+          userId: author.uid,
+          type: "like",
+          fromUserId: user.uid,
+          fromUserName: user.displayName,
+          fromUserAvatar: user.photoURL,
+          message: isRtl ? "أعجب بمقالك" : "liked your article",
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
     }
   };
 
@@ -163,7 +175,7 @@ export function ArticleCard({
       )}
 
       {image && (
-        <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-zinc-900 mb-4 bg-zinc-900 mt-2">
+        <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-900 mb-4 bg-zinc-900 mt-2">
           <img src={image} alt="Article" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         </div>
       )}
@@ -171,13 +183,13 @@ export function ArticleCard({
       <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-4">
           <Link href={`/profile/${author.uid}`} className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Avatar className="h-6 w-6 border border-zinc-800">
+            <Avatar className="h-7 w-7 border border-zinc-800">
               <AvatarImage src={author.photoURL} />
               <AvatarFallback className="text-[8px] bg-zinc-900">{author.name?.[0]}</AvatarFallback>
             </Avatar>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span className="text-[11px] font-bold text-zinc-300">@{author.name}</span>
-              {showCheckmark && <VerificationBadge className="h-3 w-3" />}
+              {showCheckmark && <VerificationBadge className="h-3.5 w-3.5" />}
             </div>
           </Link>
         </div>

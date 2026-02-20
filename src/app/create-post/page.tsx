@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
-import { X, Newspaper, Loader2, Award, Type, Globe, Hash } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, Newspaper, Loader2, Award, Type, Globe, Hash, Camera, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, collection, addDoc, serverTimestamp, increment, updateDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { 
   Select,
   SelectContent,
@@ -45,8 +46,31 @@ export default function CreateArticlePage() {
   const [tags, setTags] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canPublish = (profile?.points || 0) >= 20;
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Data = event.target?.result as string;
+        const uploadedUrl = await uploadToCloudinary(base64Data, 'image');
+        setMediaUrl(uploadedUrl);
+        toast({ title: isRtl ? "تم رفع الصورة" : "Image uploaded" });
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Upload Failed" });
+      setIsUploading(false);
+    }
+  };
 
   const handlePublish = async () => {
     if (!user || !profile) return;
@@ -73,10 +97,9 @@ export default function CreateArticlePage() {
         authorIsVerified: profile.isVerified || user.email === SUPER_ADMIN_EMAIL,
         likesCount: 0,
         commentsCount: 0,
-        savesCount: 0,
-        createdAt: serverTimestamp(),
         likedBy: [],
-        savedBy: []
+        savedBy: [],
+        createdAt: serverTimestamp()
       });
 
       // خصم النقاط فوراً
@@ -104,7 +127,7 @@ export default function CreateArticlePage() {
         </div>
         <Button 
           onClick={handlePublish} 
-          disabled={isPublishing || !title.trim() || !content.trim() || !canPublish} 
+          disabled={isPublishing || isUploading || !title.trim() || !content.trim() || !canPublish} 
           className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200"
         >
           {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Publish")}
@@ -151,7 +174,7 @@ export default function CreateArticlePage() {
              <div className="h-8 w-8 rounded-lg bg-zinc-900 flex items-center justify-center border border-zinc-800">
                 <Hash className="h-4 w-4 text-zinc-500" />
              </div>
-             <h2 className="text-sm font-black uppercase tracking-widest">{isRtl ? "الوسوم (اختياري)" : "Tags (Optional)"}</h2>
+             <h2 className="text-sm font-black uppercase tracking-widest">{isRtl ? "الوسوم" : "Tags"}</h2>
           </div>
           <Input 
             placeholder={isRtl ? "مثال: سيادة الجزائر القوميون" : "e.g. Sovereign Algeria"}
@@ -161,7 +184,7 @@ export default function CreateArticlePage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "القسم" : "Section"}</label>
             <Select value={section} onValueChange={setSection}>
@@ -173,13 +196,37 @@ export default function CreateArticlePage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "رابط صورة" : "Image URL"}</label>
-            <Input 
-              placeholder="https://..." 
-              className="bg-zinc-950 border-zinc-900 h-12 rounded-xl"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
+
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "الصورة" : "Media"}</label>
+            <div 
+              className="w-full aspect-video rounded-[2rem] border-2 border-dashed border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 transition-all overflow-hidden relative group"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : mediaUrl ? (
+                <>
+                  <img src={mediaUrl} alt="Upload preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                    <Camera className="h-10 w-10 text-white" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="h-16 w-16 rounded-full bg-zinc-900 flex items-center justify-center">
+                    <Camera className="h-8 w-8 text-zinc-500" />
+                  </div>
+                  <p className="text-xs font-bold text-zinc-500">{isRtl ? "ارفع صورة من هاتفك" : "Upload from phone"}</p>
+                </>
+              )}
+            </div>
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleImageSelect} 
             />
           </div>
         </div>
