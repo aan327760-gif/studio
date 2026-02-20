@@ -11,14 +11,16 @@ import {
   ThumbsUp,
   AlertTriangle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2,
+  Clock
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
 import { useState, memo } from "react";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser, useDoc, useMemoFirebase, useCollection } from "@/firebase";
 import { 
   doc, 
   updateDoc, 
@@ -28,7 +30,9 @@ import {
   addDoc, 
   serverTimestamp, 
   deleteDoc,
-  increment
+  increment,
+  query,
+  orderBy
 } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -81,12 +85,22 @@ export const PostCard = memo(({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const authorId = author.uid || author.id;
+  
+  // جلب بيانات الكاتب الحية لمزامنة الصورة والاسم والتوثيق
   const authorRef = useMemoFirebase(() => authorId ? doc(db, "users", authorId) : null, [db, authorId]);
   const { data: liveAuthor } = useDoc<any>(authorRef);
+
+  // جلب التعليقات الحية لهذا المقال
+  const commentsQuery = useMemoFirebase(() => {
+    if (!id) return null;
+    return query(collection(db, "articles", id, "comments"), orderBy("createdAt", "asc"));
+  }, [db, id]);
+  const { data: comments = [], isLoading: commentsLoading } = useCollection<any>(commentsQuery);
 
   const isLiked = user ? (likedBy || []).includes(user.uid) : false;
   const isSaved = user ? (savedBy || []).includes(user.uid) : false;
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
+  const isOwner = user?.uid === authorId;
   const isLong = content.length > 200;
 
   const displayAvatar = liveAuthor?.photoURL || author.photoURL;
@@ -151,6 +165,7 @@ export const PostCard = memo(({
         type: "comment",
         fromUserId: user.uid,
         fromUserName: user.displayName,
+        fromUserAvatar: user.photoURL,
         message: isRtl ? "علق على مقالك" : "commented on your article",
         read: false,
         createdAt: serverTimestamp()
@@ -159,14 +174,24 @@ export const PostCard = memo(({
     setNewComment("");
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    if (!id || !commentId) return;
+    if (confirm(isRtl ? "حذف هذا التعليق؟" : "Delete this comment?")) {
+      await deleteDoc(doc(db, "articles", id, "comments", commentId));
+      await updateDoc(doc(db, "articles", id), { commentsCount: increment(-1) });
+    }
+  };
+
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id) return;
     const articleRef = doc(db, "articles", id);
     if (isSaved) {
       updateDoc(articleRef, { savedBy: arrayRemove(user.uid) });
+      toast({ title: isRtl ? "تمت الإزالة من الأرشيف" : "Removed from archive" });
     } else {
       updateDoc(articleRef, { savedBy: arrayUnion(user.uid) });
+      toast({ title: isRtl ? "تم الحفظ في الأرشيف" : "Saved to archive" });
     }
   };
 
@@ -192,7 +217,11 @@ export const PostCard = memo(({
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white rounded-2xl">
                 <DropdownMenuItem className="text-orange-500 font-bold text-xs uppercase" onClick={(e) => { e.stopPropagation(); setIsReportDialogOpen(true); }}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
-                {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "articles", id)); }} className="text-red-500 font-bold text-xs uppercase"><Trash2 className="h-4 w-4 mr-2" /> Root Delete</DropdownMenuItem>}
+                {(isSuper || isOwner) && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "articles", id)); }} className="text-red-500 font-bold text-xs uppercase">
+                    <Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف المقال" : "Delete Article"}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -238,17 +267,60 @@ export const PostCard = memo(({
                   <span className="text-xs font-black text-zinc-700">{commentsCount}</span>
                 </div>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[80vh] bg-black border-zinc-900 rounded-t-[2.5rem] p-0 flex flex-col shadow-2xl">
+              <SheetContent side="bottom" className="h-[85vh] bg-black border-zinc-900 rounded-t-[2.5rem] p-0 flex flex-col shadow-2xl">
                 <SheetHeader className="p-6 border-b border-zinc-900/50">
                   <SheetTitle className="text-white font-black text-xl text-center uppercase tracking-tighter">{isRtl ? "التعليقات السيادية" : "Sovereign Comments"}</SheetTitle>
                 </SheetHeader>
-                <div className="flex-1 overflow-y-auto p-6">
-                   <p className="text-center text-zinc-600 text-[10px] font-black uppercase tracking-widest mb-10">{isRtl ? "التعليقات ترفع أولوية ظهور المقال عالمياً" : "Comments boost global visibility"}</p>
+                
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                   {commentsLoading ? (
+                     <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div>
+                   ) : comments.length > 0 ? (
+                     comments.map((comment: any) => (
+                       <div key={comment.id} className="flex gap-4 group/item">
+                          <Avatar className="h-9 w-9 shrink-0 border border-zinc-900">
+                             <AvatarImage src={comment.authorAvatar} />
+                             <AvatarFallback className="bg-zinc-900 text-[10px]">{comment.authorName?.[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                             <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                   <span className="text-xs font-black text-zinc-200">{comment.authorName}</span>
+                                   <span className="text-[8px] text-zinc-600 font-bold uppercase flex items-center gap-1">
+                                      <Clock className="h-2 w-2" />
+                                      {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleDateString() : ""}
+                                   </span>
+                                </div>
+                                {(isSuper || user?.uid === comment.authorId || isOwner) && (
+                                  <button onClick={() => handleDeleteComment(comment.id)} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-red-500/50 hover:text-red-500">
+                                     <Trash2 className="h-3 w-3" />
+                                  </button>
+                                )}
+                             </div>
+                             <p className="text-sm text-zinc-400 mt-1 leading-relaxed font-medium">{comment.text}</p>
+                          </div>
+                       </div>
+                     ))
+                   ) : (
+                     <div className="py-20 text-center opacity-20 flex flex-col items-center gap-4">
+                        <MessageCircle className="h-12 w-12" />
+                        <p className="text-xs font-black uppercase tracking-widest">{isRtl ? "كن أول من يعلق" : "Be the first to comment"}</p>
+                     </div>
+                   )}
                 </div>
+
                 <div className="p-4 pb-12 border-t border-zinc-900 bg-black">
                   <div className="flex gap-3 items-center bg-zinc-900 rounded-full pl-5 pr-1.5 py-1.5 shadow-inner border border-white/5">
-                    <Input placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" value={newComment} onChange={(e) => setNewComment(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} />
-                    <Button size="icon" className="rounded-full bg-primary h-10 w-10 shadow-lg" onClick={handleAddComment} disabled={!newComment.trim()}><Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} /></Button>
+                    <Input 
+                      placeholder={isRtl ? "أضف تعليقاً..." : "Add a comment..."} 
+                      className="bg-transparent border-none h-10 text-sm focus-visible:ring-0 shadow-none p-0" 
+                      value={newComment} 
+                      onChange={(e) => setNewComment(e.target.value)} 
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddComment()} 
+                    />
+                    <Button size="icon" className="rounded-full bg-primary h-10 w-10 shadow-lg" onClick={handleAddComment} disabled={!newComment.trim()}>
+                      <Send className={cn("h-4 w-4", isRtl ? "rotate-180" : "")} />
+                    </Button>
                   </div>
                 </div>
               </SheetContent>

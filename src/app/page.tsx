@@ -33,7 +33,7 @@ export default function Home() {
   const articlesQuery = useMemoFirebase(() => {
     let baseRef = collection(db, "articles");
     if (activeSection === "All") {
-      // استخدام الخوارزمية السيادية: الترتيب حسب الأولوية ثم الأحدث
+      // استخدام خوارزمية السيادة: ترتيب حسب الأولوية ثم الأحدث
       return query(baseRef, orderBy("priorityScore", "desc"), limit(50));
     }
     return query(baseRef, where("section", "==", activeSection), orderBy("priorityScore", "desc"), limit(50));
@@ -45,7 +45,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
       <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 pt-4 pb-2 border-b border-zinc-900 shadow-xl shadow-black/20">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 group cursor-pointer">
+          <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-2xl rotate-3 group-active:rotate-0 transition-transform">
                <span className="text-white font-black text-xl italic leading-none">ق</span>
             </div>
