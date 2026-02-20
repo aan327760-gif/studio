@@ -84,18 +84,17 @@ export const PostCard = memo(({
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const authorId = author.uid || author.id;
+  const authorId = author?.uid || author?.id;
   
-  // جلب بيانات الكاتب الحية لمزامنة الصورة والاسم والتوثيق
   const authorRef = useMemoFirebase(() => authorId ? doc(db, "users", authorId) : null, [db, authorId]);
   const { data: liveAuthor } = useDoc<any>(authorRef);
 
-  // جلب التعليقات الحية لهذا المقال
   const commentsQuery = useMemoFirebase(() => {
     if (!id) return null;
     return query(collection(db, "articles", id, "comments"), orderBy("createdAt", "asc"));
   }, [db, id]);
-  const { data: comments = [], isLoading: commentsLoading } = useCollection<any>(commentsQuery);
+  const { data: rawComments, isLoading: commentsLoading } = useCollection<any>(commentsQuery);
+  const comments = rawComments || [];
 
   const isLiked = user ? (likedBy || []).includes(user.uid) : false;
   const isSaved = user ? (savedBy || []).includes(user.uid) : false;
@@ -103,8 +102,8 @@ export const PostCard = memo(({
   const isOwner = user?.uid === authorId;
   const isLong = content.length > 200;
 
-  const displayAvatar = liveAuthor?.photoURL || author.photoURL;
-  const displayName = liveAuthor?.displayName || author.name;
+  const displayAvatar = liveAuthor?.photoURL || author?.photoURL;
+  const displayName = liveAuthor?.displayName || author?.name;
   const isVerified = liveAuthor?.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
 
   const handleLike = async (e: React.MouseEvent) => {
@@ -211,7 +210,7 @@ export const PostCard = memo(({
                 <h3 className="font-black text-[15px] truncate tracking-tight">{displayName}</h3>
                 {isVerified && <VerificationBadge className="h-4 w-4" />}
               </div>
-              <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">{author.nationality} • {time}</span>
+              <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">{author?.nationality} • {time}</span>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
@@ -275,7 +274,7 @@ export const PostCard = memo(({
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                    {commentsLoading ? (
                      <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div>
-                   ) : comments.length > 0 ? (
+                   ) : (comments && comments.length > 0) ? (
                      comments.map((comment: any) => (
                        <div key={comment.id} className="flex gap-4 group/item">
                           <Avatar className="h-9 w-9 shrink-0 border border-zinc-900">
