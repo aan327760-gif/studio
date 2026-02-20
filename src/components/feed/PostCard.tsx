@@ -332,7 +332,7 @@ export const PostCard = memo(({
             </Sheet>
 
             <button className={cn("transition-all active:scale-125", isSaved ? "text-primary" : "text-zinc-700 hover:text-white")} onClick={handleSave}>
-              <Bookmark className={cn("h-5 w-5", isSaved && "fill-primary")} />
+              <Bookmark className="h-5 w-5" />
             </button>
           </div>
 

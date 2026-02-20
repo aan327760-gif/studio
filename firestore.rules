@@ -7,7 +7,7 @@ service cloud.firestore {
     
     // قواعد القراءة العامة لجميع المجموعات الأساسية لضمان عدم حدوث أخطاء Permission
     match /users/{userId} {
-      allow read: if true;
+      allow read, list: if true;
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn(); 
     }
@@ -23,7 +23,7 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read, list: if true;
         allow create: if isSignedIn();
-        // ميزة الحذف: لصاحب التعليق أو صاحب المقال أو المدير
+        allow update: if isSignedIn() && (request.auth.uid == resource.data.authorId || request.auth.token.email == "adelbenmaza3@gmail.com");
         allow delete: if isSignedIn() && (
           resource.data.authorId == request.auth.uid || 
           get(/databases/$(database)/documents/articles/$(articleId)).data.authorId == request.auth.uid ||

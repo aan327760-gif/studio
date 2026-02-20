@@ -73,15 +73,15 @@ export default function AuthPage() {
         await setDoc(doc(db, "users", user.uid), userProfileData);
 
         // بروتوكول الولاء التلقائي: متابعة حساب المدير العام فوراً
-        if (formData.email !== ADMIN_EMAIL) {
-          try {
-            const adminQuery = query(collection(db, "users"), where("email", "==", ADMIN_EMAIL), limit(1));
-            const adminSnap = await getDocs(adminQuery);
-            if (!adminSnap.empty) {
-              const adminDoc = adminSnap.docs[0];
-              const adminId = adminDoc.id;
+        try {
+          const adminQuery = query(collection(db, "users"), where("email", "==", ADMIN_EMAIL), limit(1));
+          const adminSnap = await getDocs(adminQuery);
+          if (!adminSnap.empty) {
+            const adminDoc = adminSnap.docs[0];
+            const adminId = adminDoc.id;
+            
+            if (user.uid !== adminId) {
               const followId = `${user.uid}_${adminId}`;
-              
               await setDoc(doc(db, "follows", followId), {
                 followerId: user.uid,
                 followingId: adminId,
@@ -91,9 +91,9 @@ export default function AuthPage() {
               await updateDoc(doc(db, "users", adminId), { followersCount: increment(1) });
               await updateDoc(doc(db, "users", user.uid), { followingCount: increment(1) });
             }
-          } catch (followError) {
-            console.error("Auto-follow admin failed:", followError);
           }
+        } catch (followError) {
+          console.error("Auto-follow admin failed:", followError);
         }
 
         toast({ 
