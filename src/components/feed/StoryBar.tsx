@@ -14,7 +14,6 @@ export function StoryBar() {
   const db = useFirestore();
   const { user } = useUser();
 
-  // جلب الستوريات التي لم تنتهِ صلاحيتها (24 ساعة)
   const storiesQuery = useMemoFirebase(() => {
     return query(
       collection(db, "stories"),
@@ -28,7 +27,6 @@ export function StoryBar() {
 
   return (
     <div className="flex gap-5 overflow-x-auto no-scrollbar py-6 px-5 bg-black border-b border-zinc-900/50 shadow-inner">
-      {/* زر إضافة ستوري سيادي */}
       <Link href="/create-story" className="flex flex-col items-center gap-2.5 shrink-0 group">
         <div className="relative">
           <div className="h-[70px] w-[70px] rounded-[2.2rem] bg-zinc-950 border-2 border-dashed border-zinc-800 flex items-center justify-center group-active:scale-90 transition-all overflow-hidden shadow-xl">

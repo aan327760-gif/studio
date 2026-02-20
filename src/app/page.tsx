@@ -30,11 +30,9 @@ export default function Home() {
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userProfileRef);
 
-  // خوارزمية السيادة: ترتيب حسب الأولوية (التفاعل + التوثيق)
   const articlesQuery = useMemoFirebase(() => {
     let baseRef = collection(db, "articles");
     if (activeSection === "All") {
-      // استخدام ترتيب واحد لتجنب حاجة الفهارس المركبة حالياً لضمان عدم حدوث Permission Denied
       return query(baseRef, orderBy("priorityScore", "desc"), limit(50));
     }
     return query(baseRef, where("section", "==", activeSection), orderBy("priorityScore", "desc"), limit(50));

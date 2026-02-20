@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Camera, Video, Loader2, AlertTriangle, CheckCircle2, Award } from "lucide-react";
+import { X, Camera, Video, Loader2, AlertTriangle, CheckCircle2, Award, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
@@ -33,7 +33,6 @@ export default function CreateStoryPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // بروتوكول الـ 30 ثانية للفيديو
     if (file.type.startsWith("video/")) {
       const video = document.createElement("video");
       video.preload = "metadata";
@@ -85,7 +84,6 @@ export default function CreateStoryPage() {
 
     setIsPublishing(true);
     try {
-      // الستوري تنتهي تلقائياً بعد 24 ساعة
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
 
@@ -100,7 +98,6 @@ export default function CreateStoryPage() {
         priorityScore: profile.isVerified ? 500 : 0
       });
 
-      // خصم نقاط نشر الستوري
       await updateDoc(userProfileRef!, { points: increment(-50) });
 
       toast({ 
