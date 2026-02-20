@@ -9,7 +9,6 @@ import {
   Settings,
   ShieldCheck,
   MessageSquare,
-  TrendingUp,
   Bookmark,
   Heart,
   Newspaper
@@ -58,15 +57,15 @@ export default function UserProfilePage() {
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
 
-  // 1. مقالاتي (التي كتبتها)
+  // جلب المقالات المكتوبة
   const userArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("authorId", "==", uid), limit(30)) : null, [db, uid]);
   const { data: userArticles = [], isLoading: articlesLoading } = useCollection<any>(userArticlesQuery);
 
-  // 2. الإعجابات (المقالات التي أعجبتني)
+  // جلب المقالات المعجب بها
   const likedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("likedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
   const { data: likedArticles = [], isLoading: likesLoading } = useCollection<any>(likedArticlesQuery);
 
-  // 3. الأرشيف (المقالات التي حفظتها)
+  // جلب المقالات المحفوظة (الأرشيف)
   const savedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("savedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
   const { data: savedArticles = [], isLoading: savesLoading } = useCollection<any>(savedArticlesQuery);
 
@@ -187,7 +186,7 @@ export default function UserProfilePage() {
             <span className="text-[10px] text-zinc-500 font-black uppercase">{isRtl ? "متابع" : "Followers"}</span>
           </button>
           <div className="flex flex-col items-center flex-1">
-            <span className="font-black text-lg">{(userArticles?.length) || 0}</span>
+            <span className="font-black text-lg">{userArticles?.length || 0}</span>
             <span className="text-[10px] text-zinc-500 font-black uppercase">{isRtl ? "مقال" : "Articles"}</span>
           </div>
         </div>
@@ -212,7 +211,7 @@ export default function UserProfilePage() {
               <PostCard 
                 key={article.id} 
                 id={article.id} 
-                author={{name: article.authorName, handle: article.authorName?.toLowerCase(), photoURL: profile?.photoURL, uid: article.authorId, nationality: article.authorNationality}} 
+                author={{name: article.authorName, uid: article.authorId, nationality: article.authorNationality}} 
                 content={article.content} 
                 image={article.mediaUrl} 
                 likes={article.likesCount || 0} 
