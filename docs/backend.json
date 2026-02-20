@@ -1,72 +1,485 @@
-
 {
   "entities": {
-    "UserProfile": {
-      "title": "User Profile",
-      "description": "Extended user profile information",
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
       "type": "object",
+      "description": "Represents a registered user on the Al-Qaumiyun platform, who can be a reader or an author, with a points system and profile details.",
       "properties": {
-        "uid": { "type": "string" },
-        "displayName": { "type": "string" },
-        "photoURL": { "type": "string" },
-        "bannerURL": { "type": "string" },
-        "bio": { "type": "string", "maxLength": 150 },
-        "phoneNumber": { "type": "string" },
-        "location": { "type": "string" },
-        "joinedAt": { "type": "string", "format": "date-time" },
-        "isPro": { "type": "boolean" },
-        "isVerified": { "type": "boolean" },
-        "language": { "type": "string", "enum": ["en", "ar"] },
-        "followersCount": { "type": "number" },
-        "followingCount": { "type": "number" },
-        "isBannedUntil": { "type": "string", "format": "date-time" },
-        "role": { "type": "string", "enum": ["user", "admin"] }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, used for login or identifying the linked Google/Apple account.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The public name displayed for the user on their profile and articles."
+        },
+        "points": {
+          "type": "number",
+          "description": "The current points balance for the user, starting at 100, used for publishing and reflecting engagement."
+        },
+        "nationality": {
+          "type": "string",
+          "description": "The country of origin for the user, especially relevant for authors publishing articles about their nation."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biographical description provided by the user, displayed on their profile."
+        },
+        "profileImageUrl": {
+          "type": "string",
+          "description": "URL to the user's profile picture.",
+          "format": "uri"
+        },
+        "registeredAt": {
+          "type": "string",
+          "description": "Timestamp when the user registered on the platform.",
+          "format": "date-time"
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "description": "Timestamp of the user's last successful login.",
+          "format": "date-time"
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user on the platform (e.g., 'reader' for read-only access, 'author' for publishing and interactions)."
+        },
+        "rank": {
+          "type": "string",
+          "description": "The current rank or badge achieved by the author, based on activity (e.g., 'Beginner', 'Active', 'Distinguished')."
+        }
       },
-      "required": ["uid", "displayName"]
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "points",
+        "nationality",
+        "registeredAt",
+        "role",
+        "rank"
+      ]
     },
-    "Post": {
-      "title": "Feed Post",
-      "description": "Social media post in the feed",
+    "Article": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Article",
       "type": "object",
+      "description": "Represents an article published by an author, including its content, associated media, and metadata.",
       "properties": {
-        "authorId": { "type": "string" },
-        "content": { "type": "string" },
-        "mediaUrl": { "type": "string" },
-        "mediaUrls": { "type": "array", "items": { "type": "string" } },
-        "mediaType": { "type": "string", "enum": ["image", "video", "audio", "album"] },
-        "likesCount": { "type": "number" },
-        "likedBy": { "type": "array", "items": { "type": "string" } },
-        "savesCount": { "type": "number" },
-        "savedBy": { "type": "array", "items": { "type": "string" } },
-        "commentsCount": { "type": "number" },
-        "privacy": { "type": "string", "enum": ["public", "followers"] },
-        "allowComments": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Article entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The headline or title of the article."
+        },
+        "content": {
+          "type": "string",
+          "description": "The main text content of the article, limited to 1000 characters."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Optional URL to an image that accompanies the article.",
+          "format": "uri"
+        },
+        "videoUrl": {
+          "type": "string",
+          "description": "Optional URL to a video that accompanies the article.",
+          "format": "uri"
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the User who authored this article. (Relationship: User 1:N Article)"
+        },
+        "publishedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the article was first published.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the article was last modified.",
+          "format": "date-time"
+        },
+        "section": {
+          "type": "string",
+          "description": "The primary category or section the article belongs to (e.g., 'Politics', 'Culture', 'Sports', 'Economy', 'National')."
+        },
+        "tagIds": {
+          "type": "array",
+          "description": "An array of references to Tags associated with this article, for granular categorization. (Relationship: Tag N:N Article)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "likesCount": {
+          "type": "number",
+          "description": "Denormalized count of 'likes' received by this article, used for popularity sorting. (Relationship: Article 1:N Like)"
+        },
+        "commentsCount": {
+          "type": "number",
+          "description": "Denormalized count of comments made on this article, used for popularity sorting. (Relationship: Article 1:N Comment)"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content",
+        "authorId",
+        "publishedAt",
+        "section",
+        "likesCount",
+        "commentsCount"
+      ]
+    },
+    "Like": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Like",
+      "type": "object",
+      "description": "Records a specific instance of a user liking an article.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Like entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who performed the 'like'. (Relationship: User 1:N Like)"
+        },
+        "articleId": {
+          "type": "string",
+          "description": "Reference to the Article that was liked. (Relationship: Article 1:N Like)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the 'like' action was recorded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "articleId",
+        "createdAt"
+      ]
     },
     "Comment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Comment",
-      "description": "A comment on a post",
       "type": "object",
+      "description": "Represents a user's comment posted on an article.",
       "properties": {
-        "postId": { "type": "string" },
-        "authorId": { "type": "string" },
-        "authorName": { "type": "string" },
-        "authorAvatar": { "type": "string" },
-        "authorHandle": { "type": "string" },
-        "text": { "type": "string", "maxLength": 100 },
-        "likesCount": { "type": "number" },
-        "likedBy": { "type": "array", "items": { "type": "string" } },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Comment entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who posted the comment. (Relationship: User 1:N Comment)"
+        },
+        "articleId": {
+          "type": "string",
+          "description": "Reference to the Article to which the comment belongs. (Relationship: Article 1:N Comment)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The textual content of the comment."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the comment was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "articleId",
+        "content",
+        "createdAt"
+      ]
+    },
+    "Follow": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Follow",
+      "type": "object",
+      "description": "Records a relationship where one user is following another user (typically an author).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Follow relationship entity."
+        },
+        "followerId": {
+          "type": "string",
+          "description": "Reference to the User who initiated the 'follow'. (Relationship: User 1:N Follow)"
+        },
+        "followedId": {
+          "type": "string",
+          "description": "Reference to the User who is being followed. (Relationship: User 1:N Follow)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the follow relationship was established.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "followerId",
+        "followedId",
+        "createdAt"
+      ]
+    },
+    "Tag": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Tag",
+      "type": "object",
+      "description": "Represents a customizable keyword or category that can be applied to articles for better organization and search.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Tag entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The descriptive name of the tag (e.g., 'Politics', 'Egypt', 'Economy')."
+        },
+        "description": {
+          "type": "string",
+          "description": "An optional, more detailed description of the tag's purpose or scope."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Stores alerts and messages generated by user interactions or system events, intended for a specific user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Notification entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who is the intended recipient of this notification. (Relationship: User 1:N Notification)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The specific type of event that triggered the notification (e.g., 'ARTICLE_LIKED', 'ARTICLE_COMMENTED', 'NEW_FOLLOWED_ARTICLE')."
+        },
+        "sourceId": {
+          "type": "string",
+          "description": "The ID of the primary entity related to the notification event (e.g., the Article ID, Comment ID, or the ID of the User who performed an action)."
+        },
+        "message": {
+          "type": "string",
+          "description": "A concise, user-friendly message explaining the notification event."
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "A flag indicating whether the user has viewed or acknowledged this notification (default: false)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the notification was generated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "message",
+        "isRead",
+        "createdAt"
+      ]
     }
   },
   "auth": {
-    "providers": ["google.com", "password"]
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/users/{userId}": { "schema": "UserProfile", "description": "Citizen profiles" },
-    "/posts/{postId}": { "schema": "Post", "description": "Sovereign insights" },
-    "/posts/{postId}/comments/{commentId}": { "schema": "Comment", "description": "Post discussions" }
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles, including personal details, points balance, role (e.g., 'author'), and rank. The 'userId' matches 'request.auth.uid'. Some fields are private (e.g., email, points), while others are public for display (e.g., displayName, nationality, bio, profileImageUrl, rank).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user, corresponding to Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/articles/{articleId}",
+        "definition": {
+          "entityName": "Article",
+          "schema": {
+            "$ref": "#/backend/entities/Article"
+          },
+          "description": "A top-level collection containing all published articles. This collection is publicly readable by anyone. Includes denormalized 'authorId' for direct write authorization, and 'likesCount' and 'commentsCount' for popularity sorting.",
+          "params": [
+            {
+              "name": "articleId",
+              "description": "The unique ID of the article."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/articles/{articleId}/comments/{commentId}",
+        "definition": {
+          "entityName": "Comment",
+          "schema": {
+            "$ref": "#/backend/entities/Comment"
+          },
+          "description": "A subcollection storing comments for a specific article. Publicly readable by all. Includes denormalized 'articleId' and 'userId' for authorization independence, allowing comment authors to manage their own comments.",
+          "params": [
+            {
+              "name": "articleId",
+              "description": "The unique ID of the parent article."
+            },
+            {
+              "name": "commentId",
+              "description": "The unique ID of the comment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/articles/{articleId}/likes/{likeId}",
+        "definition": {
+          "entityName": "Like",
+          "schema": {
+            "$ref": "#/backend/entities/Like"
+          },
+          "description": "A subcollection storing 'likes' for a specific article. Publicly readable to see if a user has liked, or for counting. Includes denormalized 'articleId' and 'userId' for authorization independence, allowing users to manage their own likes (create/delete).",
+          "params": [
+            {
+              "name": "articleId",
+              "description": "The unique ID of the parent article."
+            },
+            {
+              "name": "likeId",
+              "description": "The unique ID of the like entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{followerId}/following/{followedId}",
+        "definition": {
+          "entityName": "Follow",
+          "schema": {
+            "$ref": "#/backend/entities/Follow"
+          },
+          "description": "A subcollection for each user, tracking who they are following. The 'followerId' corresponds to 'request.auth.uid'. Includes denormalized 'followerId' and 'followedId' for authorization independence, allowing users to manage their own follow relationships.",
+          "params": [
+            {
+              "name": "followerId",
+              "description": "The unique ID of the user who initiated the 'follow' action."
+            },
+            {
+              "name": "followedId",
+              "description": "The unique ID of the user being followed."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "A subcollection for each user, storing their private notifications. Access is restricted to the 'userId' (recipient), which matches 'request.auth.uid'. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the notification recipient."
+            },
+            {
+              "name": "notificationId",
+              "description": "The unique ID of the notification."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/tags/{tagId}",
+        "definition": {
+          "entityName": "Tag",
+          "schema": {
+            "$ref": "#/backend/entities/Tag"
+          },
+          "description": "A top-level collection for all globally available tags. Publicly readable for all users to browse and filter articles. Write access is typically restricted to administrators (or via backend services).",
+          "params": [
+            {
+              "name": "tagId",
+              "description": "The unique ID of the tag."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/lammas/{lammaId}",
+        "definition": {
+          "entityName": "Lamma",
+          "schema": {
+            "$ref": "#/backend/entities/Lamma"
+          },
+          "description": "A top-level collection representing community groups ('Lammas'). Stores group metadata, visibility ('public' or 'private'), 'ownerId', and a denormalized 'members' map for authorization independence (who can access or manage the Lamma).",
+          "params": [
+            {
+              "name": "lammaId",
+              "description": "The unique ID of the Lamma community."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/lammas/{lammaId}/messages/{messageId}",
+        "definition": {
+          "entityName": "LammaMessage",
+          "schema": {
+            "$ref": "#/backend/entities/LammaMessage"
+          },
+          "description": "A subcollection storing chat messages within a specific Lamma community. Read and write access depends on the parent Lamma's type and the requesting user's membership. Includes 'senderId' for message ownership.",
+          "params": [
+            {
+              "name": "lammaId",
+              "description": "The unique ID of the parent Lamma community."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique ID of the chat message."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The proposed Firestore structure for 'Al-Qaumiyun' is designed to be highly secure, scalable, and debuggable, strictly adhering to the core design principles and strategy mandates. It leverages flat collections for global, publicly accessible data and subcollections for user-specific or nested entities, ensuring clear authorization boundaries.\n\n**Justification of the Design:**\n1.  **Authorization Independence (CRITICAL):** The design prioritizes the elimination of hierarchical authorization dependencies, particularly avoiding `get()` calls to parent documents within security rules for direct access control. For entities such as `Article`, `Comment`, `Like`, `Follow`, and `Notification`, all critical authorization context (e.g., `authorId`, `userId`, `followerId`, `followedId`, `recipientId`) is denormalized and stored directly within each document. This allows security rules to perform direct checks like `request.auth.uid == resource.data.authorId` without needing to fetch additional documents, thus supporting atomic operations and significantly simplifying rule logic. For `Lamma` (community) documents, the `members` map is denormalized into the Lamma document itself, allowing membership checks via `request.auth.uid in resource.data.members`. The only exception for `get()` calls is for validating the *current user's own profile* (`/users/{request.auth.uid}`) to check `role` and `points` during article creation. This is a highly efficient, direct lookup of the authenticated user's data and is not considered a breaking hierarchical dependency.\n2.  **Structural Segregation:** Data is segregated into collections based on its security posture. For instance, `/articles` is a public collection, while `/users/{userId}/notifications` is private to the user. This ensures all documents within a given collection share the same access requirements, leading to simpler, more predictable security rules.\n3.  **Access Modeling:** Path-based ownership (`/users/{userId}/notifications`) is utilized for user-private data. For publicly visible content that still requires author-specific write access, the `authorId` is embedded in the document (`/articles/{articleId}`). The `Lamma` feature utilizes a denormalized membership map for collaborative access control within groups.\n4.  **Data Clarity:** Consistent naming conventions (e.g., `userId`, `articleId`, `authorId`) and descriptive wildcards are used throughout. Denormalized counters (`likesCount`, `commentsCount`, `memberCount`) are explicitly included for performance and easy sorting.\n\n**Achieving Authorization Independence & QAPs:**\n*   **Authorization Independence:** As detailed above, embedding `authorId`, `userId`, `followerId`, `followedId`, and `members` maps directly into their respective documents is the primary mechanism. This allows Firestore Security Rules to evaluate access permissions solely based on the `request.auth.uid` and the `resource.data` of the document being accessed, avoiding costly and complex `get()` operations. The only `get()` allowed is for the current user's own profile (`/users/$(request.auth.uid)`), which is essential for role and points-based authorization and is efficient.\n*   **QAPs (Queries are not Filters):**\n    *   **Global Public Data:** Collections like `/articles` and `/tags` are designed with `allow read: if true;` rules. This ensures that any `list` operation performed by any user will fetch all documents that match the query criteria, without the security rules silently filtering out results due to complex, field-level permissions. Clients can confidently query and filter this data without unexpected omissions.\n    *   **User-Scoped Data:** For collections such as `/users/{userId}/notifications` and `/users/{followerId}/following`, the `{userId}` or `{followerId}` wildcard in the path is strictly enforced by rules to match `request.auth.uid`. This structural enforcement means that any `list` operation on these paths will, by design, only return documents that the authenticated user is authorized to see, naturally satisfying the QAP without needing complex `where` clauses in rules.\n    *   **Lamma Community Access:** Public `/lammas` are globally readable, allowing straightforward querying. For private `/lammas`, membership is checked via the denormalized `members` map, ensuring that `list` operations for private groups only yield groups the user is a member of. For `/lammas/{lammaId}/messages`, access relies on a `get()` call to the parent `Lamma` document to determine membership or public status. While a `get()` is used, it's for a relatively static access context (group membership) that cannot reasonably be denormalized to every message. This approach still prevents `list` operations from returning unauthorized messages, as the parent `Lamma` rule acts as an initial gatekeeper."
   }
 }

@@ -1,51 +1,39 @@
-
 'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { useToast } from '@/hooks/use-toast';
-import { Info, RefreshCw } from 'lucide-react';
-import { ToastAction } from '@/components/ui/toast';
+import { FirestorePermissionError } from '@/firebase/errors';
 
+/**
+ * An invisible component that listens for globally emitted 'permission-error' events.
+ * It throws any received error to be caught by Next.js's global-error.tsx.
+ */
 export function FirebaseErrorListener() {
-  const { toast } = useToast();
+  // Use the specific error type for the state for type safety.
+  const [error, setError] = useState<FirestorePermissionError | null>(null);
 
   useEffect(() => {
-    const handlePermissionError = (error: any) => {
-      const errorMessage = error.message || "";
-      
-      const isIndexError = errorMessage.toLowerCase().includes('index') || 
-                          errorMessage.includes('فهرس') ||
-                          error.code === 'failed-precondition';
-      
-      // إذا كان الخطأ يتعلق بالفهرس، نعرض تنبيهاً مفيداً ولكن غير مزعج
-      if (isIndexError) {
-        toast({
-          duration: 5000,
-          title: 'تحسين الأداء مطلوب',
-          description: "يا زعيم، بعض الصفحات قد تعمل ببطء لأن الفهارس (Indexes) غير مفعلة. قمتُ بحل ذلك مؤقتاً برمجياً لكي لا تتعطل.",
-          action: (
-            <ToastAction altText="تحديث" onClick={() => window.location.reload()}>
-              <RefreshCw className="h-3 w-3 ml-1" />
-              تحديث
-            </ToastAction>
-          ),
-        });
-        return;
-      }
-
-      toast({
-        variant: 'destructive',
-        title: 'خطأ في الصلاحيات',
-        description: "ليس لديك صلاحية للقيام بهذا الإجراء أو أن هناك خطأ في الوصول للبيانات.",
-      });
+    // The callback now expects a strongly-typed error, matching the event payload.
+    const handleError = (error: FirestorePermissionError) => {
+      // Set error in state to trigger a re-render.
+      setError(error);
     };
 
-    errorEmitter.on('permission-error', handlePermissionError);
+    // The typed emitter will enforce that the callback for 'permission-error'
+    // matches the expected payload type (FirestorePermissionError).
+    errorEmitter.on('permission-error', handleError);
+
+    // Unsubscribe on unmount to prevent memory leaks.
     return () => {
-      errorEmitter.off('permission-error', handlePermissionError);
+      errorEmitter.off('permission-error', handleError);
     };
-  }, [toast]);
+  }, []);
 
+  // On re-render, if an error exists in state, throw it.
+  if (error) {
+    throw error;
+  }
+
+  // This component renders nothing.
   return null;
 }
