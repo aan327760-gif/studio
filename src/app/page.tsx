@@ -4,7 +4,7 @@
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ArticleCard } from "@/components/feed/ArticleCard";
 import { useLanguage } from "@/context/LanguageContext";
-import { Search, Loader2, Newspaper, Award, Globe } from "lucide-react";
+import { Newspaper, Award, Loader2, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, limit, where, doc } from "firebase/firestore";
@@ -29,11 +29,22 @@ export default function Home() {
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userProfileRef);
 
+  // خوارزمية السيادة: الترتيب حسب مجموع نقاط الأولوية (priorityScore) ثم التاريخ
   const articlesQuery = useMemoFirebase(() => {
+    let baseQuery = collection(db, "articles");
+    
     if (activeSection === "All") {
-      return query(collection(db, "articles"), orderBy("createdAt", "desc"), limit(50));
+      return query(baseQuery, orderBy("priorityScore", "desc"), orderBy("createdAt", "desc"), limit(50));
     }
-    return query(collection(db, "articles"), where("section", "==", activeSection), orderBy("createdAt", "desc"), limit(50));
+    
+    // ملاحظة: الفرز المركب يحتاج لفهرس (Index) في Firestore سيتم إنشاؤه عند أول محاولة تشغيل
+    return query(
+      baseQuery, 
+      where("section", "==", activeSection), 
+      orderBy("priorityScore", "desc"),
+      orderBy("createdAt", "desc"), 
+      limit(50)
+    );
   }, [db, activeSection]);
 
   const { data: articles = [], isLoading } = useCollection<any>(articlesQuery);
@@ -51,12 +62,17 @@ export default function Home() {
               <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-[0.2em]">{isRtl ? "الجريدة العالمية المستقلة" : "Global Sovereign Newspaper"}</span>
             </div>
           </div>
-          {profile && (
-            <Badge variant="outline" className="border-primary/30 text-primary h-7 px-3 rounded-full flex gap-2 items-center">
-              <Award className="h-3 w-3" />
-              <span className="font-black text-[10px]">{profile.points} {isRtl ? "نقطة" : "Points"}</span>
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
+               <Flame className="h-3 w-3 text-orange-500" />
+            </div>
+            {profile && (
+              <Badge variant="outline" className="border-primary/30 text-primary h-7 px-3 rounded-full flex gap-2 items-center">
+                <Award className="h-3 w-3" />
+                <span className="font-black text-[10px]">{profile.points}</span>
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -66,7 +82,7 @@ export default function Home() {
             onClick={() => setActiveSection("All")}
             className={cn("rounded-full h-8 text-[10px] font-black uppercase px-4", activeSection === "All" ? "bg-white text-black" : "bg-zinc-900 text-zinc-500")}
           >
-            {isRtl ? "الكل" : "All"}
+            {isRtl ? "الأهم" : "Top"}
           </Button>
           {SECTIONS.map((s) => (
             <Button 

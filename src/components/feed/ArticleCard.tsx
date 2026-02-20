@@ -49,7 +49,7 @@ export function ArticleCard({
   const { user } = useUser();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // جلب بيانات الكاتب الحية لضمان مزامنة الصورة والاسم والتوثيق
+  // جلب بيانات الكاتب الحية (Live)
   const authorRef = useMemoFirebase(() => author.uid ? doc(db, "users", author.uid) : null, [db, author.uid]);
   const { data: liveAuthor } = useDoc<any>(authorRef);
 
@@ -57,7 +57,6 @@ export function ArticleCard({
   const isSaved = user ? (savedBy || []).includes(user.uid) : false;
   const isLong = content.length > 180;
 
-  // استخدام البيانات الحية أو المسجلة كاحتياط
   const displayAvatar = liveAuthor?.photoURL || author.photoURL;
   const displayName = liveAuthor?.displayName || author.name;
   const isVerified = liveAuthor?.isVerified || author.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
@@ -70,14 +69,22 @@ export function ArticleCard({
     }
     
     const articleRef = doc(db, "articles", id);
-    const authorRef = doc(db, "users", author.uid);
+    const authorDocRef = doc(db, "users", author.uid);
 
     if (isLiked) {
-      updateDoc(articleRef, { likesCount: increment(-1), likedBy: arrayRemove(user.uid) });
-      updateDoc(authorRef, { points: increment(-2) });
+      updateDoc(articleRef, { 
+        likesCount: increment(-1), 
+        likedBy: arrayRemove(user.uid),
+        priorityScore: increment(-2) // خفض أولوية الظهور عند سحب اللايك
+      });
+      updateDoc(authorDocRef, { points: increment(-2) });
     } else {
-      updateDoc(articleRef, { likesCount: increment(1), likedBy: arrayUnion(user.uid) });
-      updateDoc(authorRef, { points: increment(2) });
+      updateDoc(articleRef, { 
+        likesCount: increment(1), 
+        likedBy: arrayUnion(user.uid),
+        priorityScore: increment(2) // رفع أولوية الظهور عند وضع لايك
+      });
+      updateDoc(authorDocRef, { points: increment(2) });
       
       if (author.uid !== user.uid) {
         addDoc(collection(db, "notifications"), {
@@ -150,15 +157,9 @@ export function ArticleCard({
             className="text-primary text-[10px] font-black uppercase mt-2 flex items-center gap-1 hover:underline"
           >
             {isExpanded ? (
-              <>
-                {isRtl ? "عرض أقل" : "Show Less"}
-                <ChevronUp className="h-3 w-3" />
-              </>
+              <>{isRtl ? "عرض أقل" : "Show Less"} <ChevronUp className="h-3 w-3" /></>
             ) : (
-              <>
-                {isRtl ? "اقرأ المزيد" : "Read More"}
-                <ChevronDown className="h-3 w-3" />
-              </>
+              <>{isRtl ? "اقرأ المزيد" : "Read More"} <ChevronDown className="h-3 w-3" /></>
             )}
           </button>
         )}
@@ -206,7 +207,7 @@ export function ArticleCard({
             <ThumbsUp className={cn("h-4 w-4", isLiked && "fill-primary")} />
             <span className="text-xs font-black">{likes}</span>
           </button>
-          <button className="flex items-center gap-1.5 text-zinc-600 hover:text-white transition-colors">
+          <button className="flex items-center gap-1.5 text-zinc-600 hover:text-white transition-colors" onClick={() => router.push(`/post/${id}`)}>
             <MessageCircle className="h-4 w-4" />
             <span className="text-xs font-black">{comments}</span>
           </button>

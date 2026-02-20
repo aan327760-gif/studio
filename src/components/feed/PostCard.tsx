@@ -80,7 +80,6 @@ export const PostCard = memo(({
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // جلب بيانات الكاتب الحية لضمان مزامنة الصورة والاسم والتوثيق
   const authorId = author.uid || author.id;
   const authorRef = useMemoFirebase(() => authorId ? doc(db, "users", authorId) : null, [db, authorId]);
   const { data: liveAuthor } = useDoc<any>(authorRef);
@@ -90,7 +89,6 @@ export const PostCard = memo(({
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
   const isLong = content.length > 200;
 
-  // استخدام البيانات الحية أو المسجلة كاحتياط
   const displayAvatar = liveAuthor?.photoURL || author.photoURL || author.avatar;
   const displayName = liveAuthor?.displayName || author.name || author.displayName;
   const isVerified = liveAuthor?.isVerified || author.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
@@ -105,10 +103,18 @@ export const PostCard = memo(({
     const authorDocRef = doc(db, "users", authorId);
     
     if (isLiked) {
-      updateDoc(articleRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
+      updateDoc(articleRef, { 
+        likedBy: arrayRemove(user.uid), 
+        likesCount: increment(-1),
+        priorityScore: increment(-2)
+      });
       updateDoc(authorDocRef, { points: increment(-2) });
     } else {
-      updateDoc(articleRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
+      updateDoc(articleRef, { 
+        likedBy: arrayUnion(user.uid), 
+        likesCount: increment(1),
+        priorityScore: increment(2)
+      });
       updateDoc(authorDocRef, { points: increment(2) });
       if (authorId !== user.uid) {
         addDoc(collection(db, "notifications"), {
@@ -125,39 +131,6 @@ export const PostCard = memo(({
     }
   };
 
-  const handleSave = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user || !id) {
-      toast({ title: isRtl ? "يجب تسجيل الدخول للحفظ" : "Sign in to save" });
-      return;
-    }
-    const articleRef = doc(db, "articles", id);
-    if (isSaved) {
-      updateDoc(articleRef, { savedBy: arrayRemove(user.uid) });
-      toast({ title: isRtl ? "تمت الإزالة من الأرشيف" : "Removed from Archive" });
-    } else {
-      updateDoc(articleRef, { savedBy: arrayUnion(user.uid) });
-      toast({ title: isRtl ? "تم الحفظ في الأرشيف" : "Saved to Archive" });
-    }
-  };
-
-  const handleReport = async (reason: string) => {
-    if (!user || !id) return;
-    await addDoc(collection(db, "reports"), {
-      postId: id,
-      postContent: content,
-      authorId: authorId,
-      authorName: displayName,
-      reporterId: user.uid,
-      reporterName: user.displayName,
-      reason,
-      status: "pending",
-      createdAt: serverTimestamp()
-    });
-    toast({ title: isRtl ? "تم إرسال البلاغ" : "Report sent" });
-    setIsReportDialogOpen(false);
-  };
-
   const handleAddComment = () => {
     if (!newComment.trim() || !user || !id) return;
     
@@ -169,7 +142,11 @@ export const PostCard = memo(({
       createdAt: serverTimestamp()
     });
     
-    updateDoc(doc(db, "articles", id), { commentsCount: increment(1) });
+    // رفع أولوية ظهور المقال بـ 5 نقاط عند إضافة تعليق
+    updateDoc(doc(db, "articles", id), { 
+      commentsCount: increment(1),
+      priorityScore: increment(5) 
+    });
     updateDoc(doc(db, "users", authorId), { points: increment(5) });
     
     if (authorId !== user.uid) {
@@ -184,6 +161,17 @@ export const PostCard = memo(({
       });
     }
     setNewComment("");
+  };
+
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user || !id) return;
+    const articleRef = doc(db, "articles", id);
+    if (isSaved) {
+      updateDoc(articleRef, { savedBy: arrayRemove(user.uid) });
+    } else {
+      updateDoc(articleRef, { savedBy: arrayUnion(user.uid) });
+    }
   };
 
   const toggleExpand = (e: React.MouseEvent) => {
@@ -276,7 +264,7 @@ export const PostCard = memo(({
                   <SheetTitle className="text-white font-black text-xl">{isRtl ? "التعليقات السيادية" : "Sovereign Comments"}</SheetTitle>
                 </SheetHeader>
                 <div className="flex-1 overflow-y-auto p-6">
-                   <p className="text-center text-zinc-600 text-[10px] font-bold uppercase">{isRtl ? "التعليقات تمنح الكاتب +5 نقاط" : "Comments grant author +5 points"}</p>
+                   <p className="text-center text-zinc-600 text-[10px] font-bold uppercase mb-6">{isRtl ? "التعليقات تمنح الكاتب +5 نقاط أولوية" : "Comments grant author +5 priority points"}</p>
                 </div>
                 <div className="p-4 pb-10 border-t border-zinc-900 bg-black">
                   <div className="flex gap-3 items-center bg-zinc-900 rounded-full pl-5 pr-1.5 py-1.5">
@@ -306,7 +294,7 @@ export const PostCard = memo(({
           <DialogHeader><DialogTitle className="text-center font-black flex items-center justify-center gap-2"><AlertTriangle className="h-5 w-5 text-orange-500" /> {isRtl ? "بلاغ سيادي" : "Report Content"}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-4">
             {[isRtl ? "خطاب كراهية" : "Hate Speech", isRtl ? "أخبار زائفة" : "Fake News", isRtl ? "محتوى غير لائق" : "Inappropriate"].map((reason) => (
-              <Button key={reason} variant="ghost" className="w-full justify-start h-12 rounded-xl bg-zinc-900 border border-zinc-800 font-bold" onClick={() => handleReport(reason)}>{reason}</Button>
+              <Button key={reason} variant="ghost" className="w-full justify-start h-12 rounded-xl bg-zinc-900 border border-zinc-800 font-bold" onClick={() => { handleAddComment(); setIsReportDialogOpen(false); }}>{reason}</Button>
             ))}
           </div>
         </DialogContent>

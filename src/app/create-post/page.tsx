@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Newspaper, Loader2, Award, Type, Globe, Hash, Camera, Image as ImageIcon } from "lucide-react";
+import { X, Newspaper, Loader2, Award, Type, Globe, Hash, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,6 @@ export default function CreateArticlePage() {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64Data = event.target?.result as string;
-        // الرفع لـ Cloudinary
         const uploadedUrl = await uploadToCloudinary(base64Data, 'image');
         setMediaUrl(uploadedUrl);
         toast({ title: isRtl ? "تم رفع الصورة بنجاح" : "Image uploaded successfully" });
@@ -77,13 +76,18 @@ export default function CreateArticlePage() {
     if (!user || !profile) return;
     if (!title.trim() || !content.trim()) return;
     if (!canPublish) {
-      toast({ variant: "destructive", title: isRtl ? "نقاط غير كافية" : "Insufficient Points", description: isRtl ? "تحتاج لـ 20 نقطة لنشر مقال." : "You need 20 points to publish." });
+      toast({ variant: "destructive", title: isRtl ? "نقاط غير كافية" : "Insufficient Points" });
       return;
     }
 
     setIsPublishing(true);
     try {
       const tagsArray = tags.split(' ').map(t => t.replace('#', '').trim()).filter(t => t.length > 0);
+      const isVerified = profile.isVerified || user.email === SUPER_ADMIN_EMAIL;
+
+      // حساب مجموع نقاط الأولوية الأولي (خوارزمية السيادة)
+      // الموثق يحصل على دفعة قوية للظهور في المقدمة
+      const priorityScore = isVerified ? 100 : 0;
 
       await addDoc(collection(db, "articles"), {
         title,
@@ -95,18 +99,18 @@ export default function CreateArticlePage() {
         authorName: profile.displayName,
         authorEmail: user.email,
         authorNationality: profile.nationality,
-        authorIsVerified: profile.isVerified || user.email === SUPER_ADMIN_EMAIL,
+        authorIsVerified: isVerified,
         likesCount: 0,
         commentsCount: 0,
         likedBy: [],
         savedBy: [],
+        priorityScore: priorityScore, // حقل خوارزمية الظهور
         createdAt: serverTimestamp()
       });
 
-      // خصم النقاط فوراً
       await updateDoc(userRef!, { points: increment(-20) });
 
-      toast({ title: isRtl ? "تم نشر المقال القومي" : "Article Published", description: isRtl ? "تم خصم 20 نقطة من رصيدك." : "20 points deducted." });
+      toast({ title: isRtl ? "تم نشر المقال القومي" : "Article Published" });
       router.push("/");
     } catch (e) {
       toast({ variant: "destructive", title: "Publish Error" });
