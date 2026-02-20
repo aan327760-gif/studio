@@ -21,10 +21,9 @@ service cloud.firestore {
 
     // أرشيف المقالات
     match /articles/{articleId} {
-      // السماح بالقراءة للجميع (أعضاء وزوار)
       allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.content.size() <= 1000;
-      allow update: if isSignedIn(); // لللايك والحفظ
+      allow create: if isSignedIn();
+      allow update: if isSignedIn(); 
       allow delete: if isModerator();
       
       match /comments/{commentId} {

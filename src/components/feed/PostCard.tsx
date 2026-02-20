@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLanguage } from "@/context/LanguageContext";
 import { useState, memo } from "react";
-import { useFirestore, useUser } from "@/firebase";
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { 
   doc, 
   updateDoc, 
@@ -80,10 +80,20 @@ export const PostCard = memo(({
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // جلب بيانات الكاتب الحية لضمان مزامنة الصورة والاسم والتوثيق
+  const authorId = author.uid || author.id;
+  const authorRef = useMemoFirebase(() => authorId ? doc(db, "users", authorId) : null, [db, authorId]);
+  const { data: liveAuthor } = useDoc<any>(authorRef);
+
   const isLiked = user ? (likedBy || []).includes(user.uid) : false;
   const isSaved = user ? (savedBy || []).includes(user.uid) : false;
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
   const isLong = content.length > 200;
+
+  // استخدام البيانات الحية أو المسجلة كاحتياط
+  const displayAvatar = liveAuthor?.photoURL || author.photoURL || author.avatar;
+  const displayName = liveAuthor?.displayName || author.name || author.displayName;
+  const isVerified = liveAuthor?.isVerified || author.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -92,15 +102,14 @@ export const PostCard = memo(({
       return;
     }
     const articleRef = doc(db, "articles", id);
-    const authorId = author.uid || author.id;
-    const authorRef = doc(db, "users", authorId);
+    const authorDocRef = doc(db, "users", authorId);
     
     if (isLiked) {
       updateDoc(articleRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
-      updateDoc(authorRef, { points: increment(-2) });
+      updateDoc(authorDocRef, { points: increment(-2) });
     } else {
       updateDoc(articleRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
-      updateDoc(authorRef, { points: increment(2) });
+      updateDoc(authorDocRef, { points: increment(2) });
       if (authorId !== user.uid) {
         addDoc(collection(db, "notifications"), {
           userId: authorId,
@@ -137,8 +146,8 @@ export const PostCard = memo(({
     await addDoc(collection(db, "reports"), {
       postId: id,
       postContent: content,
-      authorId: author.uid || author.id,
-      authorName: author.name || author.displayName,
+      authorId: authorId,
+      authorName: displayName,
       reporterId: user.uid,
       reporterName: user.displayName,
       reason,
@@ -151,7 +160,6 @@ export const PostCard = memo(({
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user || !id) return;
-    const authorId = author.uid || author.id;
     
     addDoc(collection(db, "articles", id, "comments"), {
       authorId: user.uid, 
@@ -183,23 +191,21 @@ export const PostCard = memo(({
     setIsExpanded(!isExpanded);
   };
 
-  const showCheckmark = author?.isVerified || author?.email === SUPER_ADMIN_EMAIL;
-
   return (
     <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/30 mb-1" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-5 pb-3 flex flex-row items-center gap-4">
-        <Link href={`/profile/${author?.uid || author?.id || '#'}`} onClick={(e) => e.stopPropagation()}>
+        <Link href={`/profile/${authorId || '#'}`} onClick={(e) => e.stopPropagation()}>
           <Avatar className="h-11 w-11 border border-zinc-900">
-            <AvatarImage src={author?.photoURL || author?.avatar} />
-            <AvatarFallback className="bg-zinc-900">{author?.name?.[0]}</AvatarFallback>
+            <AvatarImage src={displayAvatar} />
+            <AvatarFallback className="bg-zinc-900">{displayName?.[0]}</AvatarFallback>
           </Avatar>
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-center">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h3 className="font-black text-[15px] truncate tracking-tight">{author?.name || author?.displayName}</h3>
-                {showCheckmark && <VerificationBadge className="h-4 w-4" />}
+                <h3 className="font-black text-[15px] truncate tracking-tight">{displayName}</h3>
+                {isVerified && <VerificationBadge className="h-4 w-4" />}
               </div>
               <span className="text-[10px] text-zinc-600 font-bold uppercase">{author.nationality} • {time}</span>
             </div>

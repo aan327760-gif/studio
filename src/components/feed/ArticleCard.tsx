@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useFirestore, useUser } from "@/firebase";
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { doc, updateDoc, increment, arrayUnion, arrayRemove, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -49,9 +49,18 @@ export function ArticleCard({
   const { user } = useUser();
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // جلب بيانات الكاتب الحية لضمان مزامنة الصورة والاسم والتوثيق
+  const authorRef = useMemoFirebase(() => author.uid ? doc(db, "users", author.uid) : null, [db, author.uid]);
+  const { data: liveAuthor } = useDoc<any>(authorRef);
+
   const isLiked = user ? (likedBy || []).includes(user.uid) : false;
   const isSaved = user ? (savedBy || []).includes(user.uid) : false;
   const isLong = content.length > 180;
+
+  // استخدام البيانات الحية أو المسجلة كاحتياط
+  const displayAvatar = liveAuthor?.photoURL || author.photoURL;
+  const displayName = liveAuthor?.displayName || author.name;
+  const isVerified = liveAuthor?.isVerified || author.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -106,8 +115,6 @@ export function ArticleCard({
     e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
-
-  const showCheckmark = author?.isVerified || author?.email === SUPER_ADMIN_EMAIL;
 
   return (
     <div 
@@ -184,12 +191,12 @@ export function ArticleCard({
         <div className="flex items-center gap-4">
           <Link href={`/profile/${author.uid}`} className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Avatar className="h-7 w-7 border border-zinc-800">
-              <AvatarImage src={author.photoURL} />
-              <AvatarFallback className="text-[8px] bg-zinc-900">{author.name?.[0]}</AvatarFallback>
+              <AvatarImage src={displayAvatar} />
+              <AvatarFallback className="text-[8px] bg-zinc-900">{displayName?.[0]}</AvatarFallback>
             </Avatar>
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-bold text-zinc-300">@{author.name}</span>
-              {showCheckmark && <VerificationBadge className="h-3.5 w-3.5" />}
+              <span className="text-[11px] font-bold text-zinc-300">@{displayName}</span>
+              {isVerified && <VerificationBadge className="h-3.5 w-3.5" />}
             </div>
           </Link>
         </div>
