@@ -4,7 +4,7 @@
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, limit, where, Timestamp } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
@@ -27,39 +27,44 @@ export function StoryBar() {
   const { data: stories, isLoading } = useCollection<any>(storiesQuery);
 
   return (
-    <div className="flex gap-4 overflow-x-auto no-scrollbar py-5 px-4 bg-black border-b border-zinc-900/50">
+    <div className="flex gap-5 overflow-x-auto no-scrollbar py-6 px-5 bg-black border-b border-zinc-900/50 shadow-inner">
       {/* زر إضافة ستوري سيادي */}
-      <Link href="/create-story" className="flex flex-col items-center gap-2 shrink-0 group">
+      <Link href="/create-story" className="flex flex-col items-center gap-2.5 shrink-0 group">
         <div className="relative">
-          <div className="h-16 w-16 rounded-[2rem] bg-zinc-900 border-2 border-dashed border-zinc-800 flex items-center justify-center group-active:scale-90 transition-all overflow-hidden">
-            <Avatar className="h-full w-full opacity-40">
+          <div className="h-[70px] w-[70px] rounded-[2.2rem] bg-zinc-950 border-2 border-dashed border-zinc-800 flex items-center justify-center group-active:scale-90 transition-all overflow-hidden shadow-xl">
+            <Avatar className="h-full w-full opacity-20">
               <AvatarImage src={user?.photoURL || ""} />
               <AvatarFallback className="bg-zinc-900 font-black text-xs text-zinc-600">U</AvatarFallback>
             </Avatar>
-            <div className="absolute inset-0 flex items-center justify-center">
-               <Plus className="h-6 w-6 text-primary stroke-[3px]" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                  <Plus className="h-5 w-5 text-white stroke-[4px]" />
+               </div>
             </div>
           </div>
         </div>
-        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">
           {isRtl ? "إضافة" : "Add"}
         </span>
       </Link>
 
       {isLoading ? (
-        <div className="flex items-center px-4"><Loader2 className="h-5 w-5 animate-spin text-zinc-800" /></div>
+        <div className="flex items-center px-6"><Loader2 className="h-6 w-6 animate-spin text-zinc-800" /></div>
       ) : (
         stories?.map((story) => (
-          <Link key={story.id} href={`/story/${story.id}`} className="flex flex-col items-center gap-2 shrink-0 group">
-            <div className="h-16 w-16 rounded-[2rem] p-[2.5px] bg-gradient-to-tr from-primary via-accent to-primary shadow-lg shadow-primary/10 group-active:scale-95 transition-all">
-              <div className="h-full w-full rounded-[1.8rem] bg-black p-0.5">
-                <Avatar className="h-full w-full rounded-[1.6rem] border border-zinc-900">
+          <Link key={story.id} href={`/story/${story.id}`} className="flex flex-col items-center gap-2.5 shrink-0 group">
+            <div className="h-[70px] w-[70px] rounded-[2.2rem] p-[2.5px] bg-gradient-to-tr from-primary via-accent to-primary shadow-2xl shadow-primary/10 group-active:scale-95 transition-all">
+              <div className="h-full w-full rounded-[2rem] bg-black p-0.5">
+                <Avatar className="h-full w-full rounded-[1.8rem] border border-zinc-900">
                   <AvatarImage src={story.authorAvatar} className="object-cover" />
-                  <AvatarFallback className="bg-zinc-900 text-[8px] font-black">{story.authorName?.[0]}</AvatarFallback>
+                  <AvatarFallback className="bg-zinc-900 text-[10px] font-black">{story.authorName?.[0]}</AvatarFallback>
                 </Avatar>
               </div>
+              <div className="absolute -top-1 -right-1">
+                 <Sparkles className="h-3 w-3 text-accent fill-accent animate-pulse" />
+              </div>
             </div>
-            <span className="text-[9px] font-black text-zinc-400 truncate max-w-[64px] uppercase tracking-tighter">
+            <span className="text-[9px] font-black text-zinc-400 truncate max-w-[70px] uppercase tracking-tighter group-hover:text-white transition-colors">
               {story.authorName}
             </span>
           </Link>

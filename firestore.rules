@@ -14,28 +14,28 @@ service cloud.firestore {
       return isSignedIn() && (isSuperAdmin() || getUserData(request.auth.uid).role == 'moderator'); 
     }
 
-    // ملفات المواطنين
+    // ملفات المواطنين - القراءة للجميع، التحديث مسموح للنظام ولصاحب الحساب
     match /users/{userId} {
       allow read: if true;
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn(); // للسماح بتحديث النقاط من التفاعلات
+      allow update: if isSignedIn(); 
     }
 
-    // المقالات القومية (Articles)
+    // المقالات القومية - القراءة للجميع، الإنشاء للمسجلين، التحديث للتفاعلات
     match /articles/{articleId} {
       allow read: if true;
       allow create: if isSignedIn();
-      allow update: if isSignedIn(); // للسماح بتحديث الـ priorityScore واللايكات
+      allow update: if isSignedIn(); 
       allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       
       match /comments/{commentId} {
         allow read: if true;
         allow create: if isSignedIn();
-        allow delete: if isModerator();
+        allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       }
     }
 
-    // القصص اليومية (Stories)
+    // القصص اليومية (Stories) - القراءة للجميع
     match /stories/{storyId} {
       allow read: if true;
       allow create: if isSignedIn();
