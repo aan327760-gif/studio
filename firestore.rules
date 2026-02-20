@@ -9,7 +9,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isSignedIn(); // Allows points incrementing from likes/comments
+      allow update: if isOwner(userId) || isAdmin(); // يسمح للمدير بتوثيق أو حظر المستخدم
     }
 
     match /articles/{articleId} {
@@ -32,6 +32,29 @@ service cloud.firestore {
     match /notifications/{notifId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if isSignedIn();
+    }
+
+    match /reports/{reportId} {
+      allow read, update: if isAdmin();
+      allow create: if isSignedIn();
+    }
+    
+    match /groups/{groupId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+      
+      match /messages/{messageId} {
+        allow read: if isSignedIn(); // في بيئة المجموعات العامة أو العضوية
+        allow create: if isSignedIn();
+      }
+    }
+
+    match /direct_conversations/{chatId} {
+      allow read, write: if isSignedIn() && request.auth.uid in resource.data.participants;
+      
+      match /messages/{msgId} {
+        allow read, write: if isSignedIn();
+      }
     }
   }
 }

@@ -4,17 +4,19 @@
     "User": {
       "title": "User",
       "type": "object",
-      "description": "Represents a registered citizen on the Al-Qaumiyun platform.",
+      "description": "يمثل مواطناً مسجلاً في جريدة القوميون.",
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
-        "points": { "type": "number", "description": "Starting at 100 points." },
-        "nationality": { "type": "string", "description": "The country the user represents." },
+        "points": { "type": "number", "description": "تبدأ من 100 نقطة." },
+        "nationality": { "type": "string", "description": "الوطن الذي يمثله الكاتب." },
         "bio": { "type": "string", "maxLength": 150 },
         "photoURL": { "type": "string", "format": "uri" },
         "role": { "type": "string", "enum": ["user", "admin"] },
         "rank": { "type": "string", "enum": ["Beginner", "Active", "Distinguished"] },
+        "isVerified": { "type": "boolean" },
+        "isBannedUntil": { "type": "string", "format": "date-time" },
         "followersCount": { "type": "number" },
         "followingCount": { "type": "number" }
       },
@@ -23,25 +25,44 @@
     "Article": {
       "title": "Article",
       "type": "object",
-      "description": "A newspaper article limited to 1000 characters.",
+      "description": "مقال صحفي بحد أقصى 1000 حرف.",
       "properties": {
         "id": { "type": "string" },
         "title": { "type": "string" },
         "content": { "type": "string", "maxLength": 1000 },
         "section": { "type": "string", "enum": ["Politics", "Culture", "Sports", "Economy", "National"] },
         "mediaUrl": { "type": "string" },
-        "mediaType": { "type": "string" },
         "authorId": { "type": "string" },
         "authorName": { "type": "string" },
         "authorNationality": { "type": "string" },
         "likesCount": { "type": "number" },
+        "likedBy": { "type": "array", "items": { "type": "string" } },
+        "savedBy": { "type": "array", "items": { "type": "string" } },
         "commentsCount": { "type": "number" },
-        "tags": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Report": {
+      "title": "Report",
+      "type": "object",
+      "description": "بلاغ سيادي عن محتوى مخالف.",
+      "properties": {
+        "id": { "type": "string" },
+        "postId": { "type": "string" },
+        "postContent": { "type": "string" },
+        "authorId": { "type": "string" },
+        "reporterId": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved"] }
       }
     }
   },
   "auth": {
     "providers": ["password", "google"]
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "#/entities/User", "description": "ملفات المواطنين." },
+    "/articles/{articleId}": { "schema": "#/entities/Article", "description": "أرشيف المقالات." },
+    "/reports/{reportId}": { "schema": "#/entities/Report", "description": "غرفة البلاغات للمدير." }
   }
 }
