@@ -41,7 +41,7 @@ export default function ExplorePage() {
     );
   }, [db, searchQuery]);
 
-  const { data: userResults = [], isLoading: usersLoading } = useCollection<any>(usersQuery);
+  const { data: userResults, isLoading: usersLoading } = useCollection<any>(usersQuery);
 
   // بحث عن المقالات (بالوسوم)
   const articlesQuery = useMemoFirebase(() => {
@@ -54,7 +54,7 @@ export default function ExplorePage() {
     );
   }, [db, searchQuery]);
 
-  const { data: articleResults = [], isLoading: articlesLoading } = useCollection<any>(articlesQuery);
+  const { data: articleResults, isLoading: articlesLoading } = useCollection<any>(articlesQuery);
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">

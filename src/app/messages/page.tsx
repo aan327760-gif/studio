@@ -29,11 +29,12 @@ export default function MessagesInboxPage() {
     );
   }, [db, user]);
 
-  const { data: rawConversations = [], loading: chatsLoading } = useCollection<any>(chatsQuery);
+  const { data: rawConversations, isLoading: chatsLoading } = useCollection<any>(chatsQuery);
 
   // ترتيب المحادثات محلياً حسب آخر تحديث
   const sortedConversations = useMemo(() => {
-    return [...rawConversations].sort((a, b) => {
+    const list = rawConversations || [];
+    return [...list].sort((a, b) => {
       const timeA = a.updatedAt?.seconds || 0;
       const timeB = b.updatedAt?.seconds || 0;
       return timeB - timeA;

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo } from "react";
@@ -8,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, where, limit, doc, deleteDoc, writeBatch } from "firebase/firestore";
+import { collection, query, where, limit, doc, writeBatch } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -27,10 +28,11 @@ export default function NotificationsPage() {
     );
   }, [db, currentUser]);
 
-  const { data: rawNotifications = [], loading } = useCollection<any>(notificationsQuery);
+  const { data: rawNotifications, isLoading } = useCollection<any>(notificationsQuery);
 
   const notifications = useMemo(() => {
-    return [...rawNotifications].sort((a, b) => {
+    const list = rawNotifications || [];
+    return [...list].sort((a, b) => {
       const timeA = a.createdAt?.seconds || 0;
       const timeB = b.createdAt?.seconds || 0;
       return timeB - timeA;
@@ -107,7 +109,7 @@ export default function NotificationsPage() {
 
         <main className="pb-24">
           <TabsContent value="all" className="m-0">
-            {loading ? (
+            {isLoading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" />
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Syncing Alerts</p>

@@ -60,15 +60,15 @@ export default function UserProfilePage() {
 
   // جلب المقالات المكتوبة
   const userArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("authorId", "==", uid), limit(30)) : null, [db, uid]);
-  const { data: userArticles = [], isLoading: articlesLoading } = useCollection<any>(userArticlesQuery);
+  const { data: userArticles, isLoading: articlesLoading } = useCollection<any>(userArticlesQuery);
 
   // جلب المقالات المعجب بها
   const likedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("likedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
-  const { data: likedArticles = [], isLoading: likesLoading } = useCollection<any>(likedArticlesQuery);
+  const { data: likedArticles, isLoading: likesLoading } = useCollection<any>(likedArticlesQuery);
 
   // جلب المقالات المحفوظة (الأرشيف)
   const savedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("savedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
-  const { data: savedArticles = [], isLoading: savesLoading } = useCollection<any>(savedArticlesQuery);
+  const { data: savedArticles, isLoading: savesLoading } = useCollection<any>(savedArticlesQuery);
 
   const userRank = useMemo(() => {
     const points = profile?.points || 0;
@@ -292,16 +292,17 @@ function FollowListDialog({ open, onOpenChange, userId, type, isRtl }: any) {
   const field = type === 'followers' ? 'followingId' : 'followerId';
   const targetField = type === 'followers' ? 'followerId' : 'followingId';
   const queryRef = useMemoFirebase(() => query(collection(db, "follows"), where(field, "==", userId), limit(50)), [db, userId, field]);
-  const { data: followDocs = [], isLoading } = useCollection<any>(queryRef);
+  const { data: followDocs, isLoading } = useCollection<any>(queryRef);
   const [users, setUsers] = useState<any[]>([]);
   const [fetching, setFetching] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
-      if (!followDocs || followDocs.length === 0) { setUsers([]); return; }
+      const list = followDocs || [];
+      if (list.length === 0) { setUsers([]); return; }
       setFetching(true);
       const results = [];
-      for (const docSnap of followDocs) {
+      for (const docSnap of list) {
         const uDoc = await getDoc(doc(db, "users", docSnap[targetField]));
         if (uDoc.exists()) results.push({ ...uDoc.data(), id: uDoc.id });
       }
