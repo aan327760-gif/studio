@@ -89,16 +89,13 @@ export const PostCard = memo(({
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
   const isLong = content.length > 200;
 
-  const displayAvatar = liveAuthor?.photoURL || author.photoURL || author.avatar;
-  const displayName = liveAuthor?.displayName || author.name || author.displayName;
-  const isVerified = liveAuthor?.isVerified || author.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
+  const displayAvatar = liveAuthor?.photoURL || author.photoURL;
+  const displayName = liveAuthor?.displayName || author.name;
+  const isVerified = liveAuthor?.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || !id) {
-      toast({ title: isRtl ? "يجب تسجيل الدخول للتفاعل" : "Sign in to interact" });
-      return;
-    }
+    if (!user || !id) return;
     const articleRef = doc(db, "articles", id);
     const authorDocRef = doc(db, "users", authorId);
     
@@ -106,14 +103,14 @@ export const PostCard = memo(({
       updateDoc(articleRef, { 
         likedBy: arrayRemove(user.uid), 
         likesCount: increment(-1),
-        priorityScore: increment(-2)
+        priorityScore: increment(-10)
       });
       updateDoc(authorDocRef, { points: increment(-2) });
     } else {
       updateDoc(articleRef, { 
         likedBy: arrayUnion(user.uid), 
         likesCount: increment(1),
-        priorityScore: increment(2)
+        priorityScore: increment(10)
       });
       updateDoc(authorDocRef, { points: increment(2) });
       if (authorId !== user.uid) {
@@ -142,10 +139,10 @@ export const PostCard = memo(({
       createdAt: serverTimestamp()
     });
     
-    // رفع أولوية ظهور المقال بـ 5 نقاط عند إضافة تعليق
+    // رفع الأولوية بـ 25 نقطة عند إضافة تعليق (خوارزمية النقاش)
     updateDoc(doc(db, "articles", id), { 
       commentsCount: increment(1),
-      priorityScore: increment(5) 
+      priorityScore: increment(25) 
     });
     updateDoc(doc(db, "users", authorId), { points: increment(5) });
     
@@ -172,11 +169,6 @@ export const PostCard = memo(({
     } else {
       updateDoc(articleRef, { savedBy: arrayUnion(user.uid) });
     }
-  };
-
-  const toggleExpand = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsExpanded(!isExpanded);
   };
 
   return (
@@ -219,23 +211,11 @@ export const PostCard = memo(({
           
           {isLong && (
             <button 
-              onClick={toggleExpand}
+              onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
               className="text-primary text-[10px] font-black uppercase flex items-center gap-1"
             >
-              {isExpanded ? (
-                <>{isRtl ? "عرض أقل" : "Show Less"} <ChevronUp className="h-3 w-3" /></>
-              ) : (
-                <>{isRtl ? "اقرأ المزيد" : "Read More"} <ChevronDown className="h-3 w-3" /></>
-              )}
+              {isExpanded ? (isRtl ? "عرض أقل" : "Show Less") : (isRtl ? "اقرأ المزيد" : "Read More")}
             </button>
-          )}
-
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-2">
-              {tags.map((tag, idx) => (
-                <span key={idx} className="text-[11px] font-black text-primary">#{tag}</span>
-              ))}
-            </div>
           )}
         </div>
 
@@ -264,7 +244,7 @@ export const PostCard = memo(({
                   <SheetTitle className="text-white font-black text-xl">{isRtl ? "التعليقات السيادية" : "Sovereign Comments"}</SheetTitle>
                 </SheetHeader>
                 <div className="flex-1 overflow-y-auto p-6">
-                   <p className="text-center text-zinc-600 text-[10px] font-bold uppercase mb-6">{isRtl ? "التعليقات تمنح الكاتب +5 نقاط أولوية" : "Comments grant author +5 priority points"}</p>
+                   <p className="text-center text-zinc-600 text-[10px] font-bold uppercase mb-6">{isRtl ? "التعليقات ترفع أولوية ظهور المقال عالمياً" : "Comments boost global visibility"}</p>
                 </div>
                 <div className="p-4 pb-10 border-t border-zinc-900 bg-black">
                   <div className="flex gap-3 items-center bg-zinc-900 rounded-full pl-5 pr-1.5 py-1.5">
@@ -294,7 +274,7 @@ export const PostCard = memo(({
           <DialogHeader><DialogTitle className="text-center font-black flex items-center justify-center gap-2"><AlertTriangle className="h-5 w-5 text-orange-500" /> {isRtl ? "بلاغ سيادي" : "Report Content"}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-4">
             {[isRtl ? "خطاب كراهية" : "Hate Speech", isRtl ? "أخبار زائفة" : "Fake News", isRtl ? "محتوى غير لائق" : "Inappropriate"].map((reason) => (
-              <Button key={reason} variant="ghost" className="w-full justify-start h-12 rounded-xl bg-zinc-900 border border-zinc-800 font-bold" onClick={() => { handleAddComment(); setIsReportDialogOpen(false); }}>{reason}</Button>
+              <Button key={reason} variant="ghost" className="w-full justify-start h-12 rounded-xl bg-zinc-900 border border-zinc-800 font-bold" onClick={() => { setIsReportDialogOpen(false); toast({ title: "Report Submitted" }); }}>{reason}</Button>
             ))}
           </div>
         </DialogContent>

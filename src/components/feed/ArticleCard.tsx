@@ -49,7 +49,7 @@ export function ArticleCard({
   const { user } = useUser();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // جلب بيانات الكاتب الحية (Live)
+  // جلب بيانات الكاتب الحية لمزامنة الصورة والتوثيق
   const authorRef = useMemoFirebase(() => author.uid ? doc(db, "users", author.uid) : null, [db, author.uid]);
   const { data: liveAuthor } = useDoc<any>(authorRef);
 
@@ -59,7 +59,7 @@ export function ArticleCard({
 
   const displayAvatar = liveAuthor?.photoURL || author.photoURL;
   const displayName = liveAuthor?.displayName || author.name;
-  const isVerified = liveAuthor?.isVerified || author.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
+  const isVerified = liveAuthor?.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,14 +75,14 @@ export function ArticleCard({
       updateDoc(articleRef, { 
         likesCount: increment(-1), 
         likedBy: arrayRemove(user.uid),
-        priorityScore: increment(-2) // خفض أولوية الظهور عند سحب اللايك
+        priorityScore: increment(-10) // خفض الأولوية عند سحب اللايك
       });
       updateDoc(authorDocRef, { points: increment(-2) });
     } else {
       updateDoc(articleRef, { 
         likesCount: increment(1), 
         likedBy: arrayUnion(user.uid),
-        priorityScore: increment(2) // رفع أولوية الظهور عند وضع لايك
+        priorityScore: increment(10) // رفع الأولوية بـ 10 نقاط عند اللايك
       });
       updateDoc(authorDocRef, { points: increment(2) });
       
@@ -103,18 +103,12 @@ export function ArticleCard({
 
   const handleSave = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) {
-      toast({ title: isRtl ? "يجب تسجيل الدخول للحفظ" : "Sign in to save" });
-      return;
-    }
-
+    if (!user) return;
     const articleRef = doc(db, "articles", id);
     if (isSaved) {
       updateDoc(articleRef, { savedBy: arrayRemove(user.uid) });
-      toast({ title: isRtl ? "تمت الإزالة من الأرشيف" : "Removed from Archive" });
     } else {
       updateDoc(articleRef, { savedBy: arrayUnion(user.uid) });
-      toast({ title: isRtl ? "تم الحفظ في الأرشيف" : "Saved to Archive" });
     }
   };
 
@@ -156,11 +150,7 @@ export function ArticleCard({
             onClick={toggleExpand}
             className="text-primary text-[10px] font-black uppercase mt-2 flex items-center gap-1 hover:underline"
           >
-            {isExpanded ? (
-              <>{isRtl ? "عرض أقل" : "Show Less"} <ChevronUp className="h-3 w-3" /></>
-            ) : (
-              <>{isRtl ? "اقرأ المزيد" : "Read More"} <ChevronDown className="h-3 w-3" /></>
-            )}
+            {isExpanded ? (isRtl ? "عرض أقل" : "Show Less") : (isRtl ? "اقرأ المزيد" : "Read More")}
           </button>
         )}
       </div>
@@ -168,14 +158,7 @@ export function ArticleCard({
       {tags && tags.length > 0 && (
         <div className="flex flex-wrap gap-2 my-4">
           {tags.map((tag, idx) => (
-            <button 
-              key={idx} 
-              className="text-[10px] font-black text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10 hover:bg-primary/10 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(`/explore?q=${tag}`);
-              }}
-            >
+            <button key={idx} className="text-[10px] font-black text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">
               #{tag}
             </button>
           ))}

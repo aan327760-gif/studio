@@ -19,16 +19,16 @@ service cloud.firestore {
       allow update: if isSuperAdmin() || isOwner(userId) || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['points', 'followersCount', 'followingCount', 'fcmToken', 'lastTokenUpdate']));
     }
 
-    // أرشيف المقالات - تحديث صلاحيات القراءة والترتيب
+    // أرشيف المقالات - تحديث صلاحيات القراءة والترتيب العالمي
     match /articles/{articleId} {
-      allow read, list, get: if true;
+      allow read: if true;
       allow create: if isSignedIn();
-      // السماح بتحديث التفاعلات ونقاط الأولوية من قبل الجميع
-      allow update: if isSignedIn() && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'likedBy', 'savedBy', 'commentsCount', 'priorityScore']));
+      // السماح بتحديث التفاعلات ونقاط الأولوية من قبل الجميع لخدمة الخوارزمية
+      allow update: if isSignedIn() && (request.resource.data.diff(resource.data).affectedKeys().hasAny(['likesCount', 'likedBy', 'savedBy', 'commentsCount', 'priorityScore']));
       allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       
       match /comments/{commentId} {
-        allow read, list, get: if true;
+        allow read: if true;
         allow create: if isSignedIn();
         allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       }
