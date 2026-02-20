@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -101,26 +102,29 @@ export const PostCard = memo(({
   const [sortType, setSortType] = useState<'top' | 'latest'>('top');
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
-  const isLiked = user ? likedBy.includes(user.uid) : false;
-  const isSaved = user ? savedBy.includes(user.uid) : false;
+  const isLiked = user ? (likedBy || []).includes(user.uid) : false;
+  const isSaved = user ? (savedBy || []).includes(user.uid) : false;
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id) return;
-    const postRef = doc(db, "posts", id);
+    const postRef = doc(db, "articles", id);
+    const authorRef = doc(db, "users", author.uid || author.id);
     
     if (isLiked) {
       updateDoc(postRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
+      updateDoc(authorRef, { points: increment(-2) });
     } else {
       updateDoc(postRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
+      updateDoc(authorRef, { points: increment(2) });
       if (author?.uid !== user.uid) {
         addDoc(collection(db, "notifications"), {
-          userId: author.uid,
+          userId: author.uid || author.id,
           type: "like",
           fromUserId: user.uid,
           fromUserName: user.displayName,
           fromUserAvatar: user.photoURL,
-          message: isRtl ? "أعجب برؤيتك" : "liked your insight",
+          message: isRtl ? "أعجب بمقالك" : "liked your article",
           read: false,
           createdAt: serverTimestamp()
         });
@@ -131,7 +135,7 @@ export const PostCard = memo(({
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id) return;
-    updateDoc(doc(db, "posts", id), isSaved ? { savedBy: arrayRemove(user.uid), savesCount: increment(-1) } : { savedBy: arrayUnion(user.uid), savesCount: increment(1) });
+    updateDoc(doc(db, "articles", id), isSaved ? { savedBy: arrayRemove(user.uid), savesCount: increment(-1) } : { savedBy: arrayUnion(user.uid), savesCount: increment(1) });
     toast({ title: isSaved ? (isRtl ? "تمت الإزالة" : "Unsaved") : (isRtl ? "تم الحفظ في الأرشيف" : "Saved to Archive") });
   };
 
@@ -158,6 +162,7 @@ export const PostCard = memo(({
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user || !id || !allowComments) return;
+    const authorId = author.uid || author.id;
     const commentData = {
       authorId: user.uid, 
       authorName: user.displayName, 
@@ -169,17 +174,21 @@ export const PostCard = memo(({
       likedBy: [],
       parentId: replyTo?.id || null
     };
-    addDoc(collection(db, "posts", id, "comments"), commentData);
-    updateDoc(doc(db, "posts", id), { commentsCount: increment(1) });
     
-    if (author?.uid !== user.uid) {
+    addDoc(collection(db, "articles", id, "comments"), commentData);
+    updateDoc(doc(db, "articles", id), { commentsCount: increment(1) });
+    
+    // منح الكاتب +5 نقاط عن كل تعليق
+    updateDoc(doc(db, "users", authorId), { points: increment(5) });
+    
+    if (authorId !== user.uid) {
       addDoc(collection(db, "notifications"), {
-        userId: author.uid,
+        userId: authorId,
         type: "comment",
         fromUserId: user.uid,
         fromUserName: user.displayName,
         fromUserAvatar: user.photoURL,
-        message: isRtl ? "علق على رؤيتك" : "commented on your insight",
+        message: isRtl ? "علق على مقالك" : "commented on your article",
         read: false,
         createdAt: serverTimestamp()
       });
@@ -213,7 +222,7 @@ export const PostCard = memo(({
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-9 w-9 text-zinc-800 hover:bg-zinc-900 rounded-full"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 text-white rounded-2xl p-2 shadow-2xl">
                 <DropdownMenuItem className="text-orange-500 rounded-xl font-black text-xs uppercase cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsReportDialogOpen(true); }}><Flag className="h-4 w-4 mr-2" /> {isRtl ? "إبلاغ" : "Report"}</DropdownMenuItem>
-                {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "posts", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف جذري" : "Root Delete"}</DropdownMenuItem>}
+                {isSuper && <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteDoc(doc(db, "articles", id)); }} className="text-red-500 rounded-xl font-black text-xs uppercase cursor-pointer"><Trash2 className="h-4 w-4 mr-2" /> {isRtl ? "حذف جذري" : "Root Delete"}</DropdownMenuItem>}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -227,29 +236,22 @@ export const PostCard = memo(({
 
         {carouselImages.length > 0 && (
           <div className="w-full bg-black relative">
-            {mediaType === 'video' ? (
-              <div className="relative w-full flex items-center justify-center bg-zinc-950">
-                <video ref={videoRef} src={carouselImages[0]} className="w-full h-auto object-contain max-h-[85vh]" onClick={(e) => { e.stopPropagation(); if(videoRef.current) isPlaying ? videoRef.current.pause() : videoRef.current.play(); setIsPlaying(!isPlaying); }} playsInline loop preload="metadata" />
-                {!isPlaying && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="h-16 w-16 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center shadow-2xl"><Play className="h-8 w-8 text-white fill-white ml-1" /></div></div>}
-              </div>
-            ) : (
-              <Carousel className="w-full" onSelect={(api) => setCurrentSlide(api?.selectedScrollSnap() || 0)}>
-                <CarouselContent className="-ml-0">
-                  {carouselImages.map((url, idx) => (
-                    <CarouselItem key={idx} className="pl-0 flex justify-center items-center bg-zinc-950">
-                      <img src={url} alt="Media" className="w-full h-auto object-contain max-h-[85vh]" loading="lazy" />
-                    </CarouselItem>
+            <Carousel className="w-full" onSelect={(api) => setCurrentSlide(api?.selectedScrollSnap() || 0)}>
+              <CarouselContent className="-ml-0">
+                {carouselImages.map((url, idx) => (
+                  <CarouselItem key={idx} className="pl-0 flex justify-center items-center bg-zinc-950">
+                    <img src={url} alt="Media" className="w-full h-auto object-contain max-h-[85vh]" loading="lazy" />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {carouselImages.length > 1 && (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
+                  {carouselImages.map((_, idx) => (
+                    <div key={idx} className={cn("h-1 w-3 rounded-full transition-all duration-300", idx === currentSlide ? "bg-primary w-5" : "bg-white/20")} />
                   ))}
-                </CarouselContent>
-                {carouselImages.length > 1 && (
-                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
-                    {carouselImages.map((_, idx) => (
-                      <div key={idx} className={cn("h-1 w-3 rounded-full transition-all duration-300", idx === currentSlide ? "bg-primary w-5" : "bg-white/20")} />
-                    ))}
-                  </div>
-                )}
-              </Carousel>
-            )}
+                </div>
+              )}
+            </Carousel>
           </div>
         )}
 
@@ -318,7 +320,7 @@ export const PostCard = memo(({
         <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-[90%] rounded-[2rem] p-6">
           <DialogHeader><DialogTitle className="text-center font-black uppercase flex items-center justify-center gap-2"><AlertTriangle className="h-5 w-5 text-orange-500" /> {isRtl ? "بلاغ سيادي" : "Report Content"}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-4">
-            <p className="text-[10px] text-zinc-500 font-bold uppercase text-center mb-4">{isRtl ? "لماذا تبلغ عن هذا المنشور؟" : "Why are you reporting this?"}</p>
+            <p className="text-[10px] text-zinc-500 font-bold uppercase text-center mb-4">{isRtl ? "لماذا تبلغ عن هذا المقال؟" : "Why are you reporting this?"}</p>
             {[
               { id: 'hate', label: isRtl ? "خطاب كراهية" : "Hate Speech" },
               { id: 'violence', label: isRtl ? "تحريض على العنف" : "Violence" },
@@ -345,21 +347,21 @@ function CommentsList({ postId, isRtl, sortType, onReply }: any) {
 
   const commentsQuery = useMemoFirebase(() => {
     const orderField = sortType === 'top' ? 'likesCount' : 'createdAt';
-    return query(collection(db, "posts", postId, "comments"), orderBy(orderField, "desc"), limit(100));
+    return query(collection(db, "articles", postId, "comments"), orderBy(orderField, "desc"), limit(100));
   }, [db, postId, sortType]);
 
   const { data: rawComments = [] } = useCollection<any>(commentsQuery);
 
   const organized = useMemo(() => {
-    const main = rawComments.filter(c => !c.parentId);
-    const replies = rawComments.filter(c => c.parentId);
+    const main = (rawComments || []).filter(c => !c.parentId);
+    const replies = (rawComments || []).filter(c => c.parentId);
     return { main, replies };
   }, [rawComments]);
 
   const handleLikeComment = (comment: any) => {
     if (!user) return;
     const isLiked = (comment.likedBy || []).includes(user.uid);
-    const commentRef = doc(db, "posts", postId, "comments", comment.id);
+    const commentRef = doc(db, "articles", postId, "comments", comment.id);
     if (isLiked) {
       updateDoc(commentRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
     } else {
@@ -397,7 +399,7 @@ function CommentsList({ postId, isRtl, sortType, onReply }: any) {
                 </div>
                 <button onClick={() => onReply({ id: comment.id, handle: comment.authorHandle, authorId: comment.authorId })} className="text-[11px] font-bold text-zinc-500">Reply</button>
                 {(isSuper || user?.uid === comment.authorId) && (
-                  <button onClick={() => deleteDoc(doc(db, "posts", postId, "comments", comment.id))} className="text-zinc-700 ml-auto"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => deleteDoc(doc(db, "articles", postId, "comments", comment.id))} className="text-zinc-700 ml-auto"><Trash2 className="h-3.5 w-3.5" /></button>
                 )}
               </div>
               <ReplyThread commentId={comment.id} allReplies={organized.replies} isRtl={isRtl} onReply={onReply} onLike={handleLikeComment} formatTime={formatTime} user={user} isSuper={isSuper} postId={postId} db={db} />
@@ -438,7 +440,7 @@ function ReplyThread({ commentId, allReplies, isRtl, onReply, onLike, formatTime
                     <button onClick={() => onLike(reply)}><ThumbsUp className={cn("h-3.5 w-3.5", (reply.likedBy || []).includes(user?.uid) && "fill-white text-white")} /></button>
                     <button onClick={() => onReply({ id: reply.parentId, handle: reply.authorHandle, authorId: reply.authorId })} className="text-[10px] font-bold text-zinc-500 uppercase">Reply</button>
                     {(isSuper || user?.uid === reply.authorId) && (
-                      <button onClick={() => deleteDoc(doc(db, "posts", postId, "comments", reply.id))} className="text-zinc-800 ml-auto"><Trash2 className="h-3 w-3" /></button>
+                      <button onClick={() => deleteDoc(doc(db, "articles", postId, "comments", reply.id))} className="text-zinc-800 ml-auto"><Trash2 className="h-3 w-3" /></button>
                     )}
                   </div>
                 </div>

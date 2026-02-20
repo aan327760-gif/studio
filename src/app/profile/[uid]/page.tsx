@@ -14,7 +14,8 @@ import {
   MessageSquare,
   Lock,
   Bookmark,
-  Users
+  Award,
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -30,6 +31,7 @@ import { VerificationBadge } from "@/components/ui/verification-badge";
 import { toast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -44,7 +46,7 @@ export default function UserProfilePage() {
   const isSuper = currentUser?.email === SUPER_ADMIN_EMAIL;
 
   const profileRef = useMemoFirebase(() => uid ? doc(db, "users", uid as string) : null, [db, uid]);
-  const { data: profile, loading: profileLoading } = useDoc<any>(profileRef);
+  const { data: profile, isLoading: profileLoading } = useDoc<any>(profileRef);
 
   const followId = currentUser && uid ? `${currentUser.uid}_${uid}` : null;
   const followRef = useMemoFirebase(() => (followId && !isOwnProfile) ? doc(db, "follows", followId) : null, [db, followId, isOwnProfile]);
@@ -59,16 +61,17 @@ export default function UserProfilePage() {
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
 
-  // استعلام المنشورات الأصلية
-  const userPostsQuery = useMemoFirebase(() => uid ? query(collection(db, "posts"), where("authorId", "==", uid), limit(30)) : null, [db, uid]);
-  const { data: userPosts = [], loading: postsLoading } = useCollection<any>(userPostsQuery);
+  // استعلام المقالات الأصلية
+  const userPostsQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("authorId", "==", uid), limit(30)) : null, [db, uid]);
+  const { data: userPosts, isLoading: postsLoading } = useCollection<any>(userPostsQuery);
 
-  // استعلام المحفوظات (يظهر فقط لصاحب الملف - الخصوصية السيادية)
-  const savedPostsQuery = useMemoFirebase(() => {
-    if (!isOwnProfile) return null;
-    return query(collection(db, "posts"), where("savedBy", "array-contains", uid), limit(30));
-  }, [db, uid, isOwnProfile]);
-  const { data: savedPosts = [], loading: savedLoading } = useCollection<any>(savedPostsQuery);
+  // حساب الرتبة القومية
+  const userRank = useMemo(() => {
+    const points = profile?.points || 0;
+    if (points >= 500) return { label: isRtl ? "متميز" : "Distinguished", color: "text-orange-500 bg-orange-500/10 border-orange-500/20" };
+    if (points >= 200) return { label: isRtl ? "نشط" : "Active", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" };
+    return { label: isRtl ? "مبتدئ" : "Beginner", color: "text-zinc-500 bg-zinc-500/10 border-zinc-500/20" };
+  }, [profile?.points, isRtl]);
 
   const handleFollow = async () => {
     if (!currentUser || !uid || isOwnProfile || !followRef) return;
@@ -93,18 +96,6 @@ export default function UserProfilePage() {
         createdAt: serverTimestamp()
       });
     }
-  };
-
-  const handleStartMessage = async () => {
-    if (!currentUser || !uid || isOwnProfile || !isFriend) return;
-    const participants = [currentUser.uid, uid as string].sort();
-    const chatId = participants.join("_");
-    const chatRef = doc(db, "direct_conversations", chatId);
-    const snap = await getDoc(chatRef);
-    if (!snap.exists()) {
-      await setDoc(chatRef, { participants, updatedAt: serverTimestamp(), lastMessage: "", createdAt: serverTimestamp() });
-    }
-    router.push(`/messages/${chatId}`);
   };
 
   if (profileLoading) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -142,14 +133,13 @@ export default function UserProfilePage() {
             <div className="flex items-center gap-1.5 flex-wrap">
               <h2 className="text-2xl font-black truncate">{profile?.displayName}</h2>
               {showCheckmark && <VerificationBadge className="h-5 w-5" />}
-              {profile?.isPro && (
-                <div className="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-full">
-                   <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
-                   <span className="text-[9px] font-black text-yellow-500 uppercase">{isRtl ? "إعلام" : "Media"}</span>
-                </div>
-              )}
             </div>
-            <p className="text-zinc-500 text-sm font-medium">@{profile?.email?.split('@')[0]}</p>
+            <div className="flex items-center gap-2">
+               <p className="text-zinc-500 text-sm font-medium">@{profile?.email?.split('@')[0]}</p>
+               <Badge variant="outline" className={cn("text-[8px] font-black uppercase tracking-widest px-2 h-5", userRank.color)}>
+                  {userRank.label}
+               </Badge>
+            </div>
           </div>
           
           <div className="flex flex-col gap-2">
@@ -157,12 +147,10 @@ export default function UserProfilePage() {
               <Link href="/profile/edit"><Button variant="outline" className="rounded-full font-black px-6">Edit</Button></Link>
             ) : (
               <div className="flex gap-2">
-                {isFriend ? (
-                  <Button variant="outline" size="icon" className="rounded-full bg-primary/10 border-primary/30" onClick={handleStartMessage}>
+                {isFriend && (
+                  <Button variant="outline" size="icon" className="rounded-full bg-primary/10 border-primary/30" onClick={() => router.push(`/messages/${[currentUser?.uid, uid].sort().join('_')}`)}>
                     <MessageSquare className="h-5 w-5 text-primary" />
                   </Button>
-                ) : (
-                  <Button variant="outline" size="icon" className="rounded-full opacity-40 cursor-not-allowed" disabled title={isRtl ? "المراسلة للأصدقاء فقط" : "Friends only"}><Lock className="h-4 w-4" /></Button>
                 )}
                 <Button onClick={handleFollow} className={cn("rounded-full font-black px-8", isFollowing ? "bg-zinc-900 text-white border border-zinc-800" : "bg-white text-black")}>
                   {isFollowing ? (isRtl ? "يتبع" : "Following") : (isRtl ? "متابعة" : "Follow")}
@@ -172,12 +160,18 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        <div className="mt-4 text-[15px] leading-relaxed text-zinc-300 font-medium whitespace-pre-line">{profile?.bio}</div>
-
-        <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500 font-bold uppercase tracking-widest">
-           {profile?.location && <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /><span>{profile.location}</span></div>}
-           <div className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /><span>{isRtl ? "انضم" : "Joined"} {profile?.createdAt?.toDate ? profile.createdAt.toDate().toLocaleDateString() : "Recently"}</span></div>
+        <div className="mt-4 flex items-center gap-4 bg-zinc-950 p-4 rounded-2xl border border-zinc-900">
+           <div className="flex-1 flex flex-col items-center border-r border-zinc-900">
+              <span className="text-lg font-black text-primary">{profile?.points || 0}</span>
+              <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">{isRtl ? "نقطة" : "Points"}</span>
+           </div>
+           <div className="flex-1 flex flex-col items-center">
+              <span className="text-lg font-black">{profile?.nationality || "Global"}</span>
+              <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">{isRtl ? "الوطن" : "Nation"}</span>
+           </div>
         </div>
+
+        <div className="mt-4 text-[15px] leading-relaxed text-zinc-300 font-medium whitespace-pre-line">{profile?.bio}</div>
 
         <div className="mt-6 flex gap-6 border-y border-zinc-900 py-4">
           <button onClick={() => setShowFollowing(true)} className="flex flex-col items-center flex-1 active:scale-95 transition-transform">
@@ -189,51 +183,35 @@ export default function UserProfilePage() {
             <span className="text-[10px] text-zinc-500 font-black uppercase">{isRtl ? "متابع" : "Followers"}</span>
           </button>
           <div className="flex flex-col items-center flex-1">
-            <span className="font-black text-lg">{userPosts.length}</span>
-            <span className="text-[10px] text-zinc-500 font-black uppercase">{isRtl ? "منشور" : "Posts"}</span>
+            <span className="font-black text-lg">{userPosts?.length || 0}</span>
+            <span className="text-[10px] text-zinc-500 font-black uppercase">{isRtl ? "مقال" : "Articles"}</span>
           </div>
         </div>
       </div>
 
       <Tabs defaultValue="posts" className="mt-2 w-full">
         <TabsList className="w-full bg-black h-14 p-0 border-b border-zinc-900 flex">
-          <TabsTrigger value="posts" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">{isRtl ? "المنشورات" : "Posts"}</TabsTrigger>
-          <TabsTrigger value="media" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">{isRtl ? "الوسائط" : "Media"}</TabsTrigger>
-          {isOwnProfile && (
-            <TabsTrigger value="saved" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">
-              {isRtl ? "المحفوظات" : "Saved"}
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="posts" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">{isRtl ? "المقالات" : "Articles"}</TabsTrigger>
           <TabsTrigger value="likes" className="flex-1 font-black text-[10px] uppercase data-[state=active]:border-b-2 data-[state=active]:border-primary transition-all">{isRtl ? "الإعجابات" : "Likes"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="posts" className="m-0">
           {postsLoading ? <div className="p-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div> :
-            userPosts.map((post: any) => <PostCard key={post.id} id={post.id} author={{...profile, handle: profile.email?.split('@')[0], id: uid}} content={post.content} image={post.mediaUrl} mediaUrls={post.mediaUrls} mediaType={post.mediaType} likes={post.likesCount || 0} saves={post.savesCount || 0} likedBy={post.likedBy} savedBy={post.savedBy} commentsCount={post.commentsCount} time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} />)}
-        </TabsContent>
-
-        <TabsContent value="saved" className="m-0">
-          {savedLoading ? <div className="p-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div> :
-            savedPosts.length > 0 ? savedPosts.map((post: any) => (
+            (userPosts && userPosts.length > 0) ? userPosts.map((post: any) => (
               <PostCard 
                 key={post.id} 
                 id={post.id} 
-                author={post.author} 
+                author={{...profile, handle: profile.email?.split('@')[0], id: uid}} 
                 content={post.content} 
                 image={post.mediaUrl} 
-                mediaUrls={post.mediaUrls} 
-                mediaType={post.mediaType} 
                 likes={post.likesCount || 0} 
-                saves={post.savesCount || 0} 
-                likedBy={post.likedBy} 
-                savedBy={post.savedBy}
-                commentsCount={post.commentsCount}
-                time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""} 
+                commentsCount={post.commentsCount} 
+                time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleDateString() : ""} 
               />
             )) : (
-              <div className="py-40 text-center opacity-20 flex flex-col items-center gap-4">
-                <Bookmark className="h-12 w-12" />
-                <p className="text-xs font-black uppercase tracking-widest">{isRtl ? "لا توجد محفوظات" : "No saved insights"}</p>
+              <div className="py-24 text-center opacity-20 flex flex-col items-center gap-4">
+                 <TrendingUp className="h-12 w-12" />
+                 <p className="text-xs font-black uppercase">{isRtl ? "لا توجد مقالات" : "No articles yet"}</p>
               </div>
             )}
         </TabsContent>
@@ -252,7 +230,7 @@ function FollowListDialog({ open, onOpenChange, userId, type, isRtl }: any) {
   const field = type === 'followers' ? 'followingId' : 'followerId';
   const targetField = type === 'followers' ? 'followerId' : 'followingId';
   const queryRef = useMemoFirebase(() => query(collection(db, "follows"), where(field, "==", userId), limit(50)), [db, userId, field]);
-  const { data: followDocs = [], loading } = useCollection<any>(queryRef);
+  const { data: followDocs = [], isLoading } = useCollection<any>(queryRef);
   const [users, setUsers] = useState<any[]>([]);
   const [fetching, setFetching] = useState(false);
 
@@ -278,7 +256,7 @@ function FollowListDialog({ open, onOpenChange, userId, type, isRtl }: any) {
           <DialogTitle className="text-center font-black uppercase text-sm">{type === 'followers' ? (isRtl ? "المتابعون" : "Followers") : (isRtl ? "يتابع" : "Following")}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 p-4">
-          {loading || fetching ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin opacity-20" /></div> : users.map((u) => (
+          {isLoading || fetching ? <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin opacity-20" /></div> : users.map((u) => (
             <Link key={u.id} href={`/profile/${u.id}`} onClick={() => onOpenChange(false)}>
               <div className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl transition-all">
                 <Avatar className="h-10 w-10 border border-zinc-800"><AvatarImage src={u.photoURL} /><AvatarFallback>U</AvatarFallback></Avatar>
