@@ -16,7 +16,8 @@ export default function PostDetailPage() {
   const router = useRouter();
   const db = useFirestore();
 
-  const postRef = useMemoFirebase(() => postId ? doc(db, "posts", postId as string) : null, [db, postId]);
+  // تصحيح: استخدام مجموعة articles المعتمدة بدلاً من posts
+  const postRef = useMemoFirebase(() => postId ? doc(db, "articles", postId as string) : null, [db, postId]);
   const { data: post, isLoading } = useDoc<any>(postRef);
 
   if (isLoading) {
@@ -44,23 +45,32 @@ export default function PostDetailPage() {
         <Button variant="ghost" size="icon" className="rounded-full" onClick={() => router.back()}>
           <ArrowLeft className={isRtl ? "rotate-180" : ""} />
         </Button>
-        <h1 className="text-lg font-bold">{isRtl ? "عرض المقال" : "View Article"}</h1>
+        <h1 className="text-lg font-black uppercase tracking-tight">{isRtl ? "عرض المقال" : "View Article"}</h1>
       </header>
 
       <main className="pb-24">
         <PostCard 
           id={post.id}
-          author={post.author || { name: "User", handle: "user", avatar: "" }}
+          author={{
+            name: post.authorName,
+            uid: post.authorId,
+            nationality: post.authorNationality,
+            isVerified: post.authorIsVerified,
+            email: post.authorEmail,
+            photoURL: post.mediaUrl // fallback
+          }}
           content={post.content}
           image={post.mediaUrl}
-          mediaType={post.mediaType}
           likes={post.likesCount || 0}
           commentsCount={post.commentsCount || 0}
+          likedBy={post.likedBy}
+          savedBy={post.savedBy}
+          tags={post.tags}
           time={post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString() : ""}
         />
         
-        <div className="p-4 text-zinc-500 text-xs text-center">
-          {isRtl ? "التعليقات تظهر في الأسفل عند النقر على أيقونة التعليق" : "Comments appear in the sheet when clicking the comment icon"}
+        <div className="p-10 text-zinc-600 text-[10px] font-black uppercase text-center tracking-widest opacity-40">
+          {isRtl ? "انتهى السجل السيادي للمقال" : "End of sovereign record"}
         </div>
       </main>
 

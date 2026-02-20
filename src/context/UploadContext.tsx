@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
 interface UploadContextType {
@@ -15,9 +15,6 @@ interface UploadContextType {
 
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
-/**
- * محرك الضغط السيادي - معالجة خفيفة لضمان سرعة الرفع
- */
 const compressImage = async (url: string): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -48,43 +45,26 @@ const compressImage = async (url: string): Promise<string> => {
   });
 };
 
-/**
- * نظام الرفع في الخلفية - يتيح للمواطن التصفح أثناء معالجة الوسائط
- */
 export function UploadProvider({ children }: { children: React.ReactNode }) {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const db = useFirestore();
 
   const startUpload = async (payload: any) => {
-    const { content, localImages, videoUrl, authorInfo, privacy, allowComments, isRtl } = payload;
+    const { content, localImages, videoUrl, authorInfo, isRtl, title, section, tags } = payload;
     
     setIsUploading(true);
     setProgress(10); 
 
     try {
-      let finalMediaUrls: string[] = [];
-      let mediaType: "image" | "video" | "audio" | "album" | null = null;
+      let finalMediaUrl: string | null = null;
 
-      // 1. معالجة الصور (الألبومات أو الصورة المفردة)
       if (localImages && localImages.length > 0) {
-        mediaType = localImages.length > 1 ? 'album' : 'image';
-        
-        const uploadPromises = localImages.map(async (rawUrl: string, idx: number) => {
-          const compressed = await compressImage(rawUrl);
-          setProgress(prev => Math.min(40, prev + (20 / localImages.length)));
-          const url = await uploadToCloudinary(compressed, 'image');
-          setProgress(prev => Math.min(90, prev + (50 / localImages.length)));
-          return url;
-        });
-        finalMediaUrls = await Promise.all(uploadPromises);
-      } 
-      
-      // 2. معالجة الفيديوهات
-      else if (videoUrl) {
-        mediaType = 'video';
-        setProgress(30);
-        
+        const compressed = await compressImage(localImages[0]);
+        setProgress(40);
+        finalMediaUrl = await uploadToCloudinary(compressed, 'image');
+        setProgress(80);
+      } else if (videoUrl) {
         const response = await fetch(videoUrl);
         const blob = await response.blob();
         const base64 = await new Promise<string>((resolve) => {
@@ -92,34 +72,37 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
-        
-        const url = await uploadToCloudinary(base64, 'video');
-        finalMediaUrls = [url];
-        setProgress(95);
+        finalMediaUrl = await uploadToCloudinary(base64, 'video');
+        setProgress(85);
       }
 
-      // 3. التسجيل في Firestore
-      await addDoc(collection(db, "posts"), {
+      // تصحيح: الرفع لمجموعة articles المعتمدة
+      await addDoc(collection(db, "articles"), {
+        title: title || (isRtl ? "مقال جديد" : "New Article"),
         content,
-        mediaUrl: finalMediaUrls[0] || null,
-        mediaUrls: finalMediaUrls,
-        mediaType,
+        section: section || "National",
+        tags: tags || [],
+        mediaUrl: finalMediaUrl,
         authorId: authorInfo.uid,
-        author: authorInfo,
+        authorName: authorInfo.displayName,
+        authorEmail: authorInfo.email,
+        authorNationality: authorInfo.nationality || "Global",
+        authorIsVerified: authorInfo.isVerified || false,
         likesCount: 0,
-        likedBy: [],
-        savesCount: 0,
-        savedBy: [],
         commentsCount: 0,
+        likedBy: [],
+        savedBy: [],
         createdAt: serverTimestamp(),
-        privacy,
-        allowComments
       });
 
+      // خصم نقاط النشر
+      const userRef = doc(db, "users", authorInfo.uid);
+      await updateDoc(userRef, { points: increment(-20) });
+
       setProgress(100);
-      toast({ title: isRtl ? "تم النشر بنجاح" : "Sovereign Post Published" });
+      toast({ title: isRtl ? "تم النشر بنجاح" : "Article Published" });
     } catch (error: any) {
-      console.error("Sovereign Upload Failure:", error);
+      console.error("Upload Failure:", error);
       toast({ variant: "destructive", title: isRtl ? "فشل الرفع" : "Upload Failed" });
     } finally {
       setTimeout(() => {

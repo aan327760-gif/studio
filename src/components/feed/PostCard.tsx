@@ -87,7 +87,10 @@ export const PostCard = memo(({
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || !id) return;
+    if (!user || !id) {
+      toast({ title: isRtl ? "يجب تسجيل الدخول للتفاعل" : "Sign in to interact" });
+      return;
+    }
     const articleRef = doc(db, "articles", id);
     const authorId = author.uid || author.id;
     const authorRef = doc(db, "users", authorId);
@@ -115,7 +118,10 @@ export const PostCard = memo(({
 
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || !id) return;
+    if (!user || !id) {
+      toast({ title: isRtl ? "يجب تسجيل الدخول للحفظ" : "Sign in to save" });
+      return;
+    }
     const articleRef = doc(db, "articles", id);
     if (isSaved) {
       updateDoc(articleRef, { savedBy: arrayRemove(user.uid) });
@@ -177,6 +183,8 @@ export const PostCard = memo(({
     setIsExpanded(!isExpanded);
   };
 
+  const showCheckmark = author?.isVerified || author?.email === SUPER_ADMIN_EMAIL;
+
   return (
     <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/30 mb-1" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-5 pb-3 flex flex-row items-center gap-4">
@@ -191,7 +199,7 @@ export const PostCard = memo(({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <h3 className="font-black text-[15px] truncate tracking-tight">{author?.name || author?.displayName}</h3>
-                {(author?.isVerified || author?.email === SUPER_ADMIN_EMAIL) && <VerificationBadge className="h-4 w-4" />}
+                {showCheckmark && <VerificationBadge className="h-4 w-4" />}
               </div>
               <span className="text-[10px] text-zinc-600 font-bold uppercase">{author.nationality} • {time}</span>
             </div>
@@ -246,8 +254,8 @@ export const PostCard = memo(({
         <div className="px-5 py-4 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 cursor-pointer group" onClick={handleLike}>
-              <ThumbsUp className={cn("h-5 w-5 transition-all", isLiked ? "fill-white text-white" : "text-zinc-700")} />
-              <span className={cn("text-xs font-black", isLiked ? "text-white" : "text-zinc-700")}>{likes}</span>
+              <ThumbsUp className={cn("h-5 w-5 transition-all", isLiked ? "fill-primary text-primary" : "text-zinc-700")} />
+              <span className={cn("text-xs font-black", isLiked ? "text-primary" : "text-zinc-700")}>{likes}</span>
             </div>
             
             <Sheet>
