@@ -2,6 +2,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // وظائف السيادة الأساسية
     function isSignedIn() { return request.auth != null; }
     function isSuperAdmin() { return request.auth != null && request.auth.token.email == 'adelbenmaza3@gmail.com'; }
     
@@ -13,16 +14,18 @@ service cloud.firestore {
       return isSignedIn() && (isSuperAdmin() || getUserData(request.auth.uid).role == 'moderator'); 
     }
 
+    // ملفات المواطنين
     match /users/{userId} {
       allow read: if true;
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn();
+      allow update: if isSignedIn(); // للسماح بتحديث النقاط من التفاعلات
     }
 
+    // المقالات القومية (Articles)
     match /articles/{articleId} {
       allow read: if true;
       allow create: if isSignedIn();
-      allow update: if isSignedIn();
+      allow update: if isSignedIn(); // للسماح بتحديث الـ priorityScore واللايكات
       allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       
       match /comments/{commentId} {
@@ -32,28 +35,39 @@ service cloud.firestore {
       }
     }
 
+    // القصص اليومية (Stories)
     match /stories/{storyId} {
       allow read: if true;
       allow create: if isSignedIn();
       allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
     }
 
+    // البلاغات (Reports)
+    match /reports/{reportId} {
+      allow create: if isSignedIn();
+      allow read, update: if isModerator();
+    }
+
+    // التنبيهات
     match /notifications/{notifId} {
-      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
     }
 
+    // المتابعات
     match /follows/{followId} {
       allow read: if true;
       allow write: if isSignedIn();
     }
 
+    // اللمة (Groups)
     match /groups/{groupId} {
       allow read: if true;
       allow write: if isSignedIn();
       match /messages/{msgId} { allow read, write: if isSignedIn(); }
     }
 
+    // المحادثات المباشرة
     match /direct_conversations/{chatId} {
       allow read, write: if isSignedIn() && request.auth.uid in resource.data.participants;
       allow create: if isSignedIn();

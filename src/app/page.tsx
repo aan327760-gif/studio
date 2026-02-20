@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ArticleCard } from "@/components/feed/ArticleCard";
 import { StoryBar } from "@/components/feed/StoryBar";
 import { useLanguage } from "@/context/LanguageContext";
-import { Newspaper, Award, Loader2 } from "lucide-react";
+import { Newspaper, Award, Loader2, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, limit, where, doc } from "firebase/firestore";
@@ -30,10 +30,11 @@ export default function Home() {
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userProfileRef);
 
-  // خوارزمية السيادة: ترتيب حسب الأولوية ثم التاريخ
+  // خوارزمية السيادة: ترتيب حسب الأولوية (التفاعل + التوثيق) ثم التاريخ
   const articlesQuery = useMemoFirebase(() => {
     let baseQuery = collection(db, "articles");
     if (activeSection === "All") {
+      // نستخدم الترتيب حسب priorityScore لضمان ظهور المحتوى النخبوي أولاً
       return query(baseQuery, orderBy("priorityScore", "desc"), orderBy("createdAt", "desc"), limit(50));
     }
     return query(baseQuery, where("section", "==", activeSection), orderBy("priorityScore", "desc"), orderBy("createdAt", "desc"), limit(50));
@@ -51,12 +52,15 @@ export default function Home() {
             </div>
             <div className="flex flex-col">
               <h1 className="text-lg font-black uppercase tracking-tight">{isRtl ? "القوميون" : "Al-Qaumiyun"}</h1>
-              <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-[0.2em]">{isRtl ? "الخوارزمية السيادية نشطة" : "Sovereign Algorithm Active"}</span>
+              <div className="flex items-center gap-1">
+                <TrendingUp className="h-2 w-2 text-primary" />
+                <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-[0.2em]">{isRtl ? "خوارزمية السيادة نشطة" : "Sovereign Algorithm Active"}</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {profile && (
-              <Badge variant="outline" className="border-primary/30 text-primary h-7 px-3 rounded-full flex gap-2 items-center">
+              <Badge variant="outline" className="border-primary/30 text-primary h-7 px-3 rounded-full flex gap-2 items-center bg-primary/5">
                 <Award className="h-3 w-3" />
                 <span className="font-black text-[10px]">{profile.points}</span>
               </Badge>
@@ -88,7 +92,7 @@ export default function Home() {
       </header>
 
       <main className="pb-32">
-        {/* إطار الستوري السيادي في أعلى الخلاصة */}
+        {/* إطار الستوري السيادي المحدث */}
         <StoryBar />
 
         {isLoading ? (
