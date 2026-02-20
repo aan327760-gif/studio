@@ -43,12 +43,13 @@ export default function ExplorePage() {
 
   const { data: userResults = [], isLoading: usersLoading } = useCollection<any>(usersQuery);
 
-  // بحث عن المقالات (بالوسوم أو المحتوى)
+  // بحث عن المقالات (بالوسوم)
   const articlesQuery = useMemoFirebase(() => {
     if (!searchQuery.trim()) return null;
+    const cleanTag = searchQuery.startsWith("#") ? searchQuery.substring(1) : searchQuery;
     return query(
       collection(db, "articles"),
-      where("tags", "array-contains", searchQuery.startsWith("#") ? searchQuery.substring(1) : searchQuery),
+      where("tags", "array-contains", cleanTag),
       limit(15)
     );
   }, [db, searchQuery]);
@@ -121,7 +122,7 @@ export default function ExplorePage() {
             <TabsContent value="articles" className="m-0">
               {articlesLoading ? (
                 <div className="py-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div>
-              ) : articleResults.length > 0 ? (
+              ) : articleResults && articleResults.length > 0 ? (
                 <div className="flex flex-col">
                   {articleResults.map((article: any) => (
                     <ArticleCard 
@@ -131,6 +132,7 @@ export default function ExplorePage() {
                       title={article.title}
                       content={article.content}
                       section={article.section}
+                      tags={article.tags}
                       image={article.mediaUrl}
                       likes={article.likesCount || 0}
                       comments={article.commentsCount || 0}
@@ -149,7 +151,7 @@ export default function ExplorePage() {
             <TabsContent value="people" className="p-4 space-y-3">
               {usersLoading ? (
                 <div className="py-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div>
-              ) : userResults.length > 0 ? (
+              ) : userResults && userResults.length > 0 ? (
                 userResults.filter((u:any) => u.uid !== currentUser?.uid).map((user: any) => (
                   <Link href={`/profile/${user.uid}`} key={user.uid}>
                     <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2.5rem] hover:border-primary/30 transition-all">

@@ -11,7 +11,8 @@ import {
   MessageSquare,
   Bookmark,
   Heart,
-  Newspaper
+  Newspaper,
+  Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -218,6 +219,7 @@ export default function UserProfilePage() {
                 commentsCount={article.commentsCount} 
                 likedBy={article.likedBy}
                 savedBy={article.savedBy}
+                tags={article.tags}
                 time={article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString() : ""} 
               />
             )) : (
@@ -241,6 +243,7 @@ export default function UserProfilePage() {
                 commentsCount={article.commentsCount}
                 likedBy={article.likedBy}
                 savedBy={article.savedBy}
+                tags={article.tags}
                 time={article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString() : ""} 
               />
             )) : (
@@ -264,6 +267,7 @@ export default function UserProfilePage() {
                 commentsCount={article.commentsCount}
                 likedBy={article.likedBy}
                 savedBy={article.savedBy}
+                tags={article.tags}
                 time={article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString() : ""} 
               />
             )) : (

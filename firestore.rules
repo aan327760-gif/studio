@@ -3,13 +3,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
-    function isOwner(userId) { return request.auth.uid == userId; }
-    function isAdmin() { return request.auth.token.email == 'adelbenmaza3@gmail.com'; }
+    function isOwner(userId) { return request.auth != null && request.auth.uid == userId; }
+    function isAdmin() { return request.auth != null && request.auth.token.email == 'adelbenmaza3@gmail.com'; }
 
     match /users/{userId} {
       allow read: if true;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin(); // يسمح للمدير بتوثيق أو حظر المستخدم
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
     }
 
     match /articles/{articleId} {
@@ -20,7 +20,7 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read: if true;
         allow create: if isSignedIn();
-        allow delete: if isOwner(resource.data.authorId) || isAdmin();
+        allow delete: if isAdmin() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       }
     }
 
@@ -30,7 +30,7 @@ service cloud.firestore {
     }
 
     match /notifications/{notifId} {
-      allow read: if isOwner(resource.data.userId);
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
     }
 
@@ -44,13 +44,14 @@ service cloud.firestore {
       allow write: if isSignedIn();
       
       match /messages/{messageId} {
-        allow read: if isSignedIn(); // في بيئة المجموعات العامة أو العضوية
+        allow read: if isSignedIn();
         allow create: if isSignedIn();
       }
     }
 
     match /direct_conversations/{chatId} {
-      allow read, write: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow write: if isSignedIn() && request.auth.uid in resource.data.participants;
       
       match /messages/{msgId} {
         allow read, write: if isSignedIn();

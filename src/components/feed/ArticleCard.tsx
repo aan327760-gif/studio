@@ -38,7 +38,7 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
   const db = useFirestore();
   const { user } = useUser();
 
-  const isLiked = user ? likedBy.includes(user.uid) : false;
+  const isLiked = user ? (likedBy || []).includes(user.uid) : false;
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -85,12 +85,19 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
       <h2 className="text-lg font-black leading-tight mb-2 group-hover:text-primary transition-colors">{title}</h2>
       <p className="text-sm text-zinc-400 line-clamp-3 mb-3 font-medium leading-relaxed">{content}</p>
 
-      {tags.length > 0 && (
+      {tags && tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {tags.map((tag, idx) => (
-            <span key={idx} className="text-[10px] font-black text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">
+            <button 
+              key={idx} 
+              className="text-[10px] font-black text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10 hover:bg-primary/10 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/explore?q=${tag}`);
+              }}
+            >
               #{tag}
-            </span>
+            </button>
           ))}
         </div>
       )}
