@@ -86,8 +86,8 @@ export default function CreateArticlePage() {
       const isVerified = profile.isVerified || user.email === SUPER_ADMIN_EMAIL;
 
       // حساب مجموع نقاط الأولوية الأولي (خوارزمية السيادة)
-      // الموثق يحصل على دفعة قوية للظهور في المقدمة
-      const priorityScore = isVerified ? 100 : 0;
+      // الموثق يحصل على دفعة هائلة للظهور في المقدمة (1000 نقطة)
+      const priorityScore = isVerified ? 1000 : 0;
 
       await addDoc(collection(db, "articles"), {
         title,

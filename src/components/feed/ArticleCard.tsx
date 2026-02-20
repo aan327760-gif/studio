@@ -155,16 +155,6 @@ export function ArticleCard({
         )}
       </div>
 
-      {tags && tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 my-4">
-          {tags.map((tag, idx) => (
-            <button key={idx} className="text-[10px] font-black text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">
-              #{tag}
-            </button>
-          ))}
-        </div>
-      )}
-
       {image && (
         <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-900 mb-4 bg-zinc-900 mt-2">
           <img src={image} alt="Article" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />

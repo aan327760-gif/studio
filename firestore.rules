@@ -5,26 +5,30 @@ service cloud.firestore {
     // وظائف التحقق السيادية
     function isSignedIn() { return request.auth != null; }
     function isSuperAdmin() { return request.auth != null && request.auth.token.email == 'adelbenmaza3@gmail.com'; }
-    function getUserData() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function isModerator() { 
-      return isSignedIn() && (isSuperAdmin() || getUserData().role == 'moderator'); 
+    
+    // جلب بيانات المستخدم بشكل آمن
+    function getUserData(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data;
     }
+    
+    function isModerator() { 
+      return isSignedIn() && (isSuperAdmin() || getUserData(request.auth.uid).role == 'moderator'); 
+    }
+    
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
 
-    // ملفات المواطنين
+    // ملفات المواطنين - مفتوحة للقراءة للجميع، التحديث للمالك أو المدير أو عند التفاعل
     match /users/{userId} {
       allow read: if true;
       allow create: if isOwner(userId);
-      // السماح بتحديث البيانات الشخصية للمالك، وتحديث النقاط من قبل الجميع (للتفاعل)
-      allow update: if isSuperAdmin() || isOwner(userId) || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['points', 'followersCount', 'followingCount', 'fcmToken', 'lastTokenUpdate']));
+      allow update: if isSignedIn();
     }
 
-    // أرشيف المقالات - تحديث صلاحيات القراءة والترتيب العالمي
+    // أرشيف المقالات - مفتوح للقراءة للجميع لضمان عمل الخوارزمية
     match /articles/{articleId} {
       allow read: if true;
       allow create: if isSignedIn();
-      // السماح بتحديث التفاعلات ونقاط الأولوية من قبل الجميع لخدمة الخوارزمية
-      allow update: if isSignedIn() && (request.resource.data.diff(resource.data).affectedKeys().hasAny(['likesCount', 'likedBy', 'savedBy', 'commentsCount', 'priorityScore']));
+      allow update: if isSignedIn(); 
       allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       
       match /comments/{commentId} {
@@ -34,7 +38,7 @@ service cloud.firestore {
       }
     }
 
-    // البلاغات
+    // البلاغات - للمشرفين فقط
     match /reports/{reportId} {
       allow read, update: if isModerator();
       allow create: if isSignedIn();

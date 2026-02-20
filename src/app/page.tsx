@@ -29,8 +29,8 @@ export default function Home() {
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userProfileRef);
 
-  // خوارزمية السيادة: الترتيب حسب مجموع نقاط الأولوية (priorityScore) ثم التاريخ
-  // ملاحظة: الترتيب بـ priorityScore يضع المحتوى الموثق والأكثر تفاعلاً في المقدمة
+  // خوارزمية السيادة: الترتيب حسب مجموع نقاط الأولوية (priorityScore)
+  // ملاحظة: الترتيب بـ priorityScore يضع المحتوى الموثق والأكثر تفاعلاً في المقدمة (مثل المنصات العالمية)
   const articlesQuery = useMemoFirebase(() => {
     let baseQuery = collection(db, "articles");
     
@@ -38,7 +38,6 @@ export default function Home() {
       return query(
         baseQuery, 
         orderBy("priorityScore", "desc"), 
-        orderBy("createdAt", "desc"), 
         limit(50)
       );
     }
@@ -47,12 +46,11 @@ export default function Home() {
       baseQuery, 
       where("section", "==", activeSection), 
       orderBy("priorityScore", "desc"),
-      orderBy("createdAt", "desc"), 
       limit(50)
     );
   }, [db, activeSection]);
 
-  const { data: articles = [], isLoading } = useCollection<any>(articlesQuery);
+  const { data: articles, isLoading } = useCollection<any>(articlesQuery);
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
@@ -87,7 +85,7 @@ export default function Home() {
             onClick={() => setActiveSection("All")}
             className={cn("rounded-full h-8 text-[10px] font-black uppercase px-4", activeSection === "All" ? "bg-white text-black" : "bg-zinc-900 text-zinc-500")}
           >
-            {isRtl ? "الأهم عالمياً" : "Trending"}
+            {isRtl ? "الأهم عالمياً" : "Global Pulse"}
           </Button>
           {SECTIONS.map((s) => (
             <Button 
@@ -107,6 +105,7 @@ export default function Home() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Syncing Algorithm</p>
           </div>
         ) : (
           <div className="flex flex-col">
