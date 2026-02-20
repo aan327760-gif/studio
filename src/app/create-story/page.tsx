@@ -25,7 +25,6 @@ export default function CreateStoryPage() {
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [isUploading, setIsUploading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [videoDuration, setVideoDuration] = useState(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,21 +32,21 @@ export default function CreateStoryPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // فحص المدة إذا كان فيديو
+    // فحص مدة الفيديو قبل الرفع
     if (file.type.startsWith("video/")) {
       const video = document.createElement("video");
       video.preload = "metadata";
       video.onloadedmetadata = () => {
         window.URL.revokeObjectURL(video.src);
-        if (video.duration > 30) {
+        if (video.duration > 30.5) { // هامش بسيط لـ 30 ثانية
           toast({
             variant: "destructive",
             title: isRtl ? "فيديو طويل جداً" : "Video too long",
             description: isRtl ? "الحد الأقصى هو 30 ثانية للستوري السيادي." : "Max duration is 30 seconds."
           });
+          if (fileInputRef.current) fileInputRef.current.value = "";
           return;
         }
-        setVideoDuration(video.duration);
         upload(file, "video");
       };
       video.src = URL.createObjectURL(file);
@@ -153,7 +152,7 @@ export default function CreateStoryPage() {
               </div>
               <div className="flex-1">
                  <p className="text-xs font-black uppercase">{isRtl ? "بروتوكول الـ 30 ثانية" : "30s Protocol"}</p>
-                 <p className="text-[9px] text-zinc-500 font-bold leading-relaxed">{isRtl ? "لضمان سرعة نقل النبض القومي، لا نقبل فيديوهات تتجاوز 30 ثانية." : "To ensure speed, we don't accept videos over 30s."}</p>
+                 <p className="text-[9px] text-zinc-500 font-bold leading-relaxed">{isRtl ? "لضمان سرعة نقل النبض القومي، لا نقبل فيديوهات تتجاوز 30 ثانية في الستوري." : "To ensure speed, we don't accept stories over 30s."}</p>
               </div>
            </div>
         </div>

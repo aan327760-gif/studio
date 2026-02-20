@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ArticleCard } from "@/components/feed/ArticleCard";
 import { StoryBar } from "@/components/feed/StoryBar";
 import { useLanguage } from "@/context/LanguageContext";
-import { Newspaper, Award, Loader2, TrendingUp } from "lucide-react";
+import { Newspaper, Award, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, limit, where, doc } from "firebase/firestore";
@@ -30,12 +30,13 @@ export default function Home() {
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userProfileRef);
 
+  // خوارزمية السيادة: ترتيب حسب الأولوية ثم التاريخ
   const articlesQuery = useMemoFirebase(() => {
     let baseQuery = collection(db, "articles");
     if (activeSection === "All") {
-      return query(baseQuery, orderBy("priorityScore", "desc"), limit(50));
+      return query(baseQuery, orderBy("priorityScore", "desc"), orderBy("createdAt", "desc"), limit(50));
     }
-    return query(baseQuery, where("section", "==", activeSection), orderBy("priorityScore", "desc"), limit(50));
+    return query(baseQuery, where("section", "==", activeSection), orderBy("priorityScore", "desc"), orderBy("createdAt", "desc"), limit(50));
   }, [db, activeSection]);
 
   const { data: articles, isLoading } = useCollection<any>(articlesQuery);
@@ -87,7 +88,7 @@ export default function Home() {
       </header>
 
       <main className="pb-32">
-        {/* إطار الستوري في أعلى الصفحة */}
+        {/* إطار الستوري السيادي في أعلى الخلاصة */}
         <StoryBar />
 
         {isLoading ? (
