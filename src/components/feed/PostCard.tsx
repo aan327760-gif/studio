@@ -9,10 +9,10 @@ import {
   Share2,
   Send,
   Bookmark,
-  X,
-  CornerDownLeft,
   ThumbsUp,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ import {
 } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import Link from "next/link";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -79,16 +79,19 @@ export const PostCard = memo(({
   
   const [newComment, setNewComment] = useState("");
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const isLiked = user ? (likedBy || []).includes(user.uid) : false;
   const isSaved = user ? (savedBy || []).includes(user.uid) : false;
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
+  const isLong = content.length > 200;
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || !id) return;
     const articleRef = doc(db, "articles", id);
-    const authorRef = doc(db, "users", author.uid || author.id);
+    const authorId = author.uid || author.id;
+    const authorRef = doc(db, "users", authorId);
     
     if (isLiked) {
       updateDoc(articleRef, { likedBy: arrayRemove(user.uid), likesCount: increment(-1) });
@@ -96,9 +99,9 @@ export const PostCard = memo(({
     } else {
       updateDoc(articleRef, { likedBy: arrayUnion(user.uid), likesCount: increment(1) });
       updateDoc(authorRef, { points: increment(2) });
-      if ((author?.uid || author?.id) !== user.uid) {
+      if (authorId !== user.uid) {
         addDoc(collection(db, "notifications"), {
-          userId: author.uid || author.id,
+          userId: authorId,
           type: "like",
           fromUserId: user.uid,
           fromUserName: user.displayName,
@@ -154,7 +157,7 @@ export const PostCard = memo(({
     });
     
     updateDoc(doc(db, "articles", id), { commentsCount: increment(1) });
-    updateDoc(doc(db, "users", authorId), { points: increment(5) }); // +5 نقاط للتعليق
+    updateDoc(doc(db, "users", authorId), { points: increment(5) });
     
     if (authorId !== user.uid) {
       addDoc(collection(db, "notifications"), {
@@ -170,13 +173,18 @@ export const PostCard = memo(({
     setNewComment("");
   };
 
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <Card className="bg-black text-white border-none rounded-none border-b border-zinc-900/30 mb-1" onClick={() => router.push(`/post/${id}`)}>
       <CardHeader className="p-5 pb-3 flex flex-row items-center gap-4">
         <Link href={`/profile/${author?.uid || author?.id || '#'}`} onClick={(e) => e.stopPropagation()}>
           <Avatar className="h-11 w-11 border border-zinc-900">
             <AvatarImage src={author?.photoURL || author?.avatar} />
-            <AvatarFallback>{author?.name?.[0]}</AvatarFallback>
+            <AvatarFallback className="bg-zinc-900">{author?.name?.[0]}</AvatarFallback>
           </Avatar>
         </Link>
         <div className="flex-1 min-w-0">
@@ -201,9 +209,28 @@ export const PostCard = memo(({
 
       <CardContent className="p-0">
         <div className="px-5 pb-3 space-y-3">
-          <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{content}</p>
+          <p className={cn(
+            "text-[15px] leading-relaxed whitespace-pre-wrap transition-all duration-300",
+            !isExpanded && isLong ? "line-clamp-4" : ""
+          )}>
+            {content}
+          </p>
+          
+          {isLong && (
+            <button 
+              onClick={toggleExpand}
+              className="text-primary text-[10px] font-black uppercase flex items-center gap-1"
+            >
+              {isExpanded ? (
+                <>{isRtl ? "عرض أقل" : "Show Less"} <ChevronUp className="h-3 w-3" /></>
+              ) : (
+                <>{isRtl ? "اقرأ المزيد" : "Read More"} <ChevronDown className="h-3 w-3" /></>
+              )}
+            </button>
+          )}
+
           {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 pt-2">
               {tags.map((tag, idx) => (
                 <span key={idx} className="text-[11px] font-black text-primary">#{tag}</span>
               ))}
@@ -212,7 +239,7 @@ export const PostCard = memo(({
         </div>
 
         {image && (
-          <div className="w-full bg-zinc-950 flex justify-center border-y border-zinc-900/50">
+          <div className="w-full bg-zinc-950 flex justify-center border-y border-zinc-900/50 mt-2">
             <img src={image} alt="Article Media" className="w-full h-auto max-h-[80vh] object-contain" />
           </div>
         )}

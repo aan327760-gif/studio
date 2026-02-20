@@ -1,14 +1,16 @@
 
 "use client";
 
+import { useState } from "react";
 import { 
   MessageCircle, 
   ThumbsUp, 
   Share2, 
   Globe, 
-  Hash
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
@@ -37,8 +39,10 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
   const router = useRouter();
   const db = useFirestore();
   const { user } = useUser();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const isLiked = user ? (likedBy || []).includes(user.uid) : false;
+  const isLong = content.length > 180;
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -64,6 +68,11 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
     }
   };
 
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <div 
       className="p-5 border-b border-zinc-900 hover:bg-zinc-950 transition-all cursor-pointer group"
@@ -83,10 +92,37 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
       </div>
 
       <h2 className="text-lg font-black leading-tight mb-2 group-hover:text-primary transition-colors">{title}</h2>
-      <p className="text-sm text-zinc-400 line-clamp-3 mb-3 font-medium leading-relaxed">{content}</p>
+      
+      <div className="relative">
+        <p className={cn(
+          "text-sm text-zinc-400 font-medium leading-relaxed transition-all duration-300 whitespace-pre-wrap",
+          !isExpanded && isLong ? "line-clamp-3" : ""
+        )}>
+          {content}
+        </p>
+        
+        {isLong && (
+          <button 
+            onClick={toggleExpand}
+            className="text-primary text-[10px] font-black uppercase mt-2 flex items-center gap-1 hover:underline"
+          >
+            {isExpanded ? (
+              <>
+                {isRtl ? "عرض أقل" : "Show Less"}
+                <ChevronUp className="h-3 w-3" />
+              </>
+            ) : (
+              <>
+                {isRtl ? "اقرأ المزيد" : "Read More"}
+                <ChevronDown className="h-3 w-3" />
+              </>
+            )}
+          </button>
+        )}
+      </div>
 
       {tags && tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 my-4">
           {tags.map((tag, idx) => (
             <button 
               key={idx} 
@@ -103,16 +139,16 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
       )}
 
       {image && (
-        <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-zinc-900 mb-4 bg-zinc-900">
+        <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-zinc-900 mb-4 bg-zinc-900 mt-2">
           <img src={image} alt="Article" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-4">
           <Link href={`/profile/${author.uid}`} className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Avatar className="h-6 w-6 border border-zinc-800">
-              <AvatarFallback className="text-[8px]">{author.name?.[0]}</AvatarFallback>
+              <AvatarFallback className="text-[8px] bg-zinc-900">{author.name?.[0]}</AvatarFallback>
             </Avatar>
             <span className="text-[11px] font-bold text-zinc-300">@{author.name}</span>
           </Link>
