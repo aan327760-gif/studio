@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Newspaper, Loader2, Globe, Award, Type } from "lucide-react";
+import { X, Newspaper, Loader2, Award, Type, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -82,7 +82,7 @@ export default function CreateArticlePage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative">
+    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
       <header className="p-4 flex items-center justify-between sticky top-0 bg-black/90 backdrop-blur-xl z-20 border-b border-zinc-900">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><X className="h-6 w-6" /></Button>
         <div className="flex flex-col items-center">
@@ -101,7 +101,7 @@ export default function CreateArticlePage() {
         </Button>
       </header>
 
-      <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+      <main className="flex-1 p-6 space-y-6 overflow-y-auto pb-20">
         <div className="space-y-4">
           <div className="flex items-center gap-3 mb-2">
              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">

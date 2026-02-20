@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, query, collection, where, limit, getDocs } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/context/LanguageContext";
-import { Loader2, Globe } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { 
   Select,
   SelectContent,
@@ -69,7 +69,10 @@ export default function AuthPage() {
         };
 
         await setDoc(doc(db, "users", user.uid), userProfileData);
-        toast({ title: isRtl ? "تم التسجيل بنجاح" : "Registered Successfully", description: isRtl ? "حصلت على 100 نقطة هدية." : "You got 100 points gift." });
+        toast({ 
+          title: isRtl ? "تم التسجيل بنجاح" : "Registered Successfully", 
+          description: isRtl ? "حصلت على 100 نقطة هدية للبدء في النشر." : "You received 100 points gift to start publishing." 
+        });
       }
       router.push("/");
     } catch (error: any) {
@@ -122,7 +125,7 @@ export default function AuthPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">Password</Label>
-              <Input type="password" className="bg-zinc-900 border-none h-12 rounded-2xl" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required />
+              <Input type="password" placeholder="••••••••" className="bg-zinc-900 border-none h-12 rounded-2xl" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required />
             </div>
             <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 font-black h-14 rounded-2xl mt-4" disabled={loading}>
               {loading ? <Loader2 className="animate-spin h-5 w-5" /> : (isLogin ? (isRtl ? "دخول" : "Sign In") : (isRtl ? "إنشاء حساب" : "Join Now"))}

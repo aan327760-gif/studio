@@ -6,18 +6,15 @@ import {
   ThumbsUp, 
   Share2, 
   Globe, 
-  MoreHorizontal,
-  Flag,
-  Bookmark
+  Award
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/context/LanguageContext";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFirestore, useUser } from "@/firebase";
-import { doc, updateDoc, arrayUnion, arrayRemove, increment, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, increment } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
 
 interface ArticleCardProps {
@@ -40,16 +37,23 @@ export function ArticleCard({ id, author, title, content, section, image, likes 
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) return;
+    if (!user) {
+      toast({ title: isRtl ? "يجب تسجيل الدخول للتفاعل" : "Sign in to interact" });
+      return;
+    }
     
-    const articleRef = doc(db, "articles", id);
-    const authorRef = doc(db, "users", author.uid);
+    try {
+      const articleRef = doc(db, "articles", id);
+      const authorRef = doc(db, "users", author.uid);
 
-    // Points logic: +2 for author on like
-    await updateDoc(articleRef, { likesCount: increment(1) });
-    await updateDoc(authorRef, { points: increment(2) });
-    
-    toast({ title: isRtl ? "أعجبك المقال" : "Article Liked" });
+      // Points logic: +2 for author on like
+      await updateDoc(articleRef, { likesCount: increment(1) });
+      await updateDoc(authorRef, { points: increment(2) });
+      
+      toast({ title: isRtl ? "أعجبك المقال" : "Article Liked", description: isRtl ? "+2 نقطة للكاتب" : "+2 points for author" });
+    } catch (err) {
+      toast({ variant: "destructive", title: "Error" });
+    }
   };
 
   return (
@@ -64,9 +68,9 @@ export function ArticleCard({ id, author, title, content, section, image, likes 
           </Badge>
           <span className="text-[10px] text-zinc-600 font-bold">• {time}</span>
         </div>
-        <div className="flex items-center gap-1 bg-zinc-900 px-2 py-0.5 rounded-full">
+        <div className="flex items-center gap-1.5 bg-zinc-900 px-2 py-0.5 rounded-full">
           <Globe className="h-3 w-3 text-zinc-500" />
-          <span className="text-[9px] font-black text-zinc-400 uppercase">{author.nationality}</span>
+          <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider">{author.nationality}</span>
         </div>
       </div>
 
@@ -98,7 +102,11 @@ export function ArticleCard({ id, author, title, content, section, image, likes 
             <MessageCircle className="h-4 w-4" />
             <span className="text-xs font-black">{comments}</span>
           </button>
-          <button className="text-zinc-600 hover:text-primary transition-colors">
+          <button className="text-zinc-600 hover:text-primary transition-colors" onClick={(e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
+            toast({ title: isRtl ? "تم نسخ الرابط" : "Link Copied" });
+          }}>
             <Share2 className="h-4 w-4" />
           </button>
         </div>

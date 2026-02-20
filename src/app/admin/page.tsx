@@ -25,8 +25,7 @@ import {
   ShieldCheck,
   CheckCircle,
   Activity,
-  Megaphone,
-  Users
+  Megaphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -108,7 +107,7 @@ export default function AdminDashboard() {
     if (!isSuper) return;
     try {
       if (action === 'delete' && postId) {
-        await deleteDoc(doc(db, "posts", postId));
+        await deleteDoc(doc(db, "articles", postId));
       } else if (action === 'ban' && authorId) {
         const banUntil = new Date();
         banUntil.setDate(banUntil.getDate() + 30);

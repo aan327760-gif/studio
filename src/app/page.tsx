@@ -4,13 +4,11 @@
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ArticleCard } from "@/components/feed/ArticleCard";
 import { useLanguage } from "@/context/LanguageContext";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Search, Loader2, Newspaper, TrendingUp, Globe, Award } from "lucide-react";
+import { Search, Loader2, Newspaper, Award, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, limit, where, doc } from "firebase/firestore";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -32,11 +30,10 @@ export default function Home() {
   const { data: profile } = useDoc<any>(userProfileRef);
 
   const articlesQuery = useMemoFirebase(() => {
-    let q = query(collection(db, "articles"), orderBy("createdAt", "desc"), limit(50));
-    if (activeSection !== "All") {
-      q = query(collection(db, "articles"), where("section", "==", activeSection), orderBy("createdAt", "desc"), limit(50));
+    if (activeSection === "All") {
+      return query(collection(db, "articles"), orderBy("createdAt", "desc"), limit(50));
     }
-    return q;
+    return query(collection(db, "articles"), where("section", "==", activeSection), orderBy("createdAt", "desc"), limit(50));
   }, [db, activeSection]);
 
   const { data: articles = [], isLoading } = useCollection<any>(articlesQuery);
