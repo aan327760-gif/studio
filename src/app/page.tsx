@@ -33,7 +33,7 @@ export default function Home() {
   const articlesQuery = useMemoFirebase(() => {
     let baseRef = collection(db, "articles");
     if (activeSection === "All") {
-      // استخدام خوارزمية السيادة: ترتيب حسب الأولوية ثم الأحدث
+      // استخدام خوارزمية السيادة: ترتيب حسب الأولوية لضمان ظهور النخبة أولاً
       return query(baseRef, orderBy("priorityScore", "desc"), limit(50));
     }
     return query(baseRef, where("section", "==", activeSection), orderBy("priorityScore", "desc"), limit(50));

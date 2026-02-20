@@ -13,24 +13,29 @@ service cloud.firestore {
     }
 
     match /articles/{articleId} {
-      // السماح بالقراءة الجماعية والفردية للجميع
-      allow read: if true;
+      // السماح بالقراءة الجماعية والفردية للجميع لضمان عمل الخوارزمية
+      allow read, list: if true;
       allow create: if isSignedIn();
       // السماح بالتحديث لإضافة اللايكات والتعليقات ونقاط الأولوية
       allow update: if isSignedIn(); 
-      allow delete: if isSignedIn();
+      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.auth.token.email == "adelbenmaza3@gmail.com");
       
       match /comments/{commentId} {
-        allow read: if true;
+        allow read, list: if true;
         allow create: if isSignedIn();
-        allow delete: if isSignedIn();
+        // ميزة الحذف: لصاحب التعليق أو صاحب المقال أو المدير
+        allow delete: if isSignedIn() && (
+          resource.data.authorId == request.auth.uid || 
+          get(/databases/$(database)/documents/articles/$(articleId)).data.authorId == request.auth.uid ||
+          request.auth.token.email == "adelbenmaza3@gmail.com"
+        );
       }
     }
 
     match /stories/{storyId} {
-      allow read: if true;
+      allow read, list: if true;
       allow create: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.auth.token.email == "adelbenmaza3@gmail.com");
     }
 
     match /reports/{reportId} {
@@ -44,12 +49,12 @@ service cloud.firestore {
     }
 
     match /follows/{followId} { 
-      allow read: if true; 
+      allow read, list: if true; 
       allow write: if isSignedIn(); 
     }
     
     match /groups/{groupId} { 
-      allow read: if true; 
+      allow read, list: if true; 
       allow write: if isSignedIn();
       match /messages/{msgId} { allow read, write: if isSignedIn(); }
     }

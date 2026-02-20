@@ -51,7 +51,7 @@ export function StoryBar() {
       ) : (
         stories?.map((story) => (
           <Link key={story.id} href={`/story/${story.id}`} className="flex flex-col items-center gap-2.5 shrink-0 group">
-            <div className="h-[70px] w-[70px] rounded-[2.2rem] p-[2.5px] bg-gradient-to-tr from-primary via-accent to-primary shadow-2xl shadow-primary/10 group-active:scale-95 transition-all">
+            <div className="h-[70px] w-[70px] rounded-[2.2rem] p-[2.5px] bg-gradient-to-tr from-primary via-accent to-primary shadow-2xl shadow-primary/10 group-active:scale-95 transition-all relative">
               <div className="h-full w-full rounded-[2rem] bg-black p-0.5">
                 <Avatar className="h-full w-full rounded-[1.8rem] border border-zinc-900">
                   <AvatarImage src={story.authorAvatar} className="object-cover" />

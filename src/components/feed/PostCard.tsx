@@ -177,7 +177,12 @@ export const PostCard = memo(({
     if (!id || !commentId) return;
     if (confirm(isRtl ? "حذف هذا التعليق؟" : "Delete this comment?")) {
       await deleteDoc(doc(db, "articles", id, "comments", commentId));
-      await updateDoc(doc(db, "articles", id), { commentsCount: increment(-1) });
+      await updateDoc(doc(db, "articles", id), { 
+        commentsCount: increment(-1),
+        priorityScore: increment(-25)
+      });
+      updateDoc(doc(db, "users", authorId), { points: increment(-5) });
+      toast({ title: isRtl ? "تم حذف التعليق" : "Comment Deleted" });
     }
   };
 
@@ -291,8 +296,8 @@ export const PostCard = memo(({
                                    </span>
                                 </div>
                                 {(isSuper || user?.uid === comment.authorId || isOwner) && (
-                                  <button onClick={() => handleDeleteComment(comment.id)} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-red-500/50 hover:text-red-500">
-                                     <Trash2 className="h-3 w-3" />
+                                  <button onClick={() => handleDeleteComment(comment.id)} className="text-red-500/50 hover:text-red-500 transition-colors p-1">
+                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
                                 )}
                              </div>
