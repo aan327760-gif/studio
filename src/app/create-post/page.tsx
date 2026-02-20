@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Newspaper, Loader2, Award, Type, Globe } from "lucide-react";
+import { X, Newspaper, Loader2, Award, Type, Globe, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,7 @@ export default function CreateArticlePage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [section, setSection] = useState("National");
+  const [tags, setTags] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -55,18 +56,24 @@ export default function CreateArticlePage() {
 
     setIsPublishing(true);
     try {
+      // معالجة الوسوم
+      const tagsArray = tags.split(' ').map(t => t.replace('#', '').trim()).filter(t => t.length > 0);
+
       // Create Article
       await addDoc(collection(db, "articles"), {
         title,
         content,
         section,
+        tags: tagsArray,
         mediaUrl: mediaUrl || null,
         authorId: user.uid,
         authorName: profile.displayName,
         authorNationality: profile.nationality,
         likesCount: 0,
         commentsCount: 0,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        likedBy: [],
+        savedBy: []
       });
 
       // Deduct 20 points
@@ -133,6 +140,21 @@ export default function CreateArticlePage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             maxLength={1000}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+             <div className="h-8 w-8 rounded-lg bg-zinc-900 flex items-center justify-center border border-zinc-800">
+                <Hash className="h-4 w-4 text-zinc-500" />
+             </div>
+             <h2 className="text-sm font-black uppercase tracking-widest">{isRtl ? "الوسوم (اختياري)" : "Tags (Optional)"}</h2>
+          </div>
+          <Input 
+            placeholder={isRtl ? "مثال: سيادة الجزائر القوميون (بدون #)" : "e.g. Sovereign Algeria News"}
+            className="bg-zinc-950 border-zinc-900 h-12 rounded-xl focus-visible:ring-primary"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
           />
         </div>
 

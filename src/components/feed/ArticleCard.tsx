@@ -6,7 +6,7 @@ import {
   ThumbsUp, 
   Share2, 
   Globe, 
-  Award
+  Hash
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +14,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFirestore, useUser } from "@/firebase";
-import { doc, updateDoc, increment } from "firebase/firestore";
+import { doc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface ArticleCardProps {
   id: string;
@@ -23,17 +24,21 @@ interface ArticleCardProps {
   title: string;
   content: string;
   section: string;
+  tags?: string[];
   image?: string;
   likes?: number;
   comments?: number;
+  likedBy?: string[];
   time: string;
 }
 
-export function ArticleCard({ id, author, title, content, section, image, likes = 0, comments = 0, time }: ArticleCardProps) {
+export function ArticleCard({ id, author, title, content, section, tags = [], image, likes = 0, comments = 0, likedBy = [], time }: ArticleCardProps) {
   const { isRtl } = useLanguage();
   const router = useRouter();
   const db = useFirestore();
   const { user } = useUser();
+
+  const isLiked = user ? likedBy.includes(user.uid) : false;
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -46,11 +51,14 @@ export function ArticleCard({ id, author, title, content, section, image, likes 
       const articleRef = doc(db, "articles", id);
       const authorRef = doc(db, "users", author.uid);
 
-      // Points logic: +2 for author on like
-      await updateDoc(articleRef, { likesCount: increment(1) });
-      await updateDoc(authorRef, { points: increment(2) });
-      
-      toast({ title: isRtl ? "أعجبك المقال" : "Article Liked", description: isRtl ? "+2 نقطة للكاتب" : "+2 points for author" });
+      if (isLiked) {
+        await updateDoc(articleRef, { likesCount: increment(-1), likedBy: arrayRemove(user.uid) });
+        await updateDoc(authorRef, { points: increment(-2) });
+      } else {
+        await updateDoc(articleRef, { likesCount: increment(1), likedBy: arrayUnion(user.uid) });
+        await updateDoc(authorRef, { points: increment(2) });
+        toast({ title: isRtl ? "أعجبك المقال" : "Article Liked", description: isRtl ? "+2 نقطة للكاتب" : "+2 points for author" });
+      }
     } catch (err) {
       toast({ variant: "destructive", title: "Error" });
     }
@@ -75,7 +83,17 @@ export function ArticleCard({ id, author, title, content, section, image, likes 
       </div>
 
       <h2 className="text-lg font-black leading-tight mb-2 group-hover:text-primary transition-colors">{title}</h2>
-      <p className="text-sm text-zinc-400 line-clamp-3 mb-4 font-medium leading-relaxed">{content}</p>
+      <p className="text-sm text-zinc-400 line-clamp-3 mb-3 font-medium leading-relaxed">{content}</p>
+
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {tags.map((tag, idx) => (
+            <span key={idx} className="text-[10px] font-black text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
 
       {image && (
         <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border border-zinc-900 mb-4 bg-zinc-900">
@@ -94,8 +112,8 @@ export function ArticleCard({ id, author, title, content, section, image, likes 
         </div>
 
         <div className="flex items-center gap-6" onClick={(e) => e.stopPropagation()}>
-          <button className="flex items-center gap-1.5 text-zinc-600 hover:text-white transition-colors" onClick={handleLike}>
-            <ThumbsUp className="h-4 w-4" />
+          <button className={cn("flex items-center gap-1.5 transition-colors", isLiked ? "text-primary" : "text-zinc-600 hover:text-white")} onClick={handleLike}>
+            <ThumbsUp className={cn("h-4 w-4", isLiked && "fill-primary")} />
             <span className="text-xs font-black">{likes}</span>
           </button>
           <button className="flex items-center gap-1.5 text-zinc-600 hover:text-white transition-colors">
