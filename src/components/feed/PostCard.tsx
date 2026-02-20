@@ -6,9 +6,8 @@ import {
   MoreHorizontal, 
   Trash2, 
   Flag, 
-  Share2,
-  Send,
   Bookmark,
+  Send,
   ThumbsUp,
   AlertTriangle,
   ChevronDown,
@@ -119,10 +118,10 @@ export const PostCard = memo(({
     if (!user || !id) return;
     const articleRef = doc(db, "articles", id);
     if (isSaved) {
-      updateDoc(articleRef, { savedBy: arrayRemove(user.uid), savesCount: increment(-1) });
+      updateDoc(articleRef, { savedBy: arrayRemove(user.uid) });
       toast({ title: isRtl ? "تمت الإزالة من الأرشيف" : "Removed from Archive" });
     } else {
-      updateDoc(articleRef, { savedBy: arrayUnion(user.uid), savesCount: increment(1) });
+      updateDoc(articleRef, { savedBy: arrayUnion(user.uid) });
       toast({ title: isRtl ? "تم الحفظ في الأرشيف" : "Saved to Archive" });
     }
   };
@@ -274,13 +273,17 @@ export const PostCard = memo(({
               </SheetContent>
             </Sheet>
 
-            <Share2 className="h-5 w-5 text-zinc-700 cursor-pointer" onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
-              toast({ title: isRtl ? "نسخ الرابط" : "Link Copied" });
-            }} />
+            <button className={cn("transition-colors", isSaved ? "text-primary" : "text-zinc-700 hover:text-white")} onClick={handleSave}>
+              <Bookmark className={cn("h-5 w-5", isSaved && "fill-primary")} />
+            </button>
           </div>
 
-          <Bookmark className={cn("h-5 w-5 cursor-pointer transition-all", isSaved ? "fill-primary text-primary" : "text-zinc-700")} onClick={handleSave} />
+          <div className="flex items-center gap-2 cursor-pointer text-zinc-700 hover:text-white" onClick={() => {
+            navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
+            toast({ title: isRtl ? "نسخ الرابط" : "Link Copied" });
+          }}>
+            <Send className="h-5 w-5" />
+          </div>
         </div>
       </CardContent>
 

@@ -5,12 +5,12 @@ import { useState } from "react";
 import { 
   MessageCircle, 
   ThumbsUp, 
-  Share2, 
+  Bookmark, 
   Globe, 
   ChevronDown,
   ChevronUp
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
@@ -31,10 +31,15 @@ interface ArticleCardProps {
   likes?: number;
   comments?: number;
   likedBy?: string[];
+  savedBy?: string[];
   time: string;
 }
 
-export function ArticleCard({ id, author, title, content, section, tags = [], image, likes = 0, comments = 0, likedBy = [], time }: ArticleCardProps) {
+export function ArticleCard({ 
+  id, author, title, content, section, 
+  tags = [], image, likes = 0, comments = 0, 
+  likedBy = [], savedBy = [], time 
+}: ArticleCardProps) {
   const { isRtl } = useLanguage();
   const router = useRouter();
   const db = useFirestore();
@@ -42,6 +47,7 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isLiked = user ? (likedBy || []).includes(user.uid) : false;
+  const isSaved = user ? (savedBy || []).includes(user.uid) : false;
   const isLong = content.length > 180;
 
   const handleLike = async (e: React.MouseEvent) => {
@@ -51,20 +57,33 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
       return;
     }
     
-    try {
-      const articleRef = doc(db, "articles", id);
-      const authorRef = doc(db, "users", author.uid);
+    const articleRef = doc(db, "articles", id);
+    const authorRef = doc(db, "users", author.uid);
 
-      if (isLiked) {
-        await updateDoc(articleRef, { likesCount: increment(-1), likedBy: arrayRemove(user.uid) });
-        await updateDoc(authorRef, { points: increment(-2) });
-      } else {
-        await updateDoc(articleRef, { likesCount: increment(1), likedBy: arrayUnion(user.uid) });
-        await updateDoc(authorRef, { points: increment(2) });
-        toast({ title: isRtl ? "أعجبك المقال" : "Article Liked", description: isRtl ? "+2 نقطة للكاتب" : "+2 points for author" });
-      }
-    } catch (err) {
-      toast({ variant: "destructive", title: "Error" });
+    if (isLiked) {
+      updateDoc(articleRef, { likesCount: increment(-1), likedBy: arrayRemove(user.uid) });
+      updateDoc(authorRef, { points: increment(-2) });
+    } else {
+      updateDoc(articleRef, { likesCount: increment(1), likedBy: arrayUnion(user.uid) });
+      updateDoc(authorRef, { points: increment(2) });
+      toast({ title: isRtl ? "أعجبك المقال" : "Article Liked", description: isRtl ? "+2 نقطة للكاتب" : "+2 points for author" });
+    }
+  };
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      toast({ title: isRtl ? "يجب تسجيل الدخول للحفظ" : "Sign in to save" });
+      return;
+    }
+
+    const articleRef = doc(db, "articles", id);
+    if (isSaved) {
+      updateDoc(articleRef, { savedBy: arrayRemove(user.uid) });
+      toast({ title: isRtl ? "تمت الإزالة من الأرشيف" : "Removed from Archive" });
+    } else {
+      updateDoc(articleRef, { savedBy: arrayUnion(user.uid) });
+      toast({ title: isRtl ? "تم الحفظ في الأرشيف" : "Saved to Archive" });
     }
   };
 
@@ -148,6 +167,7 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
         <div className="flex items-center gap-4">
           <Link href={`/profile/${author.uid}`} className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Avatar className="h-6 w-6 border border-zinc-800">
+              <AvatarImage src={author.photoURL} />
               <AvatarFallback className="text-[8px] bg-zinc-900">{author.name?.[0]}</AvatarFallback>
             </Avatar>
             <span className="text-[11px] font-bold text-zinc-300">@{author.name}</span>
@@ -163,12 +183,8 @@ export function ArticleCard({ id, author, title, content, section, tags = [], im
             <MessageCircle className="h-4 w-4" />
             <span className="text-xs font-black">{comments}</span>
           </button>
-          <button className="text-zinc-600 hover:text-primary transition-colors" onClick={(e) => {
-            e.stopPropagation();
-            navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
-            toast({ title: isRtl ? "تم نسخ الرابط" : "Link Copied" });
-          }}>
-            <Share2 className="h-4 w-4" />
+          <button className={cn("transition-colors", isSaved ? "text-primary" : "text-zinc-600 hover:text-white")} onClick={handleSave}>
+            <Bookmark className={cn("h-4 w-4", isSaved && "fill-primary")} />
           </button>
         </div>
       </div>
