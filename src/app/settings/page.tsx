@@ -39,6 +39,7 @@ export default function SettingsPage() {
   const { data: profile } = useDoc<any>(profileRef);
 
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
+  const isMod = profile?.role === 'moderator' || isSuper;
 
   const handleSignOut = async () => {
     if (confirm(isRtl ? "هل تريد تسجيل الخروج؟" : "Are you sure you want to sign out?")) {
@@ -70,16 +71,20 @@ export default function SettingsPage() {
                   <h2 className="font-black text-lg truncate">{user?.displayName}</h2>
                   {(profile?.isVerified || isSuper) && <VerificationBadge className="h-4 w-4" />}
                 </div>
-                <p className="text-xs text-zinc-500 font-bold truncate">@{user?.email?.split('@')[0]}</p>
+                <p className="text-xs text-zinc-500 font-bold truncate">
+                  {isSuper ? "DIRECTOR GENERAL" : (profile?.role === 'moderator' ? "OFFICIAL MODERATOR" : `@${user?.email?.split('@')[0]}`)}
+                </p>
               </div>
             </div>
           </div>
         </section>
 
         <div className="px-6 space-y-8 pb-10">
-          {isSuper && (
+          {isMod && (
             <section>
-              <h2 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2">COMMAND CENTER</h2>
+              <h2 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2">
+                {isSuper ? "COMMAND CENTER" : "MODERATION TOOLS"}
+              </h2>
               <Button 
                 variant="ghost" 
                 className="w-full justify-start p-5 h-auto bg-primary/5 border border-primary/20 rounded-[2rem] hover:bg-primary/10 hover:border-primary/40 group transition-all"
@@ -91,7 +96,9 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex flex-col text-left">
                     <span className="text-sm font-black group-hover:text-primary transition-all">{isRtl ? "غرفة العمليات" : "War Room"}</span>
-                    <span className="text-[8px] font-bold text-primary/60 uppercase tracking-widest">ROOT ACCESS</span>
+                    <span className="text-[8px] font-bold text-primary/60 uppercase tracking-widest">
+                      {isSuper ? "ROOT ACCESS" : "MODERATOR ACCESS"}
+                    </span>
                   </div>
                 </div>
               </Button>

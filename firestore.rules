@@ -2,57 +2,67 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // وظائف التحقق السيادية
     function isSignedIn() { return request.auth != null; }
+    function isSuperAdmin() { return request.auth != null && request.auth.token.email == 'adelbenmaza3@gmail.com'; }
+    function isModerator() { 
+      return request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator' || isSuperAdmin()); 
+    }
     function isOwner(userId) { return request.auth != null && request.auth.uid == userId; }
-    function isAdmin() { return request.auth != null && request.auth.token.email == 'adelbenmaza3@gmail.com'; }
 
+    // ملفات المواطنين
     match /users/{userId} {
       allow read: if true;
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId) || isAdmin();
+      // التوثيق وتغيير الرتب محصور بالمدير العام فقط
+      allow update: if isSuperAdmin() || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isVerified', 'isPro']));
     }
 
+    // أرشيف المقالات
     match /articles/{articleId} {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.content.size() <= 1000;
-      allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
+      // المشرف والمدير يمكنهم الحذف، المدير فقط يمكنه التعديل الجذري
+      allow delete: if isModerator();
+      allow update: if isOwner(resource.data.authorId) || isSuperAdmin();
       
       match /comments/{commentId} {
         allow read: if true;
         allow create: if isSignedIn();
-        allow delete: if isAdmin() || (isSignedIn() && resource.data.authorId == request.auth.uid);
+        allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       }
     }
 
-    match /follows/{followId} {
-      allow read: if true;
-      allow write: if isSignedIn();
+    // غرفة البلاغات
+    match /reports/{reportId} {
+      allow read: if isModerator();
+      allow update: if isModerator();
+      allow create: if isSignedIn();
     }
 
+    // البيانات الرسمية (الإشعارات)
     match /notifications/{notifId} {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
+      allow delete: if isOwner(resource.data.userId);
     }
 
-    match /reports/{reportId} {
-      allow read, update: if isAdmin();
-      allow create: if isSignedIn();
+    // الأنظمة الاجتماعية
+    match /follows/{followId} {
+      allow read: if true;
+      allow write: if isSignedIn();
     }
     
     match /groups/{groupId} {
       allow read: if true;
       allow write: if isSignedIn();
-      
       match /messages/{messageId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn();
+        allow read, create: if isSignedIn();
       }
     }
 
     match /direct_conversations/{chatId} {
-      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
-      allow write: if isSignedIn() && request.auth.uid in resource.data.participants;
-      
+      allow read, write: if isSignedIn() && request.auth.uid in resource.data.participants;
       match /messages/{msgId} {
         allow read, write: if isSignedIn();
       }
