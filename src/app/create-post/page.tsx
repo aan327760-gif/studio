@@ -86,7 +86,6 @@ export default function CreateArticlePage() {
       const isVerified = profile.isVerified || user.email === SUPER_ADMIN_EMAIL;
 
       // حساب مجموع نقاط الأولوية الأولي (خوارزمية السيادة)
-      // الموثق يحصل على دفعة هائلة للظهور في المقدمة (1000 نقطة)
       const priorityScore = isVerified ? 1000 : 0;
 
       await addDoc(collection(db, "articles"), {
@@ -104,7 +103,7 @@ export default function CreateArticlePage() {
         commentsCount: 0,
         likedBy: [],
         savedBy: [],
-        priorityScore: priorityScore, // حقل خوارزمية الظهور
+        priorityScore: priorityScore,
         createdAt: serverTimestamp()
       });
 
@@ -203,9 +202,9 @@ export default function CreateArticlePage() {
           </div>
 
           <div className="space-y-4">
-            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "الصورة" : "Media"}</label>
+            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "صورة المقال" : "Article Image"}</label>
             <div 
-              className="w-full aspect-video rounded-[2rem] border-2 border-dashed border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 transition-all overflow-hidden relative group"
+              className="w-full aspect-video rounded-[2rem] border-2 border-dashed border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 transition-all overflow-hidden relative group shadow-inner"
               onClick={() => fileInputRef.current?.click()}
             >
               {isUploading ? (
@@ -219,10 +218,10 @@ export default function CreateArticlePage() {
                 </>
               ) : (
                 <>
-                  <div className="h-16 w-16 rounded-full bg-zinc-900 flex items-center justify-center">
+                  <div className="h-16 w-16 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 group-hover:scale-110 transition-transform">
                     <Camera className="h-8 w-8 text-zinc-500" />
                   </div>
-                  <p className="text-xs font-bold text-zinc-500">{isRtl ? "ارفع صورة من هاتفك" : "Upload from phone"}</p>
+                  <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">{isRtl ? "ارفع من هاتفك" : "Upload from phone"}</p>
                 </>
               )}
             </div>

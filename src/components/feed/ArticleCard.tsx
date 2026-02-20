@@ -50,7 +50,7 @@ export function ArticleCard({
   const { user } = useUser();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // جلب بيانات الكاتب الحية لمزامنة الصورة والتوثيق
+  // جلب بيانات الكاتب الحية لمزامنة الصورة والتوثيق والاسم فور تغييرهم
   const authorRef = useMemoFirebase(() => author.uid ? doc(db, "users", author.uid) : null, [db, author.uid]);
   const { data: liveAuthor } = useDoc<any>(authorRef);
 

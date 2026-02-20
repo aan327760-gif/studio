@@ -12,7 +12,9 @@ import {
   Bookmark,
   Heart,
   Newspaper,
-  Award
+  Award,
+  Globe,
+  MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -58,15 +60,12 @@ export default function UserProfilePage() {
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
 
-  // جلب المقالات المكتوبة
   const userArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("authorId", "==", uid), limit(30)) : null, [db, uid]);
   const { data: userArticles, isLoading: articlesLoading } = useCollection<any>(userArticlesQuery);
 
-  // جلب المقالات المعجب بها
   const likedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("likedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
   const { data: likedArticles, isLoading: likesLoading } = useCollection<any>(likedArticlesQuery);
 
-  // جلب المقالات المحفوظة (الأرشيف)
   const savedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("savedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
   const { data: savedArticles, isLoading: savesLoading } = useCollection<any>(savedArticlesQuery);
 
@@ -164,15 +163,26 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-4 bg-zinc-950 p-4 rounded-2xl border border-zinc-900">
-           <div className="flex-1 flex flex-col items-center border-r border-zinc-900">
-              <span className="text-lg font-black text-primary">{profile?.points || 0}</span>
-              <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">{isRtl ? "نقطة" : "Points"}</span>
+        <div className="mt-4 flex flex-col gap-3">
+           <div className="flex items-center gap-4 bg-zinc-950 p-4 rounded-2xl border border-zinc-900 shadow-inner">
+              <div className="flex-1 flex flex-col items-center border-r border-zinc-900">
+                 <span className="text-lg font-black text-primary">{profile?.points || 0}</span>
+                 <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">{isRtl ? "نقطة" : "Points"}</span>
+              </div>
+              <div className="flex-1 flex flex-col items-center">
+                 <div className="flex items-center gap-1">
+                    <Globe className="h-3 w-3 text-zinc-500" />
+                    <span className="text-lg font-black">{profile?.nationality || "Global"}</span>
+                 </div>
+                 <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">{isRtl ? "الوطن" : "Nation"}</span>
+              </div>
            </div>
-           <div className="flex-1 flex flex-col items-center">
-              <span className="text-lg font-black">{profile?.nationality || "Global"}</span>
-              <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">{isRtl ? "الوطن" : "Nation"}</span>
-           </div>
+           {profile?.location && (
+             <div className="flex items-center gap-2 px-2">
+                <MapPin className="h-3 w-3 text-zinc-600" />
+                <span className="text-xs text-zinc-500 font-bold">{profile.location}</span>
+             </div>
+           )}
         </div>
 
         <div className="mt-4 text-[15px] leading-relaxed text-zinc-300 font-medium whitespace-pre-line">{profile?.bio}</div>

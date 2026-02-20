@@ -12,9 +12,13 @@
         "points": { "type": "number" },
         "nationality": { "type": "string" },
         "bio": { "type": "string" },
+        "location": { "type": "string" },
         "photoURL": { "type": "string" },
+        "bannerURL": { "type": "string" },
         "role": { "type": "string" },
-        "isVerified": { "type": "boolean" }
+        "isVerified": { "type": "boolean" },
+        "followersCount": { "type": "number" },
+        "followingCount": { "type": "number" }
       },
       "required": ["uid", "email", "displayName"]
     },
@@ -26,6 +30,14 @@
         "id": { "type": "string" },
         "title": { "type": "string" },
         "content": { "type": "string" },
+        "section": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "mediaUrl": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorIsVerified": { "type": "boolean" },
+        "likesCount": { "type": "number" },
+        "commentsCount": { "type": "number" },
         "priorityScore": { "type": "number" }
       }
     },
@@ -51,6 +63,7 @@
   "firestore": {
     "/users/{userId}": { "schema": "#/entities/User", "description": "ملفات المواطنين." },
     "/articles/{articleId}": { "schema": "#/entities/Article", "description": "أرشيف المقالات." },
-    "/stories/{storyId}": { "schema": "#/entities/Story", "description": "القصص اليومية (الستوري)." }
+    "/stories/{storyId}": { "schema": "#/entities/Story", "description": "القصص اليومية (الستوري)." },
+    "/notifications/{notifId}": { "schema": "object", "description": "تنبيهات النظام والتفاعلات." }
   }
 }
