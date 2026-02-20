@@ -60,14 +60,15 @@ export default function CreateArticlePage() {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64Data = event.target?.result as string;
+        // الرفع لـ Cloudinary
         const uploadedUrl = await uploadToCloudinary(base64Data, 'image');
         setMediaUrl(uploadedUrl);
-        toast({ title: isRtl ? "تم رفع الصورة" : "Image uploaded" });
+        toast({ title: isRtl ? "تم رفع الصورة بنجاح" : "Image uploaded successfully" });
         setIsUploading(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      toast({ variant: "destructive", title: "Upload Failed" });
+      toast({ variant: "destructive", title: isRtl ? "فشل الرفع" : "Upload Failed" });
       setIsUploading(false);
     }
   };
@@ -105,7 +106,7 @@ export default function CreateArticlePage() {
       // خصم النقاط فوراً
       await updateDoc(userRef!, { points: increment(-20) });
 
-      toast({ title: isRtl ? "تم نشر المقال" : "Article Published", description: isRtl ? "تم خصم 20 نقطة من رصيدك القومي." : "20 points deducted." });
+      toast({ title: isRtl ? "تم نشر المقال القومي" : "Article Published", description: isRtl ? "تم خصم 20 نقطة من رصيدك." : "20 points deducted." });
       router.push("/");
     } catch (e) {
       toast({ variant: "destructive", title: "Publish Error" });
@@ -177,7 +178,7 @@ export default function CreateArticlePage() {
              <h2 className="text-sm font-black uppercase tracking-widest">{isRtl ? "الوسوم" : "Tags"}</h2>
           </div>
           <Input 
-            placeholder={isRtl ? "مثال: سيادة الجزائر القوميون" : "e.g. Sovereign Algeria"}
+            placeholder={isRtl ? "مثال: الجزائر القوميون السيادة" : "e.g. Algeria Qaumiyun"}
             className="bg-zinc-950 border-zinc-900 h-12 rounded-xl"
             value={tags}
             onChange={(e) => setTags(e.target.value)}

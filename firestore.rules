@@ -5,71 +5,64 @@ service cloud.firestore {
     // وظائف التحقق السيادية
     function isSignedIn() { return request.auth != null; }
     function isSuperAdmin() { return request.auth != null && request.auth.token.email == 'adelbenmaza3@gmail.com'; }
+    function getUserData() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function isModerator() { 
-      return request.auth != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator' || isSuperAdmin()); 
+      return isSignedIn() && (isSuperAdmin() || getUserData().role == 'moderator'); 
     }
-    function isOwner(userId) { return request.auth != null && request.auth.uid == userId; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
 
     // ملفات المواطنين
     match /users/{userId} {
       allow read: if true;
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      // التوثيق وتغيير الرتب محصور بالمدير العام (Adel) فقط
-      allow update: if isSuperAdmin() || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isVerified', 'points', 'email']));
+      allow create: if isOwner(userId);
+      // السماح بتحديث البيانات الشخصية للمالك، وتحديث النقاط من قبل الجميع (للتفاعل)
+      allow update: if isSuperAdmin() || isOwner(userId) || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points']));
     }
 
     // أرشيف المقالات
     match /articles/{articleId} {
-      // السماح بالقراءة الفردية والجماعية للجميع
-      allow get, list: if true;
+      // السماح بالقراءة للجميع (أعضاء وزوار)
+      allow read: if true;
       allow create: if isSignedIn() && request.resource.data.content.size() <= 1000;
-      // المشرف والمدير يمكنهم الحذف، الكاتب والمدير يمكنهم التعديل
+      allow update: if isSignedIn(); // لللايك والحفظ
       allow delete: if isModerator();
-      allow update: if isSignedIn(); // تمكين التفاعلات (Likes/Saves) من قبل أي مستخدم مسجل
       
       match /comments/{commentId} {
-        allow get, list: if true;
+        allow read: if true;
         allow create: if isSignedIn();
         allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       }
     }
 
-    // غرفة العمليات (البلاغات)
+    // البلاغات
     match /reports/{reportId} {
-      allow read: if isModerator();
-      allow update: if isModerator();
+      allow read, update: if isModerator();
       allow create: if isSignedIn();
     }
 
     // الإشعارات
     match /notifications/{notifId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
-    // الأنظمة الاجتماعية (المتابعة)
+    // المتابعات
     match /follows/{followId} {
       allow read: if true;
       allow write: if isSignedIn();
     }
 
-    // المجموعات (اللمة)
+    // المجموعات والرسائل
     match /groups/{groupId} {
       allow read: if true;
       allow write: if isSignedIn();
-      match /messages/{msgId} {
-        allow read, write: if isSignedIn();
-      }
+      match /messages/{msgId} { allow read, write: if isSignedIn(); }
     }
 
-    // المحادثات الخاصة
     match /direct_conversations/{chatId} {
       allow read, write: if isSignedIn() && request.auth.uid in resource.data.participants;
       allow create: if isSignedIn();
-      match /messages/{msgId} {
-        allow read, write: if isSignedIn();
-      }
+      match /messages/{msgId} { allow read, write: if isSignedIn(); }
     }
   }
 }
