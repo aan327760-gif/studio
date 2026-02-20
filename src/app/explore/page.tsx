@@ -41,7 +41,7 @@ export default function ExplorePage() {
     );
   }, [db, searchQuery]);
 
-  const { data: userResults = [], loading: userLoading } = useCollection<any>(userResultsQuery);
+  const { data: userResults = [], isLoading: userLoading } = useCollection<any>(userResultsQuery);
 
   const postResultsQuery = useMemoFirebase(() => {
     if (!searchQuery.trim()) return null;
@@ -53,7 +53,7 @@ export default function ExplorePage() {
     );
   }, [db, searchQuery]);
 
-  const { data: postResults = [], loading: postLoading } = useCollection<any>(postResultsQuery);
+  const { data: postResults = [], isLoading: postLoading } = useCollection<any>(postResultsQuery);
 
   const followsQuery = useMemoFirebase(() => {
     if (!currentUser) return null;
@@ -62,7 +62,7 @@ export default function ExplorePage() {
   const { data: userFollows = [] } = useCollection<any>(followsQuery);
 
   const isFollowing = (userId: string) => {
-    return userFollows.some((f: any) => f.followingId === userId);
+    return userFollows?.some((f: any) => f.followingId === userId) || false;
   };
 
   const handleFollow = async (targetUserId: string) => {
@@ -126,8 +126,8 @@ export default function ExplorePage() {
             <TabsContent value="users" className="p-4 m-0 space-y-4">
               {userLoading ? (
                 <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-              ) : userResults.length > 0 ? (
-                userResults.filter(u => u.uid !== currentUser?.uid).map((user: any) => (
+              ) : userResults && userResults.length > 0 ? (
+                userResults.filter((u:any) => u.uid !== currentUser?.uid).map((user: any) => (
                   <div key={user.uid} className="flex items-center justify-between p-4 bg-zinc-950/50 rounded-3xl border border-zinc-900 hover:border-zinc-800 transition-all group">
                     <Link href={`/profile/${user.uid}`} className="flex gap-4 flex-1">
                       <Avatar className="h-12 w-12 border border-zinc-800">
@@ -165,7 +165,7 @@ export default function ExplorePage() {
             <TabsContent value="posts" className="m-0">
               {postLoading ? (
                 <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-              ) : postResults.length > 0 ? (
+              ) : postResults && postResults.length > 0 ? (
                 <div className="flex flex-col">
                   {postResults.map((post: any) => (
                     <PostCard 

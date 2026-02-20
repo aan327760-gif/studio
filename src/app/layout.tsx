@@ -1,3 +1,4 @@
+
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -15,20 +16,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Unbound OS - Sovereign System",
-  description: "نظام تواصل اجتماعي سيادي ومستقل.",
+  title: "القوميون - Al-Qaumiyun | الجريدة العالمية",
+  description: "منصة إعلامية عالمية بأقلام المواطنين.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Unbound",
+    title: "Qaumiyun",
   },
-  applicationName: "Unbound OS",
-  authors: [{ name: "Sovereign Citizen" }],
-  icons: {
-    icon: "/favicon.ico",
-    apple: "https://picsum.photos/seed/unbound/180/180",
-  }
+  applicationName: "Al-Qaumiyun",
+  authors: [{ name: "Sovereign Editor" }],
 };
 
 export const viewport: Viewport = {

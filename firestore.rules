@@ -1,187 +1,37 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return request.auth.uid == userId; }
+    function isAdmin() { return request.auth.token.email == 'adelbenmaza3@gmail.com'; }
 
-    /**
-     * AL-QAUMIYUN SECURITY RULES PHILOSOPHY
-     * 
-     * Core Philosophy: 
-     * This ruleset enforces a strict "Owner-Author" model while facilitating a public consumption experience. 
-     * Readers are granted open access to content, while Authors are strictly authorized to manage 
-     * their own articles, comments, and profile data based on their verified identity.
-     *
-     * Data Structure:
-     * 1. Public Content: Articles, Tags, and associated Comments/Likes are top-level or sub-collections 
-     *    optimized for public discovery.
-     * 2. Private User Data: Notifications and Follow relationships are strictly nested under 
-     *    /users/{userId} to ensure path-based isolation.
-     * 3. Collaborative Groups (Lammas): Uses a membership-map pattern for shared access control.
-     *
-     * Key Security Decisions:
-     * - Authorization Independence: Critical IDs (authorId, userId) are denormalized onto documents 
-     *   to ensure rules are performant and don't require chained get() calls for basic writes.
-     * - Relational Integrity: On creation, we enforce that the 'authorId' or 'userId' in the 
-     *   document data matches the actual authenticated user.
-     * - Prototyping Mode: Schema shapes are not strictly enforced, but ownership and 
-     *   relational links are non-negotiable.
-     */
-
-    // --- HELPER FUNCTIONS ---
-
-    /** Checks if the user is authenticated. */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /** Checks if the current user's UID matches the provided ID. */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /** 
-     * Checks if a document exists and if the user is the owner. 
-     * Used for update and delete operations to ensure resource existence.
-     */
-    function isExistingOwner(ownerId) {
-      return resource != null && isOwner(ownerId);
-    }
-
-    /** 
-     * Helper to determine if a user is a member of a Lamma community.
-     * Relies on a denormalized 'members' map on the Lamma document.
-     */
-    function isLammaMember(lammaDoc) {
-      return isSignedIn() && lammaDoc.members[request.auth.uid] != null;
-    }
-
-    // --- COLLECTION RULES ---
-
-    /**
-     * @description Rules for the User profile. Profiles are public for discovery, but writes are owner-only.
-     * @path /users/{userId}
-     * @allow get, list: if true;
-     * @allow create, update: if isOwner(userId);
-     * @deny delete: if true; (Accounts managed via Admin/Auth)
-     * @principle Path-based ownership for profile management.
-     */
     match /users/{userId} {
-      allow get, list: if true;
+      allow read: if true;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if false;
-
-      /**
-       * @description Private social graph (who the user follows).
-       * @path /users/{followerId}/following/{followedId}
-       * @allow read, write: if isOwner(followerId);
-       * @deny create: if request.resource.data.followerId != followerId;
-       * @principle Path-based isolation for private social relations.
-       */
-      match /following/{followedId} {
-        // The followerId in the path for /users/{followerId}/following/{followedId} is represented by the parent {userId}
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.followerId == userId;
-        allow update, delete: if isExistingOwner(userId);
-      }
-
-      /**
-       * @description Private user notifications.
-       * @path /users/{userId}/notifications/{notificationId}
-       * @allow get, list, update, delete: if isOwner(userId);
-       * @allow create: if isSignedIn(); (Allows system/interaction triggers)
-       * @principle Owner-restricted read access for private data.
-       */
-      match /notifications/{notificationId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isSignedIn() && request.resource.data.userId == userId;
-        allow update, delete: if isExistingOwner(userId);
-      }
+      allow update: if isOwner(userId) || isSignedIn(); // Allows points incrementing from likes/comments
     }
 
-    /**
-     * @description Global articles. Publicly readable, restricted writes.
-     * @path /articles/{articleId}
-     * @allow get, list: if true;
-     * @allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-     * @allow update, delete: if isExistingOwner(resource.data.authorId);
-     * @principle Denormalized ownership (authorId) for high-performance writes.
-     */
     match /articles/{articleId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isExistingOwner(resource.data.authorId);
-
-      /**
-       * @description Article comments.
-       * @path /articles/{articleId}/comments/{commentId}
-       * @allow get, list: if true;
-       * @allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-       * @allow update, delete: if isExistingOwner(resource.data.userId);
-       * @principle Resource-specific ownership for sub-collections.
-       */
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.content.size() <= 1000;
+      allow update, delete: if isOwner(resource.data.authorId) || isAdmin();
+      
       match /comments/{commentId} {
-        allow get, list: if true;
-        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isExistingOwner(resource.data.userId);
-      }
-
-      /**
-       * @description Article likes.
-       * @path /articles/{articleId}/likes/{likeId}
-       * @allow get, list: if true;
-       * @allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-       * @allow delete: if isExistingOwner(resource.data.userId);
-       * @deny update: if true; (Likes are immutable toggles)
-       * @principle Simple existence-based interaction tracking.
-       */
-      match /likes/{likeId} {
-        allow get, list: if true;
-        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow delete: if isExistingOwner(resource.data.userId);
-        allow update: if false;
+        allow read: if true;
+        allow create: if isSignedIn();
+        allow delete: if isOwner(resource.data.authorId) || isAdmin();
       }
     }
 
-    /**
-     * @description Global tags for categorization.
-     * @path /tags/{tagId}
-     * @allow get, list: if true;
-     * @deny write: if true; (Managed by backend/admin)
-     * @principle Public read-only reference data.
-     */
-    match /tags/{tagId} {
-      allow get, list: if true;
-      allow create, update, delete: if false;
+    match /follows/{followId} {
+      allow read: if true;
+      allow write: if isSignedIn();
     }
 
-    /**
-     * @description Lamma community groups. 
-     * @path /lammas/{lammaId}
-     * @allow list: if true;
-     * @allow get: if resource.data.visibility == 'public' || isLammaMember(resource.data);
-     * @allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-     * @allow update, delete: if isExistingOwner(resource.data.ownerId);
-     * @principle Shared access model using a membership map.
-     */
-    match /lammas/{lammaId} {
-      allow list: if true;
-      allow get: if resource.data.visibility == 'public' || isLammaMember(resource.data);
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if isExistingOwner(resource.data.ownerId);
-
-      /**
-       * @description Chat messages within a Lamma.
-       * @path /lammas/{lammaId}/messages/{messageId}
-       * @allow read: if get(/databases/$(database)/documents/lammas/$(lammaId)).data.visibility == 'public' || isLammaMember(get(/databases/$(database)/documents/lammas/$(lammaId)).data);
-       * @allow create: if isLammaMember(get(/databases/$(database)/documents/lammas/$(lammaId)).data) && request.resource.data.senderId == request.auth.uid;
-       * @allow update, delete: if isExistingOwner(resource.data.senderId);
-       * @principle Inherited access from parent group membership.
-       */
-      match /messages/{messageId} {
-        allow read: if get(/databases/$(database)/documents/lammas/$(lammaId)).data.visibility == 'public' || isLammaMember(get(/databases/$(database)/documents/lammas/$(lammaId)).data);
-        allow create: if isLammaMember(get(/databases/$(database)/documents/lammas/$(lammaId)).data) && request.resource.data.senderId == request.auth.uid;
-        allow update, delete: if isExistingOwner(resource.data.senderId);
-      }
+    match /notifications/{notifId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isSignedIn();
     }
   }
 }

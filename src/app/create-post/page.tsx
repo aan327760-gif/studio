@@ -1,17 +1,17 @@
+
 "use client";
 
-import { useState, Suspense, useRef, useEffect } from "react";
-import { X, Plus, ImageIcon, Loader2, Sparkles, UserCheck } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, Newspaper, Loader2, Globe, Award, Type } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { toast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
-import { Switch } from "@/components/ui/switch";
-import { useUpload } from "@/context/UploadContext";
+import { doc, collection, addDoc, serverTimestamp, increment, updateDoc } from "firebase/firestore";
 import { 
   Select,
   SelectContent,
@@ -20,216 +20,161 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
+const SECTIONS = [
+  { id: "Politics", label: "Politics" },
+  { id: "Culture", label: "Culture" },
+  { id: "Sports", label: "Sports" },
+  { id: "Economy", label: "Economy" },
+  { id: "National", label: "National" },
+];
 
-function CreatePostContent() {
+export default function CreateArticlePage() {
   const { isRtl } = useLanguage();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const db = useFirestore();
   const { user } = useUser();
-  const { startUpload } = useUpload();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userRef);
   
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [privacy, setPrivacy] = useState("public");
-  const [allowComments, setAllowComments] = useState(true);
-  const [localImages, setLocalImages] = useState<string[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  
-  const videoUrlFromParams = searchParams.get("video");
-  const source = searchParams.get("source");
+  const [section, setSection] = useState("National");
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
 
-  useEffect(() => {
-    if (source === 'album') {
-      const stored = sessionStorage.getItem('pending_album_images');
-      if (stored) {
-        setLocalImages(JSON.parse(stored));
-        sessionStorage.removeItem('pending_album_images');
-      }
-    } else {
-      const initialImageUrl = searchParams.get("image");
-      if (initialImageUrl) setLocalImages([initialImageUrl]);
-    }
-  }, [source, searchParams]);
+  const canPublish = (profile?.points || 0) >= 20;
 
-  const isBanned = profile?.isBannedUntil && profile.isBannedUntil.toDate() > new Date();
-
-  const handleAddImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      setLocalImages(prev => [...prev, ...newImages].slice(0, 4));
-    }
-  };
-
-  const handleSubmit = () => {
-    if (isBanned) {
-      toast({ variant: "destructive", title: isRtl ? "أنت محظور" : "Account Restricted" });
+  const handlePublish = async () => {
+    if (!user || !profile) return;
+    if (!title.trim() || !content.trim()) return;
+    if (!canPublish) {
+      toast({ variant: "destructive", title: isRtl ? "نقاط غير كافية" : "Insufficient Points", description: isRtl ? "تحتاج لـ 20 نقطة لنشر مقال." : "You need 20 points to publish." });
       return;
     }
 
-    if (!content.trim() && localImages.length === 0 && !videoUrlFromParams) return;
+    setIsPublishing(true);
+    try {
+      // Create Article
+      await addDoc(collection(db, "articles"), {
+        title,
+        content,
+        section,
+        mediaUrl: mediaUrl || null,
+        authorId: user.uid,
+        authorName: profile.displayName,
+        authorNationality: profile.nationality,
+        likesCount: 0,
+        commentsCount: 0,
+        createdAt: serverTimestamp()
+      });
 
-    setIsProcessing(true);
+      // Deduct 20 points
+      await updateDoc(userRef!, { points: increment(-20) });
 
-    const authorInfo = {
-      name: profile?.displayName || user?.displayName || "User",
-      handle: user?.email?.split('@')[0] || "user",
-      avatar: profile?.photoURL || user?.photoURL || "",
-      isVerified: user?.email === ADMIN_EMAIL || profile?.isVerified || profile?.role === 'admin',
-      isPro: profile?.isPro || false,
-      role: user?.email === ADMIN_EMAIL ? "admin" : (profile?.role || "user"),
-      uid: user?.uid
-    };
-
-    startUpload({
-      content,
-      localImages,
-      videoUrl: videoUrlFromParams,
-      userId: user?.uid,
-      authorInfo,
-      privacy,
-      allowComments,
-      isRtl
-    });
-
-    toast({ 
-      title: isRtl ? "جاري الرفع في الخلفية" : "Uploading in background",
-      description: isRtl ? "يمكنك إكمال التصفح بحرية الآن." : "Continue browsing freely.",
-    });
-    
-    router.replace("/");
+      toast({ title: isRtl ? "تم نشر المقال" : "Article Published", description: isRtl ? "تم خصم 20 نقطة من رصيدك السيادي." : "20 points deducted." });
+      router.push("/");
+    } catch (e) {
+      toast({ variant: "destructive", title: "Publish Error" });
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative">
       <header className="p-4 flex items-center justify-between sticky top-0 bg-black/90 backdrop-blur-xl z-20 border-b border-zinc-900">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900">
-          <X className="h-6 w-6" />
-        </Button>
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><X className="h-6 w-6" /></Button>
         <div className="flex flex-col items-center">
-           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Unbound OS</span>
+           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Al-Qaumiyun</span>
            <div className="flex items-center gap-1">
-              <UserCheck className="h-2 w-2 text-primary" />
-              <span className="text-[8px] font-black text-primary uppercase">Human Thought Only</span>
+              <Award className="h-2 w-2 text-zinc-500" />
+              <span className="text-[8px] font-black text-zinc-500 uppercase">{profile?.points} Points</span>
            </div>
         </div>
         <Button 
-          onClick={handleSubmit} 
-          disabled={isBanned || isProcessing || (!content.trim() && localImages.length === 0 && !videoUrlFromParams)} 
-          className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200 min-w-[80px] shadow-xl"
+          onClick={handlePublish} 
+          disabled={isPublishing || !title.trim() || !content.trim() || !canPublish} 
+          className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200"
         >
-          {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Post")}
+          {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Publish")}
         </Button>
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-32 p-4 custom-scrollbar">
-        <div className="flex gap-4">
-          <Avatar className="h-11 w-11 border border-zinc-800 shadow-sm">
-            <AvatarImage src={user?.photoURL || ""} />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="relative">
-              <Textarea 
-                placeholder={isRtl ? "شارك فكرة حرة..." : "Share a free thought..."} 
-                className="bg-transparent border-none resize-none focus-visible:ring-0 p-0 text-lg font-medium min-h-[150px] mb-4 placeholder:text-zinc-700" 
-                value={content} 
-                onChange={(e) => setContent(e.target.value)} 
-              />
-            </div>
-
-            {localImages.length > 0 && (
-              <div className="w-full overflow-hidden mb-6">
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 snap-x">
-                  {localImages.map((img, i) => (
-                    <div key={i} className="relative h-40 w-40 shrink-0 rounded-2xl overflow-hidden border border-zinc-800 group snap-center shadow-2xl">
-                      <img src={img} alt="preview" className="w-full h-full object-cover" />
-                      <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 hover:bg-red-600 border-none shadow-xl"
-                        onClick={() => setLocalImages(prev => prev.filter((_, idx) => idx !== i))}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  {localImages.length < 4 && (
-                    <button 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="h-40 w-40 shrink-0 rounded-2xl border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center gap-2 hover:bg-zinc-950 transition-all group"
-                    >
-                      <Plus className="h-6 w-6 text-zinc-600 group-hover:text-primary" />
-                      <span className="text-[8px] font-black text-zinc-700 uppercase tracking-widest group-hover:text-primary">Add More</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {!videoUrlFromParams && localImages.length === 0 && (
-              <div className="flex gap-4 py-4 border-t border-zinc-900/50">
-                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-zinc-500 hover:text-white transition-all group">
-                    <div className="h-10 w-10 rounded-2xl bg-zinc-900 flex items-center justify-center border border-zinc-800 group-hover:border-primary/30 group-hover:bg-primary/5">
-                       <ImageIcon className="h-5 w-5 group-hover:text-primary" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isRtl ? "إضافة وسائط" : "Add Media"}</span>
-                 </button>
-                 <button disabled className="flex items-center gap-2 text-zinc-800 cursor-default">
-                    <div className="h-10 w-10 rounded-2xl bg-zinc-900/50 flex items-center justify-center border border-zinc-800/50">
-                       <Sparkles className="h-5 w-5 opacity-20" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">مساعد ذكي (قريباً)</span>
-                 </button>
-              </div>
-            )}
-
-            <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleAddImage} />
-
-            {videoUrlFromParams && (
-              <div className="relative aspect-video rounded-3xl overflow-hidden border border-zinc-800 bg-zinc-950 mb-6 shadow-2xl">
-                <video src={videoUrlFromParams} className="w-full h-full object-contain" autoPlay muted loop />
-              </div>
-            )}
-
-            <div className="space-y-4 pt-6 border-t border-zinc-900/50">
-               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-3xl shadow-sm">
-                  <div className="flex flex-col">
-                     <span className="text-xs font-black uppercase tracking-widest">{isRtl ? "الجمهور" : "Audience"}</span>
-                     <span className="text-[9px] text-zinc-600 font-bold uppercase">{isRtl ? "من يرى منشورك" : "Who sees this"}</span>
-                  </div>
-                  <Select value={privacy} onValueChange={setPrivacy}>
-                    <SelectTrigger className="w-[110px] bg-zinc-900 border-none h-9 text-[10px] font-black uppercase tracking-widest rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-zinc-950 border-zinc-800 text-white rounded-2xl">
-                      <SelectItem value="public">{isRtl ? "عام" : "Public"}</SelectItem>
-                      <SelectItem value="followers">{isRtl ? "متابعون" : "Followers"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-               </div>
-               <div className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-3xl shadow-sm">
-                  <div className="flex flex-col">
-                     <span className="text-xs font-black uppercase tracking-widest">{isRtl ? "التعليقات" : "Comments"}</span>
-                     <span className="text-[9px] text-zinc-600 font-bold uppercase">{isRtl ? "فتح النقاش" : "Open discussion"}</span>
-                  </div>
-                  <Switch checked={allowComments} onCheckedChange={setAllowComments} className="data-[state=checked]:bg-primary" />
-               </div>
-            </div>
+      <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+                <Type className="h-4 w-4 text-primary" />
+             </div>
+             <h2 className="text-sm font-black uppercase tracking-widest">{isRtl ? "عنوان المقال" : "Article Title"}</h2>
           </div>
+          <Input 
+            placeholder={isRtl ? "اكتب عنواناً جذاباً..." : "Enter a catchy title..."}
+            className="bg-zinc-950 border-zinc-900 h-14 text-lg font-black rounded-2xl focus-visible:ring-primary"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-2">
+             <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-zinc-900 flex items-center justify-center border border-zinc-800">
+                   <Newspaper className="h-4 w-4 text-zinc-500" />
+                </div>
+                <h2 className="text-sm font-black uppercase tracking-widest">{isRtl ? "المحتوى" : "Content"}</h2>
+             </div>
+             <span className={cn("text-[10px] font-black", content.length > 1000 ? "text-red-500" : "text-zinc-600")}>{content.length}/1000</span>
+          </div>
+          <Textarea 
+            placeholder={isRtl ? "اكتب مقالك هنا (1000 حرف كحد أقصى)..." : "Write your article (max 1000 chars)..."}
+            className="bg-zinc-950 border-zinc-900 min-h-[250px] rounded-[2rem] p-6 text-base font-medium resize-none focus-visible:ring-primary"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            maxLength={1000}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "القسم" : "Section"}</label>
+            <Select value={section} onValueChange={setSection}>
+              <SelectTrigger className="bg-zinc-950 border-zinc-900 h-12 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-950 border-zinc-900 text-white">
+                {SECTIONS.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "رابط الوسائط" : "Media URL"}</label>
+            <Input 
+              placeholder="https://..." 
+              className="bg-zinc-950 border-zinc-900 h-12 rounded-xl"
+              value={mediaUrl}
+              onChange={(e) => setMediaUrl(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="p-6 bg-primary/5 border border-primary/20 rounded-[2.5rem] flex items-center justify-between">
+           <div className="flex gap-4 items-center">
+              <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/20">
+                 <Globe className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                 <span className="text-xs font-black uppercase tracking-tight">{isRtl ? "النشر القومي" : "National Publish"}</span>
+                 <span className="text-[9px] text-zinc-500 font-bold uppercase">{isRtl ? "يمثل:" : "Representing:"} {profile?.nationality}</span>
+              </div>
+           </div>
+           <div className="text-right">
+              <span className="block text-sm font-black text-red-500">-20</span>
+              <span className="text-[8px] font-bold text-zinc-600 uppercase">Points</span>
+           </div>
         </div>
       </main>
     </div>
-  );
-}
-
-export default function CreatePostPage() {
-  return (
-    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /></div>}>
-      <CreatePostContent />
-    </Suspense>
   );
 }

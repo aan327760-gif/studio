@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -25,8 +26,7 @@ import {
   CheckCircle,
   Activity,
   Megaphone,
-  Users,
-  AlertTriangle
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -49,7 +49,7 @@ import { Bar, BarChart, XAxis, ResponsiveContainer } from "recharts";
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function AdminDashboard() {
-  const { user, loading: userLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const { isRtl } = useLanguage();
   const router = useRouter();
   const db = useFirestore();
@@ -61,21 +61,21 @@ export default function AdminDashboard() {
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
 
   useEffect(() => {
-    if (!userLoading && !isSuper) {
+    if (!isUserLoading && !isSuper) {
       router.replace("/");
     }
-  }, [user, userLoading, router, isSuper]);
+  }, [user, isUserLoading, router, isSuper]);
 
   const usersQuery = useMemoFirebase(() => isSuper ? query(collection(db, "users"), limit(100)) : null, [db, isSuper]);
-  const { data: allUsers = [], loading: usersLoading } = useCollection<any>(usersQuery);
+  const { data: allUsers = [], isLoading: usersLoading } = useCollection<any>(usersQuery);
   
   const reportsQuery = useMemoFirebase(() => isSuper ? query(collection(db, "reports"), where("status", "==", "pending"), limit(50)) : null, [db, isSuper]);
-  const { data: reports = [], loading: reportsLoading } = useCollection<any>(reportsQuery);
+  const { data: reports = [], isLoading: reportsLoading } = useCollection<any>(reportsQuery);
 
   const chartData = useMemo(() => [
-    { name: isRtl ? "مواطنين" : "Citizens", value: allUsers.length },
-    { name: isRtl ? "بلاغات" : "Reports", value: reports.length },
-    { name: isRtl ? "موثقين" : "Verified", value: allUsers.filter((u:any) => u.isVerified).length }
+    { name: isRtl ? "مواطنين" : "Citizens", value: allUsers?.length || 0 },
+    { name: isRtl ? "بلاغات" : "Reports", value: reports?.length || 0 },
+    { name: isRtl ? "موثقين" : "Verified", value: allUsers?.filter((u:any) => u.isVerified).length || 0 }
   ], [allUsers, reports, isRtl]);
 
   const handleBroadcast = async () => {
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
     setIsBroadcasting(true);
     try {
       const batch = writeBatch(db);
-      allUsers.forEach((member: any) => {
+      allUsers?.forEach((member: any) => {
         const notifRef = doc(collection(db, "notifications"));
         batch.set(notifRef, {
           userId: member.id,
@@ -121,7 +121,7 @@ export default function AdminDashboard() {
     }
   };
 
-  if (userLoading) {
+  if (isUserLoading) {
     return (
       <div className="h-screen bg-black flex items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
                {usersLoading ? (
                  <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div>
                ) : (
-                 allUsers.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
+                 allUsers?.filter((u: any) => u.displayName?.toLowerCase().includes(searchQuery.toLowerCase())).map((member: any) => (
                    <div key={member.id} className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-900 rounded-[2rem]">
                       <div className="flex items-center gap-4">
                         <Avatar className="h-12 w-12 border border-zinc-800">
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
              {reportsLoading ? (
                <div className="py-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary opacity-30" /></div>
              ) : (
-               reports.length > 0 ? (
+               reports && reports.length > 0 ? (
                  reports.map((r: any) => (
                    <Card key={r.id} className="bg-zinc-950 border-zinc-900 p-5 rounded-[2rem] space-y-4">
                       <div className="flex items-center justify-between">
