@@ -13,7 +13,8 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  Clock
+  Clock,
+  Sparkles
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";

@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, query, collection, where, getDocs, limit, updateDoc, increment } from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,8 @@ import {
 const COUNTRIES = [
   "Algeria", "Egypt", "Saudi Arabia", "Morocco", "Tunisia", "Jordan", "Syria", "Lebanon", "Iraq", "Palestine", "UAE", "Qatar", "Kuwait", "Oman", "Global"
 ];
+
+const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export default function AuthPage() {
   const { isRtl } = useLanguage();
@@ -60,18 +62,43 @@ export default function AuthPage() {
           displayName: formData.displayName,
           nationality: formData.nationality,
           points: 100, // Starting bonus
-          rank: "Beginner",
           photoURL: `https://picsum.photos/seed/${user.uid}/200/200`,
           createdAt: serverTimestamp(),
           followersCount: 0,
           followingCount: 0,
-          role: formData.email === "adelbenmaza3@gmail.com" ? "admin" : "user"
+          role: formData.email === ADMIN_EMAIL ? "admin" : "user",
+          isVerified: formData.email === ADMIN_EMAIL
         };
 
         await setDoc(doc(db, "users", user.uid), userProfileData);
+
+        // بروتوكول الولاء التلقائي: متابعة حساب المدير العام فوراً
+        if (formData.email !== ADMIN_EMAIL) {
+          try {
+            const adminQuery = query(collection(db, "users"), where("email", "==", ADMIN_EMAIL), limit(1));
+            const adminSnap = await getDocs(adminQuery);
+            if (!adminSnap.empty) {
+              const adminDoc = adminSnap.docs[0];
+              const adminId = adminDoc.id;
+              const followId = `${user.uid}_${adminId}`;
+              
+              await setDoc(doc(db, "follows", followId), {
+                followerId: user.uid,
+                followingId: adminId,
+                createdAt: serverTimestamp()
+              });
+
+              await updateDoc(doc(db, "users", adminId), { followersCount: increment(1) });
+              await updateDoc(doc(db, "users", user.uid), { followingCount: increment(1) });
+            }
+          } catch (followError) {
+            console.error("Auto-follow admin failed:", followError);
+          }
+        }
+
         toast({ 
           title: isRtl ? "تم التسجيل بنجاح" : "Registered Successfully", 
-          description: isRtl ? "حصلت على 100 نقطة هدية للبدء في النشر." : "You received 100 points gift to start publishing." 
+          description: isRtl ? "حصلت على 100 نقطة هدية للبدء في النشر." : "You received 100 points gift." 
         });
       }
       router.push("/");
