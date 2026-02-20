@@ -19,6 +19,7 @@ import { useFirestore, useUser } from "@/firebase";
 import { doc, updateDoc, increment, arrayUnion, arrayRemove } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { VerificationBadge } from "@/components/ui/verification-badge";
 
 interface ArticleCardProps {
   id: string;
@@ -34,6 +35,8 @@ interface ArticleCardProps {
   savedBy?: string[];
   time: string;
 }
+
+const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export function ArticleCard({ 
   id, author, title, content, section, 
@@ -91,6 +94,8 @@ export function ArticleCard({
     e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
+
+  const showCheckmark = author?.isVerified || author?.email === SUPER_ADMIN_EMAIL;
 
   return (
     <div 
@@ -170,7 +175,10 @@ export function ArticleCard({
               <AvatarImage src={author.photoURL} />
               <AvatarFallback className="text-[8px] bg-zinc-900">{author.name?.[0]}</AvatarFallback>
             </Avatar>
-            <span className="text-[11px] font-bold text-zinc-300">@{author.name}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-bold text-zinc-300">@{author.name}</span>
+              {showCheckmark && <VerificationBadge className="h-3 w-3" />}
+            </div>
           </Link>
         </div>
 

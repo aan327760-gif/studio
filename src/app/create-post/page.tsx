@@ -28,6 +28,8 @@ const SECTIONS = [
   { id: "National", label: "National" },
 ];
 
+const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
+
 export default function CreateArticlePage() {
   const { isRtl } = useLanguage();
   const router = useRouter();
@@ -66,7 +68,9 @@ export default function CreateArticlePage() {
         mediaUrl: mediaUrl || null,
         authorId: user.uid,
         authorName: profile.displayName,
+        authorEmail: user.email,
         authorNationality: profile.nationality,
+        authorIsVerified: profile.isVerified || user.email === SUPER_ADMIN_EMAIL,
         likesCount: 0,
         commentsCount: 0,
         savesCount: 0,

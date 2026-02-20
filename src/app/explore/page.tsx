@@ -128,7 +128,13 @@ export default function ExplorePage() {
                     <ArticleCard 
                       key={article.id}
                       id={article.id}
-                      author={{ name: article.authorName, nationality: article.authorNationality, uid: article.authorId }}
+                      author={{ 
+                        name: article.authorName, 
+                        nationality: article.authorNationality, 
+                        uid: article.authorId,
+                        isVerified: article.authorIsVerified,
+                        email: article.authorEmail
+                      }}
                       title={article.title}
                       content={article.content}
                       section={article.section}
@@ -136,6 +142,8 @@ export default function ExplorePage() {
                       image={article.mediaUrl}
                       likes={article.likesCount || 0}
                       comments={article.commentsCount || 0}
+                      likedBy={article.likedBy}
+                      savedBy={article.savedBy}
                       time={article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString() : ""}
                     />
                   ))}

@@ -50,7 +50,13 @@ export default function BookmarksPage() {
               <PostCard 
                 key={article.id} 
                 id={article.id} 
-                author={{name: article.authorName, uid: article.authorId, nationality: article.authorNationality}} 
+                author={{
+                  name: article.authorName, 
+                  uid: article.authorId, 
+                  nationality: article.authorNationality,
+                  isVerified: article.authorIsVerified,
+                  email: article.authorEmail
+                }} 
                 content={article.content} 
                 image={article.mediaUrl} 
                 likes={article.likesCount || 0} 
