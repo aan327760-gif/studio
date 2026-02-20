@@ -9,54 +9,39 @@
         "uid": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
-        "points": { "type": "number", "description": "تبدأ من 100 نقطة." },
-        "nationality": { "type": "string", "description": "الوطن الذي يمثله الكاتب." },
-        "bio": { "type": "string", "maxLength": 150 },
-        "photoURL": { "type": "string", "format": "uri" },
-        "role": { "type": "string", "enum": ["user", "admin", "moderator"] },
-        "rank": { "type": "string", "enum": ["Beginner", "Active", "Distinguished"] },
-        "isVerified": { "type": "boolean" },
-        "isBannedUntil": { "type": "string", "format": "date-time" },
-        "followersCount": { "type": "number" },
-        "followingCount": { "type": "number" }
+        "points": { "type": "number" },
+        "nationality": { "type": "string" },
+        "bio": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string" },
+        "isVerified": { "type": "boolean" }
       },
-      "required": ["uid", "email", "displayName", "points", "nationality"]
+      "required": ["uid", "email", "displayName"]
     },
     "Article": {
       "title": "Article",
       "type": "object",
-      "description": "مقال صحفي بحد أقصى 1000 حرف.",
+      "description": "مقال صحفي قومي.",
       "properties": {
         "id": { "type": "string" },
         "title": { "type": "string" },
-        "content": { "type": "string", "maxLength": 1000 },
-        "section": { "type": "string", "enum": ["Politics", "Culture", "Sports", "Economy", "National"] },
-        "tags": { "type": "array", "items": { "type": "string" } },
-        "mediaUrl": { "type": "string" },
-        "authorId": { "type": "string" },
-        "authorName": { "type": "string" },
-        "authorEmail": { "type": "string" },
-        "authorNationality": { "type": "string" },
-        "authorIsVerified": { "type": "boolean" },
-        "likesCount": { "type": "number" },
-        "likedBy": { "type": "array", "items": { "type": "string" } },
-        "savedBy": { "type": "array", "items": { "type": "string" } },
-        "commentsCount": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "content": { "type": "string" },
+        "priorityScore": { "type": "number" }
       }
     },
-    "Report": {
-      "title": "Report",
+    "Story": {
+      "title": "Story",
       "type": "object",
-      "description": "بلاغ سيادي عن محتوى مخالف.",
+      "description": "قصة سيادية قصيرة (صورة أو فيديو 30 ثانية).",
       "properties": {
         "id": { "type": "string" },
-        "postId": { "type": "string" },
-        "postContent": { "type": "string" },
         "authorId": { "type": "string" },
-        "reporterId": { "type": "string" },
-        "reason": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "resolved"] }
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "mediaType": { "type": "string", "enum": ["image", "video"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -66,6 +51,6 @@
   "firestore": {
     "/users/{userId}": { "schema": "#/entities/User", "description": "ملفات المواطنين." },
     "/articles/{articleId}": { "schema": "#/entities/Article", "description": "أرشيف المقالات." },
-    "/reports/{reportId}": { "schema": "#/entities/Report", "description": "غرفة البلاغات للمدير." }
+    "/stories/{storyId}": { "schema": "#/entities/Story", "description": "القصص اليومية (الستوري)." }
   }
 }

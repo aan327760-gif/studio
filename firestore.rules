@@ -2,11 +2,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // وظائف التحقق السيادية
     function isSignedIn() { return request.auth != null; }
     function isSuperAdmin() { return request.auth != null && request.auth.token.email == 'adelbenmaza3@gmail.com'; }
     
-    // جلب بيانات المستخدم بشكل آمن
     function getUserData(uid) {
       return get(/databases/$(database)/documents/users/$(uid)).data;
     }
@@ -14,49 +12,42 @@ service cloud.firestore {
     function isModerator() { 
       return isSignedIn() && (isSuperAdmin() || getUserData(request.auth.uid).role == 'moderator'); 
     }
-    
-    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
 
-    // ملفات المواطنين - مفتوحة للقراءة للجميع، التحديث للمالك أو المدير أو عند التفاعل
     match /users/{userId} {
       allow read: if true;
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn();
     }
 
-    // أرشيف المقالات - مفتوح للقراءة للجميع لضمان عمل الخوارزمية
     match /articles/{articleId} {
       allow read: if true;
       allow create: if isSignedIn();
-      allow update: if isSignedIn(); 
+      allow update: if isSignedIn();
       allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
       
       match /comments/{commentId} {
         allow read: if true;
         allow create: if isSignedIn();
-        allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
+        allow delete: if isModerator();
       }
     }
 
-    // البلاغات - للمشرفين فقط
-    match /reports/{reportId} {
-      allow read, update: if isModerator();
+    match /stories/{storyId} {
+      allow read: if true;
       allow create: if isSignedIn();
+      allow delete: if isModerator() || (isSignedIn() && resource.data.authorId == request.auth.uid);
     }
 
-    // الإشعارات
     match /notifications/{notifId} {
       allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
     }
 
-    // المتابعات
     match /follows/{followId} {
       allow read: if true;
       allow write: if isSignedIn();
     }
 
-    // المجموعات والرسائل
     match /groups/{groupId} {
       allow read: if true;
       allow write: if isSignedIn();

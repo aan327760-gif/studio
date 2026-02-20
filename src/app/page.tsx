@@ -3,8 +3,9 @@
 
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ArticleCard } from "@/components/feed/ArticleCard";
+import { StoryBar } from "@/components/feed/StoryBar";
 import { useLanguage } from "@/context/LanguageContext";
-import { Newspaper, Award, Loader2, Flame, TrendingUp } from "lucide-react";
+import { Newspaper, Award, Loader2, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, limit, where, doc } from "firebase/firestore";
@@ -29,32 +30,19 @@ export default function Home() {
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userProfileRef);
 
-  // خوارزمية السيادة: الترتيب حسب مجموع نقاط الأولوية (priorityScore)
-  // ملاحظة: الترتيب بـ priorityScore يضع المحتوى الموثق والأكثر تفاعلاً في المقدمة (مثل المنصات العالمية)
   const articlesQuery = useMemoFirebase(() => {
     let baseQuery = collection(db, "articles");
-    
     if (activeSection === "All") {
-      return query(
-        baseQuery, 
-        orderBy("priorityScore", "desc"), 
-        limit(50)
-      );
+      return query(baseQuery, orderBy("priorityScore", "desc"), limit(50));
     }
-    
-    return query(
-      baseQuery, 
-      where("section", "==", activeSection), 
-      orderBy("priorityScore", "desc"),
-      limit(50)
-    );
+    return query(baseQuery, where("section", "==", activeSection), orderBy("priorityScore", "desc"), limit(50));
   }, [db, activeSection]);
 
   const { data: articles, isLoading } = useCollection<any>(articlesQuery);
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
-      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 py-4 border-b border-zinc-900">
+      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 pt-4 pb-2 border-b border-zinc-900">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg rotate-3">
@@ -66,9 +54,6 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-               <TrendingUp className="h-3 w-3 text-primary" />
-            </div>
             {profile && (
               <Badge variant="outline" className="border-primary/30 text-primary h-7 px-3 rounded-full flex gap-2 items-center">
                 <Award className="h-3 w-3" />
@@ -102,6 +87,9 @@ export default function Home() {
       </header>
 
       <main className="pb-32">
+        {/* إطار الستوري في أعلى الصفحة */}
+        <StoryBar />
+
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50" />
