@@ -13,7 +13,7 @@ import {
   Landmark, 
   Target, 
   Cpu, 
-  BookOpen 
+  Newspaper 
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
@@ -24,102 +24,67 @@ export default function AboutPage() {
 
   const coreValues = [
     {
-      icon: Cpu,
-      title: isRtl ? "السيادة الرقمية" : "Digital Sovereignty",
+      icon: Globe,
+      title: isRtl ? "السيادة الوطنية" : "National Sovereignty",
       desc: isRtl 
-        ? "نؤمن بحق الأفراد والمجتمعات في امتلاك وإدارة بياناتهم بعيداً عن الهيمنة التقنية العابرة للحدود." 
-        : "We believe in the right of individuals and communities to own and manage their data, free from cross-border technical dominance."
+        ? "كل كاتب في جريدتنا هو سفير لقلمه ووطنه، ننقل نبض الشعوب كما هو دون تزييف." 
+        : "Every writer is an ambassador for their nation, conveying the pulse of the people as it is."
     },
     {
       icon: Target,
-      title: isRtl ? "الحرية المسؤولة" : "Responsible Freedom",
+      title: isRtl ? "الاستقلالية التامة" : "Absolute Independence",
       desc: isRtl 
-        ? "توفير مساحة للتعبير الحر تلتزم بالمعايير الأخلاقية الرفيعة وتحترم كرامة الإنسان." 
-        : "Providing a space for free expression that adheres to high ethical standards and respects human dignity."
+        ? "نحن مؤسسة إعلامية مستقلة تماماً، لا نتبع لأي جهة سياسية أو تنظيم، سلطتنا الوحيدة هي الحقيقة." 
+        : "An entirely independent media institution, not affiliated with any political entity."
     },
     {
       icon: Zap,
-      title: isRtl ? "الابتكار المستقل" : "Independent Innovation",
+      title: isRtl ? "صحافة المواطن" : "Citizen Journalism",
       desc: isRtl 
-        ? "تطوير حلول تقنية وطنية قادرة على المنافسة عالمياً وبناء مستقبل رقمي واعد." 
-        : "Developing national technical solutions capable of global competition and building a promising digital future."
-    }
-  ];
-
-  const legalFramework = [
-    {
-      icon: User,
-      title: isRtl ? "طبيعة المبادرة" : "Nature of the Initiative",
-      desc: isRtl 
-        ? "إن منصة 'بلا قيود' (Unbound) هي مبادرة تقنية مستقلة تماماً، نبعت من رؤية وطموح مواطن جزائري يسعى للمساهمة في تطوير المشهد الرقمي العربي." 
-        : "Unbound is an entirely independent technical initiative, born from the vision of an Algerian citizen seeking to contribute to the digital landscape."
-    },
-    {
-      icon: Scale,
-      title: isRtl ? "الامتثال التشريعي" : "Legislative Compliance",
-      desc: isRtl 
-        ? "تلتزم المنصة في كافة عملياتها بالقوانين واللوائح المعمول بها في الجمهورية الجزائرية الديمقراطية الشعبية." 
-        : "The platform adheres in all its operations to the laws and regulations in force in the People's Democratic Republic of Algeria."
-    },
-    {
-      icon: Landmark,
-      title: isRtl ? "الإطار الإقليمي" : "Regional Framework",
-      desc: isRtl 
-        ? "تسترشد المنصة في ممارساتها بالمعايير الأخلاقية والقانونية المتوافقة مع ميثاق جامعة الدول العربية لضمان بيئة آمنة." 
-        : "The platform is guided by ethical and legal standards aligned with the Charter of the Arab League to ensure a safe environment."
-    },
-    {
-      icon: Shield,
-      title: isRtl ? "الاستقلالية المؤسسية" : "Institutional Independence",
-      desc: isRtl 
-        ? "تؤكد المنصة عدم تبعيتها لأي جهة رسمية أو تنظيم حكومي، وهي مشروع خاص يهدف لخدمة الصالح العام." 
-        : "The platform confirms its non-affiliation with any official body or government organization; it is a private project."
+        ? "نؤمن بأن الخبر أصدق عندما يرويه من عاشه، لذا نمنح المنبر لكل مواطن يمتلك الفكر والرؤية." 
+        : "We believe news is truest when told by those who live it, giving a platform to every citizen."
     }
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-900 pb-20 selection:bg-primary/30">
+    <div className="min-h-screen bg-black text-white max-w-md mx-auto border-x border-zinc-900 pb-20">
       <header className="p-6 border-b border-zinc-900 sticky top-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-zinc-900 transition-all">
-            <ArrowLeft className={isRtl ? "rotate-180" : ""} />
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+            <ArrowLeft className={cn("h-5 w-5", isRtl ? "rotate-180" : "")} />
           </Button>
-          <h1 className="text-xl font-black tracking-tight">{isRtl ? "عن بلا قيود" : "About Unbound"}</h1>
+          <h1 className="text-xl font-black tracking-tight">{isRtl ? "من نحن" : "About Us"}</h1>
         </div>
-        <div className="px-3 py-1 bg-zinc-900 rounded-full border border-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+        <div className="px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary">
            Official
         </div>
       </header>
 
-      <main className="p-8 space-y-20">
-        <section className="space-y-10 text-center relative overflow-hidden py-10">
-           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -z-10" />
-           <div className="w-24 h-24 rounded-[2.5rem] bg-primary flex items-center justify-center mx-auto rotate-6 shadow-2xl shadow-primary/40 group transition-transform hover:rotate-0">
-              <span className="text-white font-black text-5xl italic">U</span>
+      <main className="p-8 space-y-16">
+        <section className="text-center space-y-8 relative py-10">
+           <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center mx-auto rotate-3 shadow-2xl shadow-primary/20">
+              <span className="text-white font-black text-4xl italic">ق</span>
            </div>
            <div className="space-y-4">
-              <h2 className="text-4xl font-black tracking-tighter">UNBOUND OS</h2>
-              <p className="text-primary text-[11px] font-black uppercase tracking-[0.5em]">{isRtl ? "نظام التواصل السيادي" : "Sovereign OS"}</p>
+              <h2 className="text-3xl font-black tracking-tighter uppercase">{isRtl ? "جريدة القوميون" : "Al-Qaumiyun"}</h2>
+              <p className="text-primary text-[10px] font-black uppercase tracking-[0.4em]">{isRtl ? "الجريدة العالمية المستقلة" : "Global Sovereign Newspaper"}</p>
               <p className="text-sm font-medium leading-relaxed text-zinc-400">
                 {isRtl 
-                  ? "تمثل منصة 'بلا قيود' صرحاً رقمياً سيادياً صُمم ليكون مساحة حرة ومستقلة تماماً. نؤمن بأن التكنولوجيا يجب أن تخدم الإنسان دون تبعية." 
-                  : "Unbound represents a sovereign digital bastion designed to be a completely free and independent space."}
+                  ? "تأسست 'القوميون' لتكون أول منبر إعلامي عالمي يدار بأقلام المواطنين أنفسهم. نحن لسنا مجرد موقع إخباري، بل نحن أرشيف حي لنضال وفكر وطموح الشعوب." 
+                  : "Founded to be the first global media platform managed by the citizens themselves."}
               </p>
            </div>
         </section>
 
         <section className="space-y-8">
-           <div className="flex items-center gap-3">
-              <div className="h-1 bg-primary w-8 rounded-full" />
-              <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600">{isRtl ? "قيمنا الأساسية" : "Core Values"}</h3>
-           </div>
+           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 text-center">{isRtl ? "ركائزنا الأساسية" : "Our Pillars"}</h3>
            <div className="grid gap-4">
               {coreValues.map((val, i) => (
-                <div key={i} className="p-6 bg-zinc-950 border border-zinc-900 rounded-[2.5rem] flex items-start gap-6 group hover:border-primary/20 transition-all">
-                   <div className="h-14 w-14 bg-zinc-900 rounded-3xl flex items-center justify-center border border-zinc-800 group-hover:bg-primary/10 transition-all shrink-0">
+                <div key={i} className="p-6 bg-zinc-950 border border-zinc-900 rounded-[2rem] space-y-4 group hover:border-primary/20 transition-all">
+                   <div className="h-12 w-12 bg-zinc-900 rounded-2xl flex items-center justify-center border border-zinc-800 group-hover:bg-primary/10 transition-all">
                       <val.icon className="h-6 w-6 text-primary" />
                    </div>
-                   <div className="space-y-2">
+                   <div className="space-y-1">
                       <h4 className="text-lg font-black">{val.title}</h4>
                       <p className="text-xs text-zinc-500 font-bold leading-relaxed">{val.desc}</p>
                    </div>
@@ -128,25 +93,14 @@ export default function AboutPage() {
            </div>
         </section>
 
-        <section className="space-y-8 bg-zinc-950/50 rounded-[3rem] p-8 border border-zinc-900 relative">
-           <div className="space-y-12 relative z-10">
-              <div className="space-y-4">
-                <h3 className="text-2xl font-black tracking-tight">{isRtl ? "البيان المؤسسي" : "Institutional Statement"}</h3>
-              </div>
-              <div className="grid gap-10">
-                {legalFramework.map((item, i) => (
-                  <div key={i} className="flex gap-6 items-start">
-                     <div className="h-10 w-10 bg-black rounded-2xl flex items-center justify-center border border-zinc-800 shrink-0">
-                        <item.icon className="h-5 w-5 text-primary" />
-                     </div>
-                     <div className="space-y-2">
-                        <h5 className="text-sm font-black text-zinc-200 uppercase tracking-wide">{item.title}</h5>
-                        <p className="text-xs text-zinc-500 leading-relaxed font-medium">{item.desc}</p>
-                     </div>
-                  </div>
-                ))}
-              </div>
-           </div>
+        <section className="p-8 bg-primary/5 rounded-[2.5rem] border border-primary/10 text-center space-y-4">
+           <Newspaper className="h-10 w-10 text-primary mx-auto opacity-50" />
+           <h3 className="text-xl font-black">{isRtl ? "رسالة القيادة" : "Leadership Message"}</h3>
+           <p className="text-xs text-zinc-400 leading-relaxed font-medium">
+             {isRtl 
+               ? "إن قلمك هو سلاحك في معركة الوعي العالمية. اجعل من مقالاتك جسراً يعبر به وطنك نحو آفاق السيادة والحرية. نحن هنا لنحمي كلمتك وننشر فكرك." 
+               : "Your pen is your weapon in the global battle of awareness. Make your articles a bridge for your nation."}
+           </p>
         </section>
       </main>
     </div>
