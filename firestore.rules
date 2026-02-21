@@ -37,7 +37,6 @@ service cloud.firestore {
 
     match /notifications/{notifId} {
       // السماح بالقراءة والقائمة إذا كان المستخدم هو صاحب التنبيه أو المدير العام
-      // تم تبسيطها لضمان عدم حدوث أخطاء الصلاحيات
       allow read, list: if isSignedIn() && (isDirector() || resource.data.userId == request.auth.uid);
       allow create: if isSignedIn();
       allow update, delete: if isSignedIn() && (isDirector() || resource.data.userId == request.auth.uid);
