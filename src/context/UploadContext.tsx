@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { createContext, useContext, useState } from "react";
@@ -10,19 +9,18 @@ import { useFirestore } from "@/firebase";
 interface UploadContextType {
   isUploading: boolean;
   progress: number;
-  startUpload: (data: any) => Promise<void>;
+  startUpload: (payload: any) => Promise<boolean>;
 }
 
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
-const compressImage = async (url: string): Promise<string> => {
+const compressImage = async (base64: string): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = url;
+    img.src = base64;
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 1080; 
+      const MAX_WIDTH = 1200;
       let width = img.width;
       let height = img.height;
 
@@ -35,13 +33,11 @@ const compressImage = async (url: string): Promise<string> => {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
       }
-      resolve(canvas.toDataURL('image/jpeg', 0.75));
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
     };
-    img.onerror = () => resolve(url);
+    img.onerror = () => resolve(base64);
   });
 };
 
@@ -54,11 +50,12 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
     const { content, localImages, videoUrl, authorInfo, isRtl, title, section, tags } = payload;
     
     setIsUploading(true);
-    setProgress(10); 
+    setProgress(5);
 
     try {
       let finalMediaUrls: string[] = [];
 
+      // رفع الصور
       if (localImages && localImages.length > 0) {
         for (let i = 0; i < localImages.length; i++) {
           const compressed = await compressImage(localImages[i]);
@@ -66,26 +63,22 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
           finalMediaUrls.push(uploadedUrl);
           setProgress(10 + ((i + 1) / localImages.length) * 70);
         }
-      } else if (videoUrl) {
-        const response = await fetch(videoUrl);
-        const blob = await response.blob();
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-        const finalVideoUrl = await uploadToCloudinary(base64, 'video');
-        finalMediaUrls.push(finalVideoUrl);
-        setProgress(85);
+      } 
+      // رفع الفيديو
+      else if (videoUrl) {
+        const uploadedUrl = await uploadToCloudinary(videoUrl, 'video');
+        finalMediaUrls.push(uploadedUrl);
+        setProgress(80);
       }
 
+      // حفظ المقال في Firestore
       await addDoc(collection(db, "articles"), {
-        title: title || (isRtl ? "مقال جديد" : "New Article"),
+        title: title || (isRtl ? "مقال سيادي" : "Sovereign Article"),
         content,
         section: section || "National",
         tags: tags || [],
         mediaUrls: finalMediaUrls,
-        mediaUrl: finalMediaUrls[0] || null, // Compatibility fallback
+        mediaUrl: finalMediaUrls[0] || null,
         authorId: authorInfo.uid,
         authorName: authorInfo.displayName,
         authorEmail: authorInfo.email,
@@ -95,17 +88,21 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
         commentsCount: 0,
         likedBy: [],
         savedBy: [],
+        priorityScore: authorInfo.isVerified ? 1000 : 0,
         createdAt: serverTimestamp(),
       });
 
+      // خصم النقاط
       const userRef = doc(db, "users", authorInfo.uid);
       await updateDoc(userRef, { points: increment(-20) });
 
       setProgress(100);
-      toast({ title: isRtl ? "تم النشر بنجاح" : "Article Published" });
+      toast({ title: isRtl ? "تم النشر بنجاح" : "Published Successfully" });
+      return true;
     } catch (error: any) {
       console.error("Upload Failure:", error);
       toast({ variant: "destructive", title: isRtl ? "فشل الرفع" : "Upload Failed" });
+      return false;
     } finally {
       setTimeout(() => {
         setIsUploading(false);

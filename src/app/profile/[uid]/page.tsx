@@ -14,7 +14,8 @@ import {
   Newspaper,
   Globe,
   MapPin,
-  Share2
+  Share2,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -255,7 +256,8 @@ export default function UserProfilePage() {
                   email: article.authorEmail
                 }} 
                 content={article.content} 
-                image={article.mediaUrl} 
+                image={article.mediaUrl}
+                mediaUrls={article.mediaUrls}
                 likes={article.likesCount || 0} 
                 commentsCount={article.commentsCount} 
                 likedBy={article.likedBy}
@@ -285,7 +287,8 @@ export default function UserProfilePage() {
                   email: article.authorEmail
                 }} 
                 content={article.content} 
-                image={article.mediaUrl} 
+                image={article.mediaUrl}
+                mediaUrls={article.mediaUrls}
                 likes={article.likesCount || 0} 
                 commentsCount={article.commentsCount}
                 likedBy={article.likedBy}

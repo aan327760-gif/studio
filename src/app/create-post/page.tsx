@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Newspaper, Loader2, Award, Type, Globe, Hash, Camera, Plus, Trash2 } from "lucide-react";
+import { X, Newspaper, Loader2, Award, Type, Globe, Camera, Plus, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -10,9 +9,9 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { toast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
-import { doc, collection, addDoc, serverTimestamp, increment, updateDoc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
-import { uploadToCloudinary } from "@/lib/cloudinary";
+import { useUpload } from "@/context/UploadContext";
 import { 
   Select,
   SelectContent,
@@ -29,13 +28,12 @@ const SECTIONS = [
   { id: "National", label: "National" },
 ];
 
-const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
-
 export default function CreateArticlePage() {
   const { isRtl } = useLanguage();
   const router = useRouter();
   const db = useFirestore();
   const { user } = useUser();
+  const { startUpload, isUploading } = useUpload();
 
   const userRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userRef);
@@ -43,87 +41,58 @@ export default function CreateArticlePage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [section, setSection] = useState("National");
-  const [tags, setTags] = useState("");
-  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [localImages, setLocalImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canPublish = (profile?.points || 0) >= 20;
 
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    if (mediaUrls.length >= 2) {
+    if (localImages.length >= 2) {
       toast({ variant: "destructive", title: isRtl ? "الحد الأقصى صورتان" : "Max 2 images" });
       return;
     }
 
-    setIsUploading(true);
-    try {
-      const file = files[0];
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64Data = event.target?.result as string;
-        const uploadedUrl = await uploadToCloudinary(base64Data, 'image');
-        setMediaUrls(prev => [...prev, uploadedUrl]);
-        toast({ title: isRtl ? "تم رفع الصورة بنجاح" : "Image uploaded successfully" });
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      toast({ variant: "destructive", title: isRtl ? "فشل الرفع" : "Upload Failed" });
-      setIsUploading(false);
-    }
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Data = event.target?.result as string;
+      setLocalImages(prev => [...prev, base64Data]);
+    };
+    reader.readAsDataURL(file);
+    // مسح القيمة للسماح باختيار نفس الصورة مرة أخرى إذا حذفت
+    e.target.value = "";
   };
 
   const removeImage = (index: number) => {
-    setMediaUrls(prev => prev.filter((_, i) => i !== index));
+    setLocalImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handlePublish = async () => {
-    if (!user || !profile) return;
-    if (!title.trim() || !content.trim()) return;
-    if (!canPublish) {
-      toast({ variant: "destructive", title: isRtl ? "نقاط غير كافية" : "Insufficient Points" });
+    if (!user || !profile || !canPublish) return;
+    if (!title.trim() || !content.trim()) {
+      toast({ variant: "destructive", title: isRtl ? "أكمل البيانات" : "Fill all fields" });
       return;
     }
 
-    setIsPublishing(true);
-    try {
-      const tagsArray = tags.split(' ').map(t => t.replace('#', '').trim()).filter(t => t.length > 0);
-      const isVerified = profile.isVerified || user.email === SUPER_ADMIN_EMAIL;
+    const success = await startUpload({
+      title,
+      content,
+      section,
+      localImages,
+      authorInfo: {
+        uid: user.uid,
+        displayName: profile.displayName,
+        email: user.email,
+        nationality: profile.nationality,
+        isVerified: profile.isVerified,
+      },
+      isRtl
+    });
 
-      const priorityScore = isVerified ? 1000 : 0;
-
-      await addDoc(collection(db, "articles"), {
-        title,
-        content,
-        section,
-        tags: tagsArray,
-        mediaUrls: mediaUrls, // مصفوفة الصور الجديدة
-        mediaUrl: mediaUrls[0] || null, // للتوافق مع الإصدارات القديمة
-        authorId: user.uid,
-        authorName: profile.displayName,
-        authorEmail: user.email,
-        authorNationality: profile.nationality,
-        authorIsVerified: isVerified,
-        likesCount: 0,
-        commentsCount: 0,
-        likedBy: [],
-        savedBy: [],
-        priorityScore: priorityScore,
-        createdAt: serverTimestamp()
-      });
-
-      await updateDoc(userRef!, { points: increment(-20) });
-
-      toast({ title: isRtl ? "تم نشر المقال القومي" : "Article Published" });
+    if (success) {
       router.push("/");
-    } catch (e) {
-      toast({ variant: "destructive", title: "Publish Error" });
-    } finally {
-      setIsPublishing(false);
     }
   };
 
@@ -140,10 +109,10 @@ export default function CreateArticlePage() {
         </div>
         <Button 
           onClick={handlePublish} 
-          disabled={isPublishing || isUploading || !title.trim() || !content.trim() || !canPublish} 
+          disabled={isUploading || !title.trim() || !content.trim() || !canPublish} 
           className="rounded-full px-8 font-black bg-white text-black hover:bg-zinc-200"
         >
-          {isPublishing ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Publish")}
+          {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRtl ? "نشر" : "Publish")}
         </Button>
       </header>
 
@@ -185,7 +154,7 @@ export default function CreateArticlePage() {
         <div className="space-y-4">
           <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "صور المقال (بحد أقصى 2)" : "Article Images (Max 2)"}</label>
           <div className="grid grid-cols-2 gap-4">
-            {mediaUrls.map((url, index) => (
+            {localImages.map((url, index) => (
               <div key={index} className="relative aspect-square rounded-2xl overflow-hidden border border-zinc-800 group">
                 <img src={url} alt="Preview" className="w-full h-full object-cover" />
                 <button 
@@ -196,12 +165,12 @@ export default function CreateArticlePage() {
                 </button>
               </div>
             ))}
-            {mediaUrls.length < 2 && (
+            {localImages.length < 2 && (
               <div 
                 className="aspect-square rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary/50 transition-all"
                 onClick={() => fileInputRef.current?.click()}
               >
-                {isUploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Plus className="h-6 w-6 text-zinc-600" />}
+                <Plus className="h-6 w-6 text-zinc-600" />
                 <span className="text-[8px] font-black text-zinc-600 uppercase">{isRtl ? "إضافة صورة" : "Add Image"}</span>
               </div>
             )}

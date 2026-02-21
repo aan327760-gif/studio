@@ -9,7 +9,8 @@ import {
   Globe, 
   ChevronLeft,
   ChevronRight,
-  Share2
+  Share2,
+  Sparkles
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -69,8 +70,7 @@ export function ArticleCard({
   const displayName = liveAuthor?.displayName || author.name;
   const isVerified = liveAuthor?.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
 
-  // دمج مصفوفة الصور لدعم الإصدار القديم والجديد
-  const allImages = mediaUrls.length > 0 ? mediaUrls : (image ? [image] : []);
+  const allImages = mediaUrls && mediaUrls.length > 0 ? mediaUrls : (image ? [image] : []);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -85,15 +85,13 @@ export function ArticleCard({
     if (isLiked) {
       updateDoc(articleRef, { 
         likesCount: increment(-1), 
-        likedBy: arrayRemove(user.uid),
-        priorityScore: increment(-10) 
+        likedBy: arrayRemove(user.uid)
       });
       updateDoc(authorDocRef, { points: increment(-2) });
     } else {
       updateDoc(articleRef, { 
         likesCount: increment(1), 
-        likedBy: arrayUnion(user.uid),
-        priorityScore: increment(10) 
+        likedBy: arrayUnion(user.uid)
       });
       updateDoc(authorDocRef, { points: increment(2) });
       
@@ -177,10 +175,10 @@ export function ArticleCard({
                 ))}
               </CarouselContent>
               <div className="absolute inset-y-0 left-2 flex items-center">
-                <CarouselPrevious className="h-8 w-8 bg-black/40 border-none text-white hover:bg-black/60" />
+                <CarouselPrevious className="h-8 w-8 bg-black/40 border-none text-white hover:bg-black/60 rounded-full" />
               </div>
               <div className="absolute inset-y-0 right-2 flex items-center">
-                <CarouselNext className="h-8 w-8 bg-black/40 border-none text-white hover:bg-black/60" />
+                <CarouselNext className="h-8 w-8 bg-black/40 border-none text-white hover:bg-black/60 rounded-full" />
               </div>
             </Carousel>
           ) : (

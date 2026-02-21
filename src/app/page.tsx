@@ -23,7 +23,7 @@ export default function Home() {
   const { data: profile } = useDoc<any>(userProfileRef);
 
   const articlesQuery = useMemoFirebase(() => {
-    return query(collection(db, "articles"), orderBy("priorityScore", "desc"), limit(50));
+    return query(collection(db, "articles"), orderBy("createdAt", "desc"), limit(50));
   }, [db]);
 
   const { data: articles, isLoading } = useCollection<any>(articlesQuery);
@@ -104,6 +104,7 @@ export default function Home() {
                 content={article.content}
                 section={article.section}
                 image={article.mediaUrl}
+                mediaUrls={article.mediaUrls}
                 likes={article.likesCount || 0}
                 comments={article.commentsCount || 0}
                 likedBy={article.likedBy}
