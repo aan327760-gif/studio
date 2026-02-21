@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { useLanguage } from "@/context/LanguageContext";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, limit } from "firebase/firestore";
-import { Bookmark, Loader2, Archive, Zap, ShieldCheck } from "lucide-react";
+import { Bookmark, Loader2, Archive } from "lucide-react";
 import { PostCard } from "@/components/feed/PostCard";
 
 export default function BookmarksPage() {
@@ -22,25 +22,14 @@ export default function BookmarksPage() {
     );
   }, [db, user]);
 
-  const { data: savedArticles = [], isLoading } = useCollection<any>(savedArticlesQuery);
+  const { data: savedArticles, isLoading } = useCollection<any>(savedArticlesQuery);
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
+    <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative border-x border-zinc-900">
       <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-6 py-5 border-b border-zinc-900 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-             <ShieldCheck className="h-5 w-5 text-primary" />
-          </div>
-          <h1 className="text-xl font-black tracking-tighter uppercase">
-            {isRtl ? "الأرشيف القومي" : "Intelligence Archive"}
-          </h1>
-        </div>
-        <div className="flex items-center gap-1">
-           <Zap className="h-3 w-3 text-zinc-600 fill-zinc-600" />
-           <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Sovereign Record</span>
-        </div>
+        <h1 className="text-xl font-black uppercase">{isRtl ? "الأرشيف" : "Archive"}</h1>
+        <Bookmark className="h-5 w-5 text-primary" />
       </header>
-
       <main className="flex-1 overflow-y-auto pb-32">
         {isLoading ? (
           <div className="flex justify-center py-40"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div>
@@ -50,13 +39,7 @@ export default function BookmarksPage() {
               <PostCard 
                 key={article.id} 
                 id={article.id} 
-                author={{
-                  name: article.authorName, 
-                  uid: article.authorId, 
-                  nationality: article.authorNationality,
-                  isVerified: article.authorIsVerified,
-                  email: article.authorEmail
-                }} 
+                author={{ name: article.authorName, uid: article.authorId }} 
                 content={article.content} 
                 image={article.mediaUrl} 
                 likes={article.likesCount || 0} 
@@ -68,16 +51,12 @@ export default function BookmarksPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-40 opacity-20 flex flex-col items-center gap-6 px-10">
+          <div className="text-center py-40 opacity-20 flex flex-col items-center gap-6">
             <Archive className="h-16 w-16" />
-            <div className="space-y-2">
-              <p className="text-sm font-black uppercase tracking-widest">{isRtl ? "الأرشيف فارغ" : "Archive Empty"}</p>
-              <p className="text-[10px] font-bold leading-relaxed">{isRtl ? "احفظ المقالات الهامة لتبني مرجعيتك الفكرية والسيادية." : "Save vital articles to build your intellectual and sovereign reference."}</p>
-            </div>
+            <p className="text-sm font-black uppercase">{isRtl ? "الأرشيف فارغ" : "Archive Empty"}</p>
           </div>
         )}
       </main>
-
       <AppSidebar />
     </div>
   );

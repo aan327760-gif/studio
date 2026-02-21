@@ -3,6 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     function isDirector() { 
       return isSignedIn() && (
         request.auth.token.email == "adelbenmaza3@gmail.com" || 
@@ -36,7 +37,6 @@ service cloud.firestore {
     }
 
     match /notifications/{notifId} {
-      // السماح بالقراءة والقائمة إذا كان المستخدم هو صاحب التنبيه أو المدير العام
       allow read, list: if isSignedIn() && (isDirector() || resource.data.userId == request.auth.uid);
       allow create: if isSignedIn();
       allow update, delete: if isSignedIn() && (isDirector() || resource.data.userId == request.auth.uid);
