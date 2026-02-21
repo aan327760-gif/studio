@@ -7,7 +7,7 @@ import { StoryBar } from "@/components/feed/StoryBar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Newspaper, Award, Loader2, TrendingUp, Sparkles, Megaphone, X } from "lucide-react";
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
-import { collection, query, orderBy, limit, doc, where } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, where, updateDoc } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -71,6 +71,11 @@ export default function Home() {
     }
   };
 
+  const markAsRead = async (notifId: string) => {
+    if (!db || !notifId) return;
+    await updateDoc(doc(db, "notifications", notifId), { read: true });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
       {showInstallOverlay && (
@@ -104,9 +109,7 @@ export default function Home() {
                 {latestBroadcast.message}
               </p>
            </div>
-           <Button variant="ghost" size="icon" className="h-6 w-6 text-white/50" onClick={() => {
-             // Logic to mark as read
-           }}><X className="h-3 w-3" /></Button>
+           <Button variant="ghost" size="icon" className="h-6 w-6 text-white/50" onClick={() => markAsRead(latestBroadcast.id)}><X className="h-3 w-3" /></Button>
         </div>
       )}
 

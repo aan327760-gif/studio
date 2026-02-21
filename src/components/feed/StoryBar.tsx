@@ -23,7 +23,8 @@ export function StoryBar() {
     );
   }, [db]);
 
-  const { data: stories, isLoading } = useCollection<any>(storiesQuery);
+  const { data: rawStories, isLoading } = useCollection<any>(storiesQuery);
+  const stories = rawStories || [];
 
   return (
     <div className="flex gap-5 overflow-x-auto no-scrollbar py-6 px-5 bg-black border-b border-zinc-900/50">
@@ -49,7 +50,7 @@ export function StoryBar() {
       {isLoading ? (
         <div className="flex items-center px-6"><Loader2 className="h-6 w-6 animate-spin text-zinc-800" /></div>
       ) : (
-        stories?.map((story) => (
+        stories.map((story) => (
           <Link key={story.id} href={`/story/${story.id}`} className="flex flex-col items-center gap-2.5 shrink-0 group">
             <div className="h-[70px] w-[70px] rounded-[2.2rem] p-[2.5px] bg-gradient-to-tr from-primary via-accent to-primary shadow-2xl relative">
               <div className="h-full w-full rounded-[2rem] bg-black p-0.5">
