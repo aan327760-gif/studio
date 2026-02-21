@@ -11,7 +11,9 @@ import {
   FileText, 
   CheckCircle2,
   PenTool,
-  Flag
+  Flag,
+  Zap,
+  Sparkles
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
@@ -66,6 +68,7 @@ export default function CommunityGuidelinesPage() {
 
       <main className="p-8 space-y-12">
         <section className="text-center space-y-6 py-10 bg-zinc-950 rounded-[2.5rem] border border-zinc-900 overflow-hidden relative">
+           <div className="absolute top-0 right-0 p-4 opacity-20"><Sparkles className="h-10 w-10 text-primary" /></div>
            <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto border border-primary/20">
               <Scale className="h-8 w-8 text-primary" />
            </div>

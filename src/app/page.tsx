@@ -5,9 +5,9 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ArticleCard } from "@/components/feed/ArticleCard";
 import { StoryBar } from "@/components/feed/StoryBar";
 import { useLanguage } from "@/context/LanguageContext";
-import { Newspaper, Award, Loader2, TrendingUp, Sparkles } from "lucide-react";
+import { Newspaper, Award, Loader2, TrendingUp, Sparkles, Megaphone, X } from "lucide-react";
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
-import { collection, query, orderBy, limit, doc } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, where } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -23,31 +23,39 @@ export default function Home() {
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userProfileRef);
 
-  // استعلام شامل لكافة المقالات بناءً على خوارزمية السيادة (بدون تصنيفات)
   const articlesQuery = useMemoFirebase(() => {
     return query(collection(db, "articles"), orderBy("priorityScore", "desc"), limit(50));
   }, [db]);
 
   const { data: articles, isLoading } = useCollection<any>(articlesQuery);
 
-  // منطق فرض التثبيت (PWA Mandatory)
+  // جلب آخر بيان رسمي للمدير العام
+  const broadcastQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(
+      collection(db, "notifications"), 
+      where("userId", "==", user.uid),
+      where("type", "==", "system"),
+      where("read", "==", false),
+      orderBy("createdAt", "desc"),
+      limit(1)
+    );
+  }, [db, user]);
+  const { data: broadcasts } = useCollection<any>(broadcastQuery);
+  const latestBroadcast = broadcasts?.[0];
+
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // إذا لم يكن التطبيق مثبتاً (في بيئة المتصفح)
       if (window.matchMedia('(display-mode: standalone)').matches === false) {
         setShowInstallOverlay(true);
       }
     };
-
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    
-    // التحقق إذا كان مفتوحاً بالفعل كـ PWA
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setShowInstallOverlay(false);
     }
-
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
@@ -60,14 +68,12 @@ export default function Home() {
         setShowInstallOverlay(false);
       }
     } else {
-      // إرشادات يدوية إذا لم يدعم المتصفح البروتوكول التلقائي فوراً
       alert(isRtl ? "يرجى الضغط على زر المشاركة في متصفحك واختيار 'إضافة إلى الصفحة الرئيسية'" : "Please tap the share button and select 'Add to Home Screen'");
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
-      {/* غطاء التثبيت الإجباري */}
       {showInstallOverlay && (
         <div className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
           <div className="w-24 h-24 rounded-[2.5rem] bg-primary flex items-center justify-center shadow-2xl rotate-3 mb-8">
@@ -88,6 +94,20 @@ export default function Home() {
             {isRtl ? "تثبيت الآن" : "Install Now"}
           </Button>
           <p className="mt-6 text-[10px] text-zinc-700 font-black uppercase tracking-widest">Sovereign OS v1.0</p>
+        </div>
+      )}
+
+      {latestBroadcast && (
+        <div className="bg-primary p-3 flex items-center justify-between animate-in slide-in-from-top duration-500 z-[60]">
+           <div className="flex items-center gap-3">
+              <Megaphone className="h-4 w-4 text-white animate-bounce" />
+              <p className="text-[10px] font-black uppercase tracking-tight text-white leading-none">
+                {latestBroadcast.message}
+              </p>
+           </div>
+           <Button variant="ghost" size="icon" className="h-6 w-6 text-white/50" onClick={() => {
+             // mark as read Logic could go here
+           }}><X className="h-3 w-3" /></Button>
         </div>
       )}
 

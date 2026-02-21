@@ -15,10 +15,11 @@
         "location": { "type": "string" },
         "photoURL": { "type": "string" },
         "bannerURL": { "type": "string" },
-        "role": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "moderator", "admin"] },
         "isVerified": { "type": "boolean" },
         "followersCount": { "type": "number" },
-        "followingCount": { "type": "number" }
+        "followingCount": { "type": "number" },
+        "lastTokenUpdate": { "type": "string" }
       },
       "required": ["uid", "email", "displayName"]
     },
@@ -38,22 +39,21 @@
         "authorIsVerified": { "type": "boolean" },
         "likesCount": { "type": "number" },
         "commentsCount": { "type": "number" },
-        "priorityScore": { "type": "number" }
+        "priorityScore": { "type": "number" },
+        "likedBy": { "type": "array", "items": { "type": "string" } },
+        "savedBy": { "type": "array", "items": { "type": "string" } }
       }
     },
-    "Story": {
-      "title": "Story",
+    "Notification": {
+      "title": "Notification",
       "type": "object",
-      "description": "قصة سيادية قصيرة (صورة أو فيديو 30 ثانية).",
       "properties": {
-        "id": { "type": "string" },
-        "authorId": { "type": "string" },
-        "authorName": { "type": "string" },
-        "authorAvatar": { "type": "string" },
-        "mediaUrl": { "type": "string" },
-        "mediaType": { "type": "string", "enum": ["image", "video"] },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "expiresAt": { "type": "string", "format": "date-time" }
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["like", "comment", "follow", "system"] },
+        "fromUserName": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -63,7 +63,8 @@
   "firestore": {
     "/users/{userId}": { "schema": "#/entities/User", "description": "ملفات المواطنين." },
     "/articles/{articleId}": { "schema": "#/entities/Article", "description": "أرشيف المقالات." },
-    "/stories/{storyId}": { "schema": "#/entities/Story", "description": "القصص اليومية (الستوري)." },
-    "/notifications/{notifId}": { "schema": "object", "description": "تنبيهات النظام والتفاعلات." }
+    "/stories/{storyId}": { "schema": "object", "description": "القصص اليومية." },
+    "/notifications/{notifId}": { "schema": "#/entities/Notification", "description": "تنبيهات النظام والتفاعلات." },
+    "/follows/{followId}": { "schema": "object", "description": "علاقات المتابعة السيادية." }
   }
 }

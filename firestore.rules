@@ -2,63 +2,43 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // وظائف السيادة الأساسية
     function isSignedIn() { return request.auth != null; }
+    function isDirector() { return request.auth.token.email == "adelbenmaza3@gmail.com"; }
     
-    // قواعد القراءة العامة لضمان عدم حدوث أخطاء Permission
     match /users/{userId} {
       allow read, list: if true;
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn(); 
+      allow update: if isSignedIn() && (request.auth.uid == userId || isDirector());
     }
 
     match /articles/{articleId} {
-      // القراءة متاحة للجميع (زوار ومواطنين) لضمان السيادة المعلوماتية
       allow read, list: if true;
       allow create: if isSignedIn();
-      // السماح بالتحديث للتفاعلات (لايك/تعليق)
       allow update: if isSignedIn(); 
-      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.auth.token.email == "adelbenmaza3@gmail.com");
+      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isDirector());
       
       match /comments/{commentId} {
         allow read, list: if true;
         allow create: if isSignedIn();
-        allow update: if isSignedIn() && (request.auth.uid == resource.data.authorId || request.auth.token.email == "adelbenmaza3@gmail.com");
-        allow delete: if isSignedIn() && (
-          request.auth.uid == resource.data.authorId || 
-          get(/databases/$(database)/documents/articles/$(articleId)).data.authorId == request.auth.uid ||
-          request.auth.token.email == "adelbenmaza3@gmail.com"
-        );
+        allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isDirector());
       }
     }
 
     match /stories/{storyId} {
       allow read, list: if true;
       allow create: if isSignedIn();
-      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.auth.token.email == "adelbenmaza3@gmail.com");
-    }
-
-    match /reports/{reportId} {
-      allow read, create, update: if isSignedIn();
+      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isDirector());
     }
 
     match /notifications/{notifId} {
-      // السماح بقراءة التنبيهات الخاصة
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isDirector());
     }
 
     match /follows/{followId} { 
       allow read, list: if true; 
       allow write: if isSignedIn(); 
-    }
-    
-    match /direct_conversations/{chatId} {
-      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && request.auth.uid in resource.data.participants;
-      match /messages/{msgId} { allow read, write: if isSignedIn(); }
     }
   }
 }
