@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Newspaper, Loader2, Award, Type, Globe, Hash, Camera } from "lucide-react";
+import { X, Newspaper, Loader2, Award, Type, Globe, Hash, Camera, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -44,7 +44,7 @@ export default function CreateArticlePage() {
   const [content, setContent] = useState("");
   const [section, setSection] = useState("National");
   const [tags, setTags] = useState("");
-  const [mediaUrl, setMediaUrl] = useState("");
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,16 +52,21 @@ export default function CreateArticlePage() {
   const canPublish = (profile?.points || 0) >= 20;
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (mediaUrls.length >= 2) {
+      toast({ variant: "destructive", title: isRtl ? "الحد الأقصى صورتان" : "Max 2 images" });
+      return;
+    }
 
     setIsUploading(true);
     try {
+      const file = files[0];
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64Data = event.target?.result as string;
         const uploadedUrl = await uploadToCloudinary(base64Data, 'image');
-        setMediaUrl(uploadedUrl);
+        setMediaUrls(prev => [...prev, uploadedUrl]);
         toast({ title: isRtl ? "تم رفع الصورة بنجاح" : "Image uploaded successfully" });
         setIsUploading(false);
       };
@@ -70,6 +75,10 @@ export default function CreateArticlePage() {
       toast({ variant: "destructive", title: isRtl ? "فشل الرفع" : "Upload Failed" });
       setIsUploading(false);
     }
+  };
+
+  const removeImage = (index: number) => {
+    setMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handlePublish = async () => {
@@ -85,7 +94,6 @@ export default function CreateArticlePage() {
       const tagsArray = tags.split(' ').map(t => t.replace('#', '').trim()).filter(t => t.length > 0);
       const isVerified = profile.isVerified || user.email === SUPER_ADMIN_EMAIL;
 
-      // حساب مجموع نقاط الأولوية الأولي (خوارزمية السيادة)
       const priorityScore = isVerified ? 1000 : 0;
 
       await addDoc(collection(db, "articles"), {
@@ -93,7 +101,8 @@ export default function CreateArticlePage() {
         content,
         section,
         tags: tagsArray,
-        mediaUrl: mediaUrl || null,
+        mediaUrls: mediaUrls, // مصفوفة الصور الجديدة
+        mediaUrl: mediaUrls[0] || null, // للتوافق مع الإصدارات القديمة
         authorId: user.uid,
         authorName: profile.displayName,
         authorEmail: user.email,
@@ -174,17 +183,35 @@ export default function CreateArticlePage() {
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-             <div className="h-8 w-8 rounded-lg bg-zinc-900 flex items-center justify-center border border-zinc-800">
-                <Hash className="h-4 w-4 text-zinc-500" />
-             </div>
-             <h2 className="text-sm font-black uppercase tracking-widest">{isRtl ? "الوسوم" : "Tags"}</h2>
+          <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "صور المقال (بحد أقصى 2)" : "Article Images (Max 2)"}</label>
+          <div className="grid grid-cols-2 gap-4">
+            {mediaUrls.map((url, index) => (
+              <div key={index} className="relative aspect-square rounded-2xl overflow-hidden border border-zinc-800 group">
+                <img src={url} alt="Preview" className="w-full h-full object-cover" />
+                <button 
+                  onClick={() => removeImage(index)}
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-4 w-4 text-white" />
+                </button>
+              </div>
+            ))}
+            {mediaUrls.length < 2 && (
+              <div 
+                className="aspect-square rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary/50 transition-all"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isUploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Plus className="h-6 w-6 text-zinc-600" />}
+                <span className="text-[8px] font-black text-zinc-600 uppercase">{isRtl ? "إضافة صورة" : "Add Image"}</span>
+              </div>
+            )}
           </div>
-          <Input 
-            placeholder={isRtl ? "مثال: الجزائر القوميون السيادة" : "e.g. Algeria Qaumiyun"}
-            className="bg-zinc-950 border-zinc-900 h-12 rounded-xl"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
+          <input 
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleImageSelect} 
           />
         </div>
 
@@ -199,39 +226,6 @@ export default function CreateArticlePage() {
                 {SECTIONS.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">{isRtl ? "صورة المقال" : "Article Image"}</label>
-            <div 
-              className="w-full aspect-video rounded-[2rem] border-2 border-dashed border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 transition-all overflow-hidden relative group shadow-inner"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {isUploading ? (
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              ) : mediaUrl ? (
-                <>
-                  <img src={mediaUrl} alt="Upload preview" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                    <Camera className="h-10 w-10 text-white" />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="h-16 w-16 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 group-hover:scale-110 transition-transform">
-                    <Camera className="h-8 w-8 text-zinc-500" />
-                  </div>
-                  <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">{isRtl ? "ارفع من هاتفك" : "Upload from phone"}</p>
-                </>
-              )}
-            </div>
-            <input 
-              type="file" 
-              accept="image/*" 
-              className="hidden" 
-              ref={fileInputRef} 
-              onChange={handleImageSelect} 
-            />
           </div>
         </div>
 

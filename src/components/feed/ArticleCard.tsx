@@ -7,8 +7,8 @@ import {
   ThumbsUp, 
   Bookmark, 
   Globe, 
-  ChevronDown,
-  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Share2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,6 +21,13 @@ import { doc, updateDoc, increment, arrayUnion, arrayRemove, collection, addDoc,
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { VerificationBadge } from "@/components/ui/verification-badge";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface ArticleCardProps {
   id: string;
@@ -30,6 +37,7 @@ interface ArticleCardProps {
   section: string;
   tags?: string[];
   image?: string;
+  mediaUrls?: string[];
   likes?: number;
   comments?: number;
   likedBy?: string[];
@@ -41,7 +49,7 @@ const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
 export function ArticleCard({ 
   id, author, title, content, section, 
-  tags = [], image, likes = 0, comments = 0, 
+  tags = [], image, mediaUrls = [], likes = 0, comments = 0, 
   likedBy = [], savedBy = [], time 
 }: ArticleCardProps) {
   const { isRtl } = useLanguage();
@@ -50,7 +58,6 @@ export function ArticleCard({
   const { user } = useUser();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // جلب بيانات الكاتب الحية لمزامنة الصورة والتوثيق والاسم فور تغييرهم
   const authorRef = useMemoFirebase(() => author.uid ? doc(db, "users", author.uid) : null, [db, author.uid]);
   const { data: liveAuthor } = useDoc<any>(authorRef);
 
@@ -61,6 +68,9 @@ export function ArticleCard({
   const displayAvatar = liveAuthor?.photoURL || author.photoURL;
   const displayName = liveAuthor?.displayName || author.name;
   const isVerified = liveAuthor?.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
+
+  // دمج مصفوفة الصور لدعم الإصدار القديم والجديد
+  const allImages = mediaUrls.length > 0 ? mediaUrls : (image ? [image] : []);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -153,10 +163,31 @@ export function ArticleCard({
         )}
       </div>
 
-      {image && (
-        <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-900 mb-4 bg-zinc-900 mt-4 shadow-2xl">
-          <img src={image} alt="Article" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      {allImages.length > 0 && (
+        <div className="mt-4" onClick={(e) => e.stopPropagation()}>
+          {allImages.length > 1 ? (
+            <Carousel className="w-full">
+              <CarouselContent>
+                {allImages.map((img, idx) => (
+                  <CarouselItem key={idx}>
+                    <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-900 shadow-2xl">
+                      <img src={img} alt={`Slide ${idx}`} className="w-full h-full object-cover" />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <div className="absolute inset-y-0 left-2 flex items-center">
+                <CarouselPrevious className="h-8 w-8 bg-black/40 border-none text-white hover:bg-black/60" />
+              </div>
+              <div className="absolute inset-y-0 right-2 flex items-center">
+                <CarouselNext className="h-8 w-8 bg-black/40 border-none text-white hover:bg-black/60" />
+              </div>
+            </Carousel>
+          ) : (
+            <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-900 shadow-2xl">
+              <img src={allImages[0]} alt="Article" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            </div>
+          )}
         </div>
       )}
 

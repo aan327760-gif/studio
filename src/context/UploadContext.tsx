@@ -57,13 +57,15 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
     setProgress(10); 
 
     try {
-      let finalMediaUrl: string | null = null;
+      let finalMediaUrls: string[] = [];
 
       if (localImages && localImages.length > 0) {
-        const compressed = await compressImage(localImages[0]);
-        setProgress(40);
-        finalMediaUrl = await uploadToCloudinary(compressed, 'image');
-        setProgress(80);
+        for (let i = 0; i < localImages.length; i++) {
+          const compressed = await compressImage(localImages[i]);
+          const uploadedUrl = await uploadToCloudinary(compressed, 'image');
+          finalMediaUrls.push(uploadedUrl);
+          setProgress(10 + ((i + 1) / localImages.length) * 70);
+        }
       } else if (videoUrl) {
         const response = await fetch(videoUrl);
         const blob = await response.blob();
@@ -72,17 +74,18 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
-        finalMediaUrl = await uploadToCloudinary(base64, 'video');
+        const finalVideoUrl = await uploadToCloudinary(base64, 'video');
+        finalMediaUrls.push(finalVideoUrl);
         setProgress(85);
       }
 
-      // تصحيح: الرفع لمجموعة articles المعتمدة
       await addDoc(collection(db, "articles"), {
         title: title || (isRtl ? "مقال جديد" : "New Article"),
         content,
         section: section || "National",
         tags: tags || [],
-        mediaUrl: finalMediaUrl,
+        mediaUrls: finalMediaUrls,
+        mediaUrl: finalMediaUrls[0] || null, // Compatibility fallback
         authorId: authorInfo.uid,
         authorName: authorInfo.displayName,
         authorEmail: authorInfo.email,
@@ -95,7 +98,6 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
         createdAt: serverTimestamp(),
       });
 
-      // خصم نقاط النشر
       const userRef = doc(db, "users", authorInfo.uid);
       await updateDoc(userRef, { points: increment(-20) });
 

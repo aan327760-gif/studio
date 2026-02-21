@@ -9,7 +9,9 @@ import {
   Bookmark,
   Send,
   ThumbsUp,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { VerificationBadge } from "@/components/ui/verification-badge";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
@@ -51,6 +60,7 @@ interface PostCardProps {
   author: any;
   content: string;
   image?: string;
+  mediaUrls?: string[];
   likes?: number;
   likedBy?: string[];
   savedBy?: string[];
@@ -60,7 +70,7 @@ interface PostCardProps {
 }
 
 export const PostCard = memo(({ 
-  id, author, content, image, 
+  id, author, content, image, mediaUrls = [],
   likes = 0, likedBy = [], savedBy = [], 
   commentsCount = 0,
   time, tags = []
@@ -93,6 +103,8 @@ export const PostCard = memo(({
   const displayAvatar = liveAuthor?.photoURL || author?.photoURL;
   const displayName = liveAuthor?.displayName || author?.name;
   const isVerified = liveAuthor?.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
+
+  const allImages = mediaUrls.length > 0 ? mediaUrls : (image ? [image] : []);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -219,9 +231,31 @@ export const PostCard = memo(({
           )}
         </div>
 
-        {image && (
-          <div className="w-full bg-zinc-950 flex justify-center border-y border-zinc-900/50 mt-4">
-            <img src={image} alt="Article Media" className="w-full h-auto max-h-[80vh] object-contain" />
+        {allImages.length > 0 && (
+          <div className="w-full bg-zinc-950 border-y border-zinc-900/50 mt-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {allImages.length > 1 ? (
+              <Carousel className="w-full">
+                <CarouselContent>
+                  {allImages.map((img, idx) => (
+                    <CarouselItem key={idx}>
+                      <div className="flex justify-center bg-zinc-900">
+                        <img src={img} alt={`Slide ${idx}`} className="w-full h-auto max-h-[80vh] object-contain" />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <div className="absolute inset-y-0 left-2 flex items-center">
+                  <CarouselPrevious className="h-10 w-10 bg-black/40 border-none" />
+                </div>
+                <div className="absolute inset-y-0 right-2 flex items-center">
+                  <CarouselNext className="h-10 w-10 bg-black/40 border-none" />
+                </div>
+              </Carousel>
+            ) : (
+              <div className="flex justify-center">
+                <img src={allImages[0]} alt="Article Media" className="w-full h-auto max-h-[80vh] object-contain" />
+              </div>
+            )}
           </div>
         )}
 
