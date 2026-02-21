@@ -8,10 +8,8 @@ import {
   collection, 
   query, 
   limit, 
-  deleteDoc, 
   doc, 
   updateDoc, 
-  where,
   serverTimestamp,
   writeBatch
 } from "firebase/firestore";
@@ -21,12 +19,8 @@ import {
   Search,
   ShieldAlert,
   ShieldCheck,
-  CheckCircle,
   Megaphone,
-  UserCog,
-  Trash2,
-  Flag,
-  Sparkles
+  UserCog
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -41,6 +35,7 @@ import { Card } from "@/components/ui/card";
 import { VerificationBadge } from "@/components/ui/verification-badge";
 
 const SUPER_ADMIN_EMAIL = "adelbenmaza3@gmail.com";
+const SUPER_ADMIN_UID = "Q6viqCxCS8MWfCsCC3sgm9Jk34i2";
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -52,7 +47,7 @@ export default function AdminDashboard() {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
-  const isSuper = user?.email === SUPER_ADMIN_EMAIL;
+  const isSuper = user?.email === SUPER_ADMIN_EMAIL || user?.uid === SUPER_ADMIN_UID;
 
   useEffect(() => {
     if (!isUserLoading && !isSuper) {
@@ -80,7 +75,7 @@ export default function AdminDashboard() {
         });
       });
       await batch.commit();
-      toast({ title: isRtl ? "تم بث البيان الرسمي" : "Official Proclamation Broadcasted" });
+      toast({ title: isRtl ? "تم بث البيان الرسمي" : "Official Broadcast Executed" });
       setBroadcastMessage("");
     } catch (error) {
       toast({ variant: "destructive", title: "Broadcast Failed" });
@@ -91,15 +86,23 @@ export default function AdminDashboard() {
 
   const toggleVerification = async (targetUserId: string, currentStatus: boolean) => {
     if (!isSuper) return;
-    await updateDoc(doc(db, "users", targetUserId), { isVerified: !currentStatus });
-    toast({ title: isRtl ? "تم تحديث حالة التوثيق" : "Verification Status Updated" });
+    try {
+      await updateDoc(doc(db, "users", targetUserId), { isVerified: !currentStatus });
+      toast({ title: isRtl ? "تم تحديث حالة التوثيق" : "Verification Status Updated" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Action Failed" });
+    }
   };
 
   const toggleModerator = async (targetUserId: string, currentRole: string) => {
     if (!isSuper) return;
     const newRole = currentRole === 'moderator' ? 'user' : 'moderator';
-    await updateDoc(doc(db, "users", targetUserId), { role: newRole });
-    toast({ title: isRtl ? "تم تحديث الرتبة الإدارية" : "Role Updated" });
+    try {
+      await updateDoc(doc(db, "users", targetUserId), { role: newRole });
+      toast({ title: isRtl ? "تم تحديث الرتبة الإدارية" : "Role Updated" });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Action Failed" });
+    }
   };
 
   if (isUserLoading) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;

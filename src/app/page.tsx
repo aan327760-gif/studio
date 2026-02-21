@@ -5,12 +5,11 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ArticleCard } from "@/components/feed/ArticleCard";
 import { StoryBar } from "@/components/feed/StoryBar";
 import { useLanguage } from "@/context/LanguageContext";
-import { Newspaper, Award, Loader2, TrendingUp, Sparkles, Megaphone, X } from "lucide-react";
+import { Award, Loader2, Sparkles } from "lucide-react";
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
-import { collection, query, orderBy, limit, doc, where, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -33,7 +32,7 @@ export default function Home() {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      if (window.matchMedia('(display-mode: standalone)').matches === false) {
+      if (typeof window !== "undefined" && window.matchMedia('(display-mode: standalone)').matches === false) {
         setShowInstallOverlay(true);
       }
     };

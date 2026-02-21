@@ -9,10 +9,7 @@ import {
   Bookmark,
   Send,
   ThumbsUp,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Clock
+  Loader2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -91,7 +88,7 @@ export const PostCard = memo(({
   const isSaved = user ? (savedBy || []).includes(user.uid) : false;
   const isSuper = user?.email === SUPER_ADMIN_EMAIL;
   const isOwner = user?.uid === authorId;
-  const isLong = content.length > 200;
+  const isLong = content?.length > 200;
 
   const displayAvatar = liveAuthor?.photoURL || author?.photoURL;
   const displayName = liveAuthor?.displayName || author?.name;
