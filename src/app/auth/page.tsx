@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, query, collection, where, getDocs, limit, updateDoc, increment } from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
@@ -27,9 +27,10 @@ const COUNTRIES = [
 
 const ADMIN_EMAIL = "adelbenmaza3@gmail.com";
 
-export default function AuthPage() {
+function AuthForm() {
   const { isRtl } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const auth = useAuth();
   const db = useFirestore();
 
@@ -41,6 +42,8 @@ export default function AuthPage() {
     displayName: "",
     nationality: "Algeria"
   });
+
+  const referralCode = searchParams.get("ref");
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +66,6 @@ export default function AuthPage() {
           email: user.email,
           displayName: formData.displayName,
           nationality: formData.nationality,
-          // المدير العام يحصل على 1000 نقطة سيادية، المواطن العادي 100
           points: isSuperAdmin ? 1000 : 100, 
           photoURL: `https://picsum.photos/seed/${user.uid}/200/200`,
           createdAt: serverTimestamp(),
@@ -74,6 +76,26 @@ export default function AuthPage() {
         };
 
         await setDoc(doc(db, "users", user.uid), userProfileData);
+
+        // بروتوكول الإحالة: منح 20 نقطة للمحيل
+        if (referralCode && referralCode !== user.uid) {
+          try {
+            const referrerRef = doc(db, "users", referralCode);
+            await updateDoc(referrerRef, { points: increment(20) });
+            
+            // إخطار المحيل
+            await addDoc(collection(db, "notifications"), {
+              userId: referralCode,
+              type: "system",
+              fromUserName: "Sovereign System",
+              message: isRtl ? "لقد حصلت على 20 نقطة بسبب إحالة مواطن جديد!" : "You earned 20 points for referring a new citizen!",
+              read: false,
+              createdAt: serverTimestamp()
+            });
+          } catch (refErr) {
+            console.error("Referral award failed", refErr);
+          }
+        }
 
         // بروتوكول الولاء التلقائي: متابعة حساب المدير العام فوراً
         try {
@@ -115,64 +137,72 @@ export default function AuthPage() {
   };
 
   return (
+    <Card className="w-full max-w-md bg-zinc-950 border-zinc-900 text-white shadow-2xl rounded-[3rem] overflow-hidden">
+      <CardHeader className="text-center py-10">
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center rotate-3 shadow-xl">
+            <span className="text-white font-black text-3xl italic">ق</span>
+          </div>
+        </div>
+        <CardTitle className="text-3xl font-black tracking-tighter">
+          {isLogin ? (isRtl ? "دخول القوميين" : "Editor Login") : (isRtl ? "انضم للقوميين" : "Join Al-Qaumiyun")}
+        </CardTitle>
+        <CardDescription className="text-zinc-500 font-medium">
+          {isRtl ? "الجريدة العالمية بلسان الشعوب" : "Global newspaper by the people"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-8">
+        <form onSubmit={handleAuth} className="space-y-5">
+          {!isLogin && (
+            <>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "الاسم" : "Name"}</Label>
+                <Input placeholder="John Doe" className="bg-zinc-900 border-none h-12 rounded-2xl" value={formData.displayName} onChange={(e) => setFormData({...formData, displayName: e.target.value})} required />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "الوطن" : "Nation"}</Label>
+                <Select value={formData.nationality} onValueChange={(v) => setFormData({...formData, nationality: v})}>
+                  <SelectTrigger className="bg-zinc-900 border-none h-12 rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
+                    {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+          <div className="space-y-2">
+            <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">Email</Label>
+            <Input type="email" placeholder="name@example.com" className="bg-zinc-900 border-none h-12 rounded-2xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">Password</Label>
+            <Input type="password" placeholder="••••••••" className="bg-zinc-900 border-none h-12 rounded-2xl" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required />
+          </div>
+          <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 font-black h-14 rounded-2xl mt-4" disabled={loading}>
+            {loading ? <Loader2 className="animate-spin h-5 w-5" /> : (isLogin ? (isRtl ? "دخول" : "Sign In") : (isRtl ? "إنشاء حساب" : "Join Now"))}
+          </Button>
+        </form>
+      </CardContent>
+      <CardFooter className="flex flex-col space-y-6 pb-10">
+        <div className="text-center text-xs font-bold text-zinc-600">
+          {isLogin ? (isRtl ? "ليس لديك حساب؟" : "New writer?") : (isRtl ? "لديك حساب بالفعل؟" : "Already registered?")}{" "}
+          <button onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline ml-1">
+            {isLogin ? (isRtl ? "سجل الآن" : "Register") : (isRtl ? "دخول" : "Login")}
+          </button>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+export default function AuthPage() {
+  return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-zinc-950 border-zinc-900 text-white shadow-2xl rounded-[3rem] overflow-hidden">
-        <CardHeader className="text-center py-10">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center rotate-3 shadow-xl">
-              <span className="text-white font-black text-3xl italic">ق</span>
-            </div>
-          </div>
-          <CardTitle className="text-3xl font-black tracking-tighter">
-            {isLogin ? (isRtl ? "دخول القوميين" : "Editor Login") : (isRtl ? "انضم للقوميين" : "Join Al-Qaumiyun")}
-          </CardTitle>
-          <CardDescription className="text-zinc-500 font-medium">
-            {isRtl ? "الجريدة العالمية بلسان الشعوب" : "Global newspaper by the people"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-8">
-          <form onSubmit={handleAuth} className="space-y-5">
-            {!isLogin && (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "الاسم" : "Name"}</Label>
-                  <Input placeholder="John Doe" className="bg-zinc-900 border-none h-12 rounded-2xl" value={formData.displayName} onChange={(e) => setFormData({...formData, displayName: e.target.value})} required />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">{isRtl ? "الوطن" : "Nation"}</Label>
-                  <Select value={formData.nationality} onValueChange={(v) => setFormData({...formData, nationality: v})}>
-                    <SelectTrigger className="bg-zinc-900 border-none h-12 rounded-2xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-zinc-950 border-zinc-800 text-white">
-                      {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">Email</Label>
-              <Input type="email" placeholder="name@example.com" className="bg-zinc-900 border-none h-12 rounded-2xl" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-black tracking-widest text-zinc-500 px-1">Password</Label>
-              <Input type="password" placeholder="••••••••" className="bg-zinc-900 border-none h-12 rounded-2xl" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required />
-            </div>
-            <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 font-black h-14 rounded-2xl mt-4" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin h-5 w-5" /> : (isLogin ? (isRtl ? "دخول" : "Sign In") : (isRtl ? "إنشاء حساب" : "Join Now"))}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-6 pb-10">
-          <div className="text-center text-xs font-bold text-zinc-600">
-            {isLogin ? (isRtl ? "ليس لديك حساب؟" : "New writer?") : (isRtl ? "لديك حساب بالفعل؟" : "Already registered?")}{" "}
-            <button onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline ml-1">
-              {isLogin ? (isRtl ? "سجل الآن" : "Register") : (isRtl ? "دخول" : "Login")}
-            </button>
-          </div>
-        </CardFooter>
-      </Card>
+      <Suspense fallback={<Loader2 className="animate-spin h-10 w-10 text-primary" />}>
+        <AuthForm />
+      </Suspense>
     </div>
   );
 }

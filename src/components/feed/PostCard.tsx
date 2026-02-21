@@ -81,8 +81,8 @@ export const PostCard = memo(({
     if (!id) return null;
     return query(collection(db, "articles", id, "comments"), orderBy("createdAt", "asc"));
   }, [db, id]);
-  const { data: commentsResult, isLoading: commentsLoading } = useCollection<any>(commentsQuery);
-  const comments = commentsResult || [];
+  const { data: rawComments, isLoading: commentsLoading } = useCollection<any>(commentsQuery);
+  const comments = rawComments || [];
 
   const isLiked = user ? (likedBy || []).includes(user.uid) : false;
   const isSaved = user ? (savedBy || []).includes(user.uid) : false;

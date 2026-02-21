@@ -12,9 +12,9 @@ import {
   Bookmark,
   Heart,
   Newspaper,
-  Award,
   Globe,
-  MapPin
+  MapPin,
+  Share2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -66,15 +66,35 @@ export default function UserProfilePage() {
   const likedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("likedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
   const { data: likedArticles, isLoading: likesLoading } = useCollection<any>(likedArticlesQuery);
 
-  const savedArticlesQuery = useMemoFirebase(() => uid ? query(collection(db, "articles"), where("savedBy", "array-contains", uid), limit(30)) : null, [db, uid]);
-  const { data: savedArticles, isLoading: savesLoading } = useCollection<any>(savedArticlesQuery);
-
   const userRank = useMemo(() => {
     const points = profile?.points || 0;
     if (points >= 500) return { label: isRtl ? "متميز" : "Distinguished", color: "text-orange-500 bg-orange-500/10 border-orange-500/20" };
     if (points >= 200) return { label: isRtl ? "نشط" : "Active", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" };
     return { label: isRtl ? "مبتدئ" : "Beginner", color: "text-zinc-500 bg-zinc-500/10 border-zinc-500/20" };
   }, [profile?.points, isRtl]);
+
+  const handleShare = async () => {
+    if (!profile) return;
+    const shareUrl = `${window.location.origin}/auth?ref=${profile.uid}`;
+    const shareText = isRtl 
+      ? `انضم إليّ في جريدة القوميون، المنصة الإعلامية السيادية. سجل من هنا لتحصل على نقاط ترحيبية:` 
+      : `Join me on Al-Qaumiyun, the sovereign media platform. Register here to get welcome points:`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'جريدة القوميون',
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (err) {
+        console.error("Share failed", err);
+      }
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      toast({ title: isRtl ? "تم نسخ رابط الإحالة" : "Referral link copied" });
+    }
+  };
 
   const handleFollow = async () => {
     if (!currentUser || !uid || isOwnProfile || !followRef) return;
@@ -115,6 +135,11 @@ export default function UserProfilePage() {
             <ArrowLeft className={cn("h-5 w-5", isRtl ? "rotate-180" : "")} />
           </Button>
           <div className="flex gap-2">
+            {isOwnProfile && (
+              <Button variant="ghost" size="icon" className="rounded-full bg-primary/20 backdrop-blur-md text-primary" onClick={handleShare}>
+                <Share2 className="h-5 w-5" />
+              </Button>
+            )}
             {isOwnProfile && isSuper && (
               <Button variant="ghost" size="icon" className="rounded-full bg-primary/20 backdrop-blur-md text-primary" onClick={() => router.push('/admin')}>
                 <ShieldCheck className="h-5 w-5" />
@@ -277,33 +302,10 @@ export default function UserProfilePage() {
         </TabsContent>
 
         <TabsContent value="archive" className="m-0">
-          {savesLoading ? <div className="p-20 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary opacity-30" /></div> :
-            (savedArticles && savedArticles.length > 0) ? savedArticles.map((article: any) => (
-              <PostCard 
-                key={article.id} 
-                id={article.id} 
-                author={{
-                  name: article.authorName, 
-                  uid: article.authorId, 
-                  nationality: article.authorNationality,
-                  isVerified: article.authorIsVerified,
-                  email: article.authorEmail
-                }} 
-                content={article.content} 
-                image={article.mediaUrl} 
-                likes={article.likesCount || 0} 
-                commentsCount={article.commentsCount}
-                likedBy={article.likedBy}
-                savedBy={article.savedBy}
-                tags={article.tags}
-                time={article.createdAt?.toDate ? article.createdAt.toDate().toLocaleDateString() : ""} 
-              />
-            )) : (
-              <div className="py-24 text-center opacity-20 flex flex-col items-center gap-4">
-                 <Bookmark className="h-12 w-12" />
-                 <p className="text-xs font-black uppercase">{isRtl ? "الأرشيف فارغ" : "Archive is empty"}</p>
-              </div>
-            )}
+          <div className="py-24 text-center opacity-20 flex flex-col items-center gap-4">
+             <Bookmark className="h-12 w-12" />
+             <p className="text-xs font-black uppercase">{isRtl ? "الأرشيف فارغ" : "Archive is empty"}</p>
+          </div>
         </TabsContent>
       </Tabs>
 

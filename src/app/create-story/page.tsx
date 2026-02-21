@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Camera, Loader2, CheckCircle2, Award, Sparkles, AlertTriangle } from "lucide-react";
+import { X, Camera, Loader2, Award, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
