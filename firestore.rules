@@ -3,7 +3,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
-    function isDirector() { return request.auth.token.email == "adelbenmaza3@gmail.com"; }
+    function isDirector() { 
+      return isSignedIn() && (
+        request.auth.token.email == "adelbenmaza3@gmail.com" || 
+        request.auth.uid == "Q6viqCxCS8MWfCsCC3sgm9Jk34i2"
+      ); 
+    }
     
     match /users/{userId} {
       allow read, list: if true;
@@ -31,7 +36,7 @@ service cloud.firestore {
     }
 
     match /notifications/{notifId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isDirector());
       allow create: if isSignedIn();
       allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isDirector());
     }
