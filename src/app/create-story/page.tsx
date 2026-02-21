@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Camera, Loader2, CheckCircle2, Award, Sparkles } from "lucide-react";
+import { X, Camera, Loader2, CheckCircle2, Award, Sparkles, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
@@ -10,8 +10,6 @@ import { toast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, doc, Timestamp, increment, updateDoc } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
 
 export default function CreateStoryPage() {
   const { isRtl } = useLanguage();

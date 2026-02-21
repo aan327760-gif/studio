@@ -61,7 +61,8 @@ export default function AuthPage() {
           email: user.email,
           displayName: formData.displayName,
           nationality: formData.nationality,
-          points: 100, // Starting bonus
+          // المدير العام يحصل على 1000 نقطة سيادية، المواطن العادي 100
+          points: formData.email === ADMIN_EMAIL ? 1000 : 100, 
           photoURL: `https://picsum.photos/seed/${user.uid}/200/200`,
           createdAt: serverTimestamp(),
           followersCount: 0,
@@ -98,7 +99,9 @@ export default function AuthPage() {
 
         toast({ 
           title: isRtl ? "تم التسجيل بنجاح" : "Registered Successfully", 
-          description: isRtl ? "حصلت على 100 نقطة هدية للبدء في النشر." : "You received 100 points gift." 
+          description: formData.email === ADMIN_EMAIL 
+            ? (isRtl ? "تم منحك 1000 نقطة سيادية." : "You received 1000 sovereign points.")
+            : (isRtl ? "حصلت على 100 نقطة هدية للبدء." : "You received 100 points gift.") 
         });
       }
       router.push("/");

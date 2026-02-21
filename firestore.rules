@@ -13,7 +13,7 @@ service cloud.firestore {
     }
 
     match /articles/{articleId} {
-      // القراءة متاحة للجميع (زوار ومواطنين)
+      // القراءة متاحة للجميع (زوار ومواطنين) لضمان السيادة المعلوماتية
       allow read, list: if true;
       allow create: if isSignedIn();
       // السماح بالتحديث للتفاعلات (لايك/تعليق)
@@ -43,6 +43,7 @@ service cloud.firestore {
     }
 
     match /notifications/{notifId} {
+      // السماح بقراءة التنبيهات الخاصة
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
