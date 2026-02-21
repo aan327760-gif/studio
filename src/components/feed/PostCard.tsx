@@ -105,7 +105,7 @@ export const PostCard = memo(({
   const displayName = liveAuthor?.displayName || author?.name;
   const isVerified = liveAuthor?.isVerified || (liveAuthor?.email === SUPER_ADMIN_EMAIL);
 
-  const allImages = mediaUrls.length > 0 ? mediaUrls : (image ? [image] : []);
+  const allImages = (mediaUrls && mediaUrls.length > 0) ? mediaUrls : (image ? [image] : []);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();

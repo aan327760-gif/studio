@@ -1,4 +1,11 @@
 
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "og-preview",
+      "description": "Official Al-Qaumiyun Social Media Preview Card",
+      "imageUrl": "https://picsum.photos/seed/qaumiyun-sovereign-og/1200/630",
+      "imageHint": "nationalism sovereignty"
+    }
+  ]
 }
