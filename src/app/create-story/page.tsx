@@ -140,7 +140,7 @@ export default function CreateStoryPage() {
                  <Loader2 className="h-16 w-16 animate-spin text-primary opacity-40" />
                  <Sparkles className="h-6 w-6 text-primary absolute inset-0 m-auto animate-pulse" />
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 animate-pulse">Processing</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 animate-pulse">Authenticating Media</p>
             </div>
           ) : mediaUrl ? (
             <div className="w-full h-full relative">

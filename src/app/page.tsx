@@ -29,7 +29,6 @@ export default function Home() {
 
   const { data: articles, isLoading } = useCollection<any>(articlesQuery);
 
-  // جلب آخر بيان رسمي للمدير العام
   const broadcastQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(
@@ -106,7 +105,7 @@ export default function Home() {
               </p>
            </div>
            <Button variant="ghost" size="icon" className="h-6 w-6 text-white/50" onClick={() => {
-             // mark as read Logic could go here
+             // Logic to mark as read
            }}><X className="h-3 w-3" /></Button>
         </div>
       )}
