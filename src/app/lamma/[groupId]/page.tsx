@@ -8,7 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, ArrowLeft, Loader2, Ban, ShieldCheck, UserPlus } from "lucide-react";
+import { Send, ArrowLeft, Loader2, ShieldCheck, UserPlus } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useCollection, useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, doc, updateDoc, arrayUnion, increment } from "firebase/firestore";
@@ -25,7 +25,7 @@ export default function ChatGroupPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const groupRef = useMemoFirebase(() => groupId ? doc(db, "groups", groupId as string) : null, [db, groupId]);
-  const { data: group, loading: groupLoading } = useDoc<any>(groupRef);
+  const { data: group, isLoading: groupLoading } = useDoc<any>(groupRef);
 
   const isMember = group?.members?.includes(user?.uid);
 
@@ -42,7 +42,8 @@ export default function ChatGroupPage() {
     );
   }, [db, groupId, isMember]);
 
-  const { data: messages = [], loading: messagesLoading } = useCollection<any>(messagesQuery);
+  const { data: rawMessages, isLoading: messagesLoading } = useCollection<any>(messagesQuery);
+  const messages = rawMessages || [];
 
   useEffect(() => {
     if (scrollRef.current) {

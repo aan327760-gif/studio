@@ -46,7 +46,8 @@ export default function LammaPage() {
     return query(collection(db, "follows"), where("followingId", "==", user.uid), limit(50));
   }, [db, user]);
   
-  const { data: followDocs = [] } = useCollection<any>(followersQuery);
+  const { data: rawFollowDocs, isLoading: followersLoading } = useCollection<any>(followersQuery);
+  const followDocs = rawFollowDocs || [];
 
   useEffect(() => {
     const fetchFollowerDetails = async () => {
@@ -79,15 +80,18 @@ export default function LammaPage() {
     if (!user) return null;
     return query(collection(db, "groups"), where("members", "array-contains", user.uid));
   }, [db, user]);
-  const { data: myGroups = [], loading: myGroupsLoading } = useCollection<any>(myGroupsQuery);
+  const { data: rawMyGroups, isLoading: myGroupsLoading } = useCollection<any>(myGroupsQuery);
+  const myGroups = rawMyGroups || [];
 
   // جلب المجموعات العامة للاكتشاف
   const discoverGroupsQuery = useMemoFirebase(() => {
     return query(collection(db, "groups"), where("isPrivate", "==", false), limit(20));
   }, [db]);
-  const { data: publicGroups = [], loading: discoverLoading } = useCollection<any>(discoverGroupsQuery);
+  const { data: rawPublicGroups, isLoading: discoverLoading } = useCollection<any>(discoverGroupsQuery);
+  const publicGroups = rawPublicGroups || [];
 
   const filteredMyGroups = useMemo(() => {
+    if (!myGroups) return [];
     if (!searchQuery.trim()) return myGroups;
     return myGroups.filter(g => g.name?.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [myGroups, searchQuery]);
