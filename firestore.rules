@@ -47,14 +47,5 @@ service cloud.firestore {
       allow read, list: if true; 
       allow write: if isSignedIn(); 
     }
-
-    match /direct_conversations/{chatId} {
-      allow read, write: if isSignedIn() && (request.auth.uid in resource.data.participants || isDirector());
-      allow create: if isSignedIn();
-      
-      match /messages/{msgId} {
-        allow read, write: if isSignedIn();
-      }
-    }
   }
 }

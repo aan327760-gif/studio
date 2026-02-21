@@ -64,7 +64,7 @@ export function ArticleCard({
 
   const isLiked = user ? (likedBy || []).includes(user.uid) : false;
   const isSaved = user ? (savedBy || []).includes(user.uid) : false;
-  const isLong = content.length > 180;
+  const isLong = content?.length > 180;
 
   const displayAvatar = liveAuthor?.photoURL || author.photoURL;
   const displayName = liveAuthor?.displayName || author.name;

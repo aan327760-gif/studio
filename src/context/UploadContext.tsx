@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState } from "react";
@@ -47,68 +48,64 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
   const db = useFirestore();
 
   const startUpload = async (payload: any) => {
-    const { content, localImages, videoUrl, authorInfo, isRtl, title, section, tags } = payload;
+    const { content, localImages, authorInfo, isRtl, title, section, tags } = payload;
     
+    // بدء الرفع في الخلفية
     setIsUploading(true);
     setProgress(5);
 
-    try {
-      let finalMediaUrls: string[] = [];
+    // تنفيذ الرفع الفعلي بشكل غير متزامن للسماح بالتصفح
+    const executeUpload = async () => {
+      try {
+        let finalMediaUrls: string[] = [];
 
-      // رفع الصور
-      if (localImages && localImages.length > 0) {
-        for (let i = 0; i < localImages.length; i++) {
-          const compressed = await compressImage(localImages[i]);
-          const uploadedUrl = await uploadToCloudinary(compressed, 'image');
-          finalMediaUrls.push(uploadedUrl);
-          setProgress(10 + ((i + 1) / localImages.length) * 70);
+        if (localImages && localImages.length > 0) {
+          for (let i = 0; i < localImages.length; i++) {
+            const compressed = await compressImage(localImages[i]);
+            const uploadedUrl = await uploadToCloudinary(compressed, 'image');
+            finalMediaUrls.push(uploadedUrl);
+            setProgress(10 + ((i + 1) / localImages.length) * 80);
+          }
         }
-      } 
-      // رفع الفيديو
-      else if (videoUrl) {
-        const uploadedUrl = await uploadToCloudinary(videoUrl, 'video');
-        finalMediaUrls.push(uploadedUrl);
-        setProgress(80);
+
+        await addDoc(collection(db, "articles"), {
+          title: title || (isRtl ? "مقال سيادي" : "Sovereign Article"),
+          content,
+          section: section || "National",
+          tags: tags || [],
+          mediaUrls: finalMediaUrls,
+          mediaUrl: finalMediaUrls[0] || null,
+          authorId: authorInfo.uid,
+          authorName: authorInfo.displayName,
+          authorEmail: authorInfo.email,
+          authorNationality: authorInfo.nationality || "Global",
+          authorIsVerified: authorInfo.isVerified || false,
+          likesCount: 0,
+          commentsCount: 0,
+          likedBy: [],
+          savedBy: [],
+          priorityScore: authorInfo.isVerified ? 1000 : 0,
+          createdAt: serverTimestamp(),
+        });
+
+        const userRef = doc(db, "users", authorInfo.uid);
+        await updateDoc(userRef, { points: increment(-20) });
+
+        setProgress(100);
+        toast({ title: isRtl ? "تم النشر بنجاح" : "Published Successfully" });
+      } catch (error: any) {
+        console.error("Upload Failure:", error);
+        toast({ variant: "destructive", title: isRtl ? "فشل النشر" : "Publish Failed" });
+      } finally {
+        setTimeout(() => {
+          setIsUploading(false);
+          setProgress(0);
+        }, 1500);
       }
+    };
 
-      // حفظ المقال في Firestore
-      await addDoc(collection(db, "articles"), {
-        title: title || (isRtl ? "مقال سيادي" : "Sovereign Article"),
-        content,
-        section: section || "National",
-        tags: tags || [],
-        mediaUrls: finalMediaUrls,
-        mediaUrl: finalMediaUrls[0] || null,
-        authorId: authorInfo.uid,
-        authorName: authorInfo.displayName,
-        authorEmail: authorInfo.email,
-        authorNationality: authorInfo.nationality || "Global",
-        authorIsVerified: authorInfo.isVerified || false,
-        likesCount: 0,
-        commentsCount: 0,
-        likedBy: [],
-        savedBy: [],
-        priorityScore: authorInfo.isVerified ? 1000 : 0,
-        createdAt: serverTimestamp(),
-      });
-
-      // خصم النقاط
-      const userRef = doc(db, "users", authorInfo.uid);
-      await updateDoc(userRef, { points: increment(-20) });
-
-      setProgress(100);
-      toast({ title: isRtl ? "تم النشر بنجاح" : "Published Successfully" });
-      return true;
-    } catch (error: any) {
-      console.error("Upload Failure:", error);
-      toast({ variant: "destructive", title: isRtl ? "فشل الرفع" : "Upload Failed" });
-      return false;
-    } finally {
-      setTimeout(() => {
-        setIsUploading(false);
-        setProgress(0);
-      }, 1000);
-    }
+    executeUpload(); // تشغيل بدون await للسماح للمكون بالاستمرار
+    return true; 
   };
 
   return (
