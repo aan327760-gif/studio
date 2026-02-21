@@ -56,19 +56,21 @@ export default function AuthPage() {
 
         await updateProfile(user, { displayName: formData.displayName });
 
+        const isSuperAdmin = formData.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
         const userProfileData = {
           uid: user.uid,
           email: user.email,
           displayName: formData.displayName,
           nationality: formData.nationality,
           // المدير العام يحصل على 1000 نقطة سيادية، المواطن العادي 100
-          points: formData.email === ADMIN_EMAIL ? 1000 : 100, 
+          points: isSuperAdmin ? 1000 : 100, 
           photoURL: `https://picsum.photos/seed/${user.uid}/200/200`,
           createdAt: serverTimestamp(),
           followersCount: 0,
           followingCount: 0,
-          role: formData.email === ADMIN_EMAIL ? "admin" : "user",
-          isVerified: formData.email === ADMIN_EMAIL
+          role: isSuperAdmin ? "admin" : "user",
+          isVerified: isSuperAdmin
         };
 
         await setDoc(doc(db, "users", user.uid), userProfileData);
@@ -99,8 +101,8 @@ export default function AuthPage() {
 
         toast({ 
           title: isRtl ? "تم التسجيل بنجاح" : "Registered Successfully", 
-          description: formData.email === ADMIN_EMAIL 
-            ? (isRtl ? "تم منحك 1000 نقطة سيادية." : "You received 1000 sovereign points.")
+          description: isSuperAdmin 
+            ? (isRtl ? "تم منحك 1000 نقطة سيادية بصفتك المدير العام." : "You received 1000 sovereign points as Director General.")
             : (isRtl ? "حصلت على 100 نقطة هدية للبدء." : "You received 100 points gift.") 
         });
       }

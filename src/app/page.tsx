@@ -6,44 +6,93 @@ import { ArticleCard } from "@/components/feed/ArticleCard";
 import { StoryBar } from "@/components/feed/StoryBar";
 import { useLanguage } from "@/context/LanguageContext";
 import { Newspaper, Award, Loader2, TrendingUp, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase";
-import { collection, query, orderBy, limit, where, doc } from "firebase/firestore";
-import { useState } from "react";
+import { collection, query, orderBy, limit, doc } from "firebase/firestore";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-const SECTIONS = [
-  { id: "Politics", label: { ar: "سياسة", en: "Politics" } },
-  { id: "Culture", label: { ar: "ثقافة", en: "Culture" } },
-  { id: "Sports", label: { ar: "رياضة", en: "Sports" } },
-  { id: "Economy", label: { ar: "اقتصاد", en: "Economy" } },
-  { id: "National", label: { ar: "وطنية", en: "National" } },
-];
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const { isRtl } = useLanguage();
   const db = useFirestore();
   const { user } = useUser();
-  const [activeSection, setActiveSection] = useState("All");
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallOverlay, setShowInstallOverlay] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => user ? doc(db, "users", user.uid) : null, [db, user]);
   const { data: profile } = useDoc<any>(userProfileRef);
 
+  // استعلام شامل لكافة المقالات بناءً على خوارزمية السيادة (بدون تصنيفات)
   const articlesQuery = useMemoFirebase(() => {
-    let baseRef = collection(db, "articles");
-    if (activeSection === "All") {
-      return query(baseRef, orderBy("priorityScore", "desc"), limit(50));
-    }
-    return query(baseRef, where("section", "==", activeSection), orderBy("priorityScore", "desc"), limit(50));
-  }, [db, activeSection]);
+    return query(collection(db, "articles"), orderBy("priorityScore", "desc"), limit(50));
+  }, [db]);
 
   const { data: articles, isLoading } = useCollection<any>(articlesQuery);
 
+  // منطق فرض التثبيت (PWA Mandatory)
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // إذا لم يكن التطبيق مثبتاً (في بيئة المتصفح)
+      if (window.matchMedia('(display-mode: standalone)').matches === false) {
+        setShowInstallOverlay(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    
+    // التحقق إذا كان مفتوحاً بالفعل كـ PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallOverlay(false);
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowInstallOverlay(false);
+      }
+    } else {
+      // إرشادات يدوية إذا لم يدعم المتصفح البروتوكول التلقائي فوراً
+      alert(isRtl ? "يرجى الضغط على زر المشاركة في متصفحك واختيار 'إضافة إلى الصفحة الرئيسية'" : "Please tap the share button and select 'Add to Home Screen'");
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
-      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 pt-4 pb-2 border-b border-zinc-900 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
+      {/* غطاء التثبيت الإجباري */}
+      {showInstallOverlay && (
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+          <div className="w-24 h-24 rounded-[2.5rem] bg-primary flex items-center justify-center shadow-2xl rotate-3 mb-8">
+             <span className="text-white font-black text-5xl italic">ق</span>
+          </div>
+          <h2 className="text-2xl font-black mb-4 uppercase tracking-tighter">
+            {isRtl ? "تطبيق القوميون مطلوب" : "Qaumiyun App Required"}
+          </h2>
+          <p className="text-zinc-500 text-sm font-medium leading-relaxed mb-10">
+            {isRtl 
+              ? "للوصول إلى السجل السيادي، يجب تثبيت التطبيق على جهازك. انقر أدناه لتفعيل السيادة الرقمية." 
+              : "To access the sovereign record, you must install the app. Click below to activate digital sovereignty."}
+          </p>
+          <Button 
+            onClick={handleInstallClick}
+            className="w-full h-16 rounded-2xl bg-white text-black font-black text-lg shadow-[0_0_30px_rgba(255,255,255,0.2)] active:scale-95 transition-all"
+          >
+            {isRtl ? "تثبيت الآن" : "Install Now"}
+          </Button>
+          <p className="mt-6 text-[10px] text-zinc-700 font-black uppercase tracking-widest">Sovereign OS v1.0</p>
+        </div>
+      )}
+
+      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 pt-4 pb-4 border-b border-zinc-900 shadow-xl">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-2xl rotate-3">
                <span className="text-white font-black text-xl italic leading-none">ق</span>
@@ -64,28 +113,6 @@ export default function Home() {
               </Badge>
             )}
           </div>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setActiveSection("All")}
-            className={cn("rounded-full h-9 text-[10px] font-black uppercase px-5 tracking-widest transition-all", activeSection === "All" ? "bg-white text-black" : "bg-zinc-900 text-zinc-500")}
-          >
-            {isRtl ? "الأهم عالمياً" : "Global Pulse"}
-          </Button>
-          {SECTIONS.map((s) => (
-            <Button 
-              key={s.id} 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setActiveSection(s.id)}
-              className={cn("rounded-full h-9 text-[10px] font-black uppercase px-5 shrink-0 tracking-widest transition-all", activeSection === s.id ? "bg-primary text-white" : "bg-zinc-900 text-zinc-500")}
-            >
-              {isRtl ? s.label.ar : s.label.en}
-            </Button>
-          ))}
         </div>
       </header>
 
