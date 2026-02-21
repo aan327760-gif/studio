@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -13,10 +14,9 @@ interface LanguageContextType {
 
 const translations: Record<Language, Record<string, string>> = {
   en: {
-    appName: "Unbound",
+    appName: "Al-Qaumiyun",
     home: "Home",
     explore: "Explore",
-    lamma: "Lamma",
     profile: "Profile",
     settings: "Settings",
     post: "Post",
@@ -26,22 +26,21 @@ const translations: Record<Language, Record<string, string>> = {
     likes: "Likes",
     repost: "Repost",
     search: "Search...",
-    createPost: "What's on your mind?",
+    createPost: "Share a sovereign thought...",
     trending: "Trending",
-    communities: "Communities",
+    communities: "Societies",
     join: "Join",
     joined: "Joined",
     language: "Language",
     arabic: "العربية",
     english: "English",
-    forYou: "For You",
-    latest: "Latest",
+    forYou: "Sovereign Feed",
+    latest: "Latest Pulse",
   },
   ar: {
-    appName: "Unbound",
+    appName: "القوميون",
     home: "الرئيسية",
     explore: "استكشف",
-    lamma: "لمة",
     profile: "الملف الشخصي",
     settings: "الإعدادات",
     post: "نشر",
@@ -51,23 +50,23 @@ const translations: Record<Language, Record<string, string>> = {
     likes: "إعجابات",
     repost: "إعادة نشر",
     search: "بحث...",
-    createPost: "ماذا يدور في ذهنك؟",
-    trending: "شائع",
+    createPost: "شارك فكراً سيادياً...",
+    trending: "النبض القومي",
     communities: "المجتمعات",
     join: "انضمام",
     joined: "تم الانضمام",
     language: "اللغة",
     arabic: "العربية",
     english: "English",
-    forYou: "لك",
-    latest: "الأحدث",
+    forYou: "الخلاصة السيادية",
+    latest: "أحدث نبض",
   },
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<Language>("en");
+  const [language, setLanguage] = useState<Language>("ar");
 
   useEffect(() => {
     const savedLang = localStorage.getItem("lang") as Language;

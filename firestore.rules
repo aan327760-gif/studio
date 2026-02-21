@@ -5,7 +5,7 @@ service cloud.firestore {
     // وظائف السيادة الأساسية
     function isSignedIn() { return request.auth != null; }
     
-    // قواعد القراءة العامة لجميع المجموعات الأساسية لضمان عدم حدوث أخطاء Permission
+    // قواعد القراءة العامة لضمان عدم حدوث أخطاء Permission
     match /users/{userId} {
       allow read, list: if true;
       allow create: if isSignedIn() && request.auth.uid == userId;
@@ -13,10 +13,10 @@ service cloud.firestore {
     }
 
     match /articles/{articleId} {
-      // السماح بالقراءة الجماعية والفردية للجميع لضمان عمل الخوارزمية
+      // القراءة متاحة للجميع (زوار ومواطنين)
       allow read, list: if true;
       allow create: if isSignedIn();
-      // السماح بالتحديث لإضافة اللايكات والتعليقات ونقاط الأولوية
+      // السماح بالتحديث للتفاعلات (لايك/تعليق)
       allow update: if isSignedIn(); 
       allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.auth.token.email == "adelbenmaza3@gmail.com");
       
@@ -25,7 +25,7 @@ service cloud.firestore {
         allow create: if isSignedIn();
         allow update: if isSignedIn() && (request.auth.uid == resource.data.authorId || request.auth.token.email == "adelbenmaza3@gmail.com");
         allow delete: if isSignedIn() && (
-          resource.data.authorId == request.auth.uid || 
+          request.auth.uid == resource.data.authorId || 
           get(/databases/$(database)/documents/articles/$(articleId)).data.authorId == request.auth.uid ||
           request.auth.token.email == "adelbenmaza3@gmail.com"
         );
@@ -51,12 +51,6 @@ service cloud.firestore {
     match /follows/{followId} { 
       allow read, list: if true; 
       allow write: if isSignedIn(); 
-    }
-    
-    match /groups/{groupId} { 
-      allow read, list: if true; 
-      allow write: if isSignedIn();
-      match /messages/{msgId} { allow read, write: if isSignedIn(); }
     }
     
     match /direct_conversations/{chatId} {

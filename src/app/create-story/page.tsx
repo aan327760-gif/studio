@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Camera, Video, Loader2, AlertTriangle, CheckCircle2, Award, Sparkles } from "lucide-react";
+import { X, Camera, Loader2, CheckCircle2, Award, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
@@ -11,7 +11,7 @@ import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, doc, Timestamp, increment, updateDoc } from "firebase/firestore";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { AlertTriangle } from "lucide-react";
 
 export default function CreateStoryPage() {
   const { isRtl } = useLanguage();
@@ -78,7 +78,7 @@ export default function CreateStoryPage() {
     if (!user || !mediaUrl || !profile) return;
     
     if (profile.points < 50) {
-      toast({ variant: "destructive", title: isRtl ? "نقاط غير كافية" : "Insufficient Points", description: isRtl ? "تحتاج 50 نقطة لنشر ستوري." : "You need 50 points." });
+      toast({ variant: "destructive", title: isRtl ? "نقاط غير كافية" : "Insufficient Points" });
       return;
     }
 
@@ -100,13 +100,10 @@ export default function CreateStoryPage() {
 
       await updateDoc(userProfileRef!, { points: increment(-50) });
 
-      toast({ 
-        title: isRtl ? "تم نشر الستوري السيادية" : "Story Published",
-        description: isRtl ? "ستختفي قصتك بعد 24 ساعة." : "Vanish in 24h."
-      });
+      toast({ title: isRtl ? "تم نشر الستوري السيادي" : "Story Published" });
       router.push("/");
     } catch (e) {
-      toast({ variant: "destructive", title: "Publish Protocol Failure" });
+      toast({ variant: "destructive", title: "Publish failure" });
     } finally {
       setIsPublishing(false);
     }
@@ -136,7 +133,7 @@ export default function CreateStoryPage() {
 
       <main className="flex-1 flex flex-col p-6 gap-8 mt-4">
         <div 
-          className="flex-1 min-h-[450px] rounded-[3.5rem] border-2 border-dashed border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-primary/50 transition-all overflow-hidden relative shadow-[0_0_50px_-12px_rgba(30,111,201,0.1)] group"
+          className="flex-1 min-h-[450px] rounded-[3.5rem] border-2 border-dashed border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-primary/50 transition-all overflow-hidden relative shadow-inner group"
           onClick={() => fileInputRef.current?.click()}
         >
           {isUploading ? (
@@ -145,7 +142,7 @@ export default function CreateStoryPage() {
                  <Loader2 className="h-16 w-16 animate-spin text-primary opacity-40" />
                  <Sparkles className="h-6 w-6 text-primary absolute inset-0 m-auto animate-pulse" />
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 animate-pulse">Authenticating Media</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 animate-pulse">Processing</p>
             </div>
           ) : mediaUrl ? (
             <div className="w-full h-full relative">
@@ -154,11 +151,8 @@ export default function CreateStoryPage() {
               ) : (
                 <video src={mediaUrl} className="w-full h-full object-cover" autoPlay muted loop playsInline />
               )}
-              <div className="absolute top-6 right-6 bg-black/60 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-2xl">
+              <div className="absolute top-6 right-6 bg-black/60 backdrop-blur-md p-3 rounded-2xl border border-white/10">
                  <CheckCircle2 className="h-6 w-6 text-green-500" />
-              </div>
-              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                 <Camera className="h-12 w-12 text-white/50" />
               </div>
             </div>
           ) : (
@@ -166,31 +160,20 @@ export default function CreateStoryPage() {
               <div className="h-28 w-28 rounded-[3rem] bg-zinc-900 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
                 <Camera className="h-12 w-12 text-zinc-700" />
               </div>
-              <div className="text-center space-y-4">
-                <p className="font-black text-2xl tracking-tighter uppercase">{isRtl ? "التقط النبض" : "Capture Pulse"}</p>
-                <div className="flex items-center gap-3 justify-center">
-                   <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase px-3 py-1 tracking-widest">30s Video</Badge>
-                   <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase px-3 py-1 tracking-widest">High Res</Badge>
-                </div>
-              </div>
+              <p className="font-black text-2xl tracking-tighter uppercase">{isRtl ? "التقط النبض" : "Capture Pulse"}</p>
             </>
           )}
         </div>
 
         <div className="bg-zinc-950 p-7 rounded-[3rem] border border-zinc-900 space-y-5 shadow-2xl relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-4 opacity-5"><AlertTriangle className="h-12 w-12 text-primary" /></div>
            <div className="flex items-center gap-5 relative z-10">
-              <div className="h-14 w-14 rounded-2xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20 shadow-lg">
+              <div className="h-14 w-14 rounded-2xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
                  <AlertTriangle className="h-7 w-7 text-orange-500" />
               </div>
               <div className="flex-1">
                  <p className="text-sm font-black uppercase tracking-widest mb-1">{isRtl ? "ميثاق الـ 30 ثانية" : "30s Protocol"}</p>
-                 <p className="text-[11px] text-zinc-500 font-bold leading-relaxed">{isRtl ? "لضمان سرعة نقل الخبر، لا نقبل فيديوهات تتجاوز 30 ثانية. القوة في الإيجاز والسيادة." : "To ensure speed, we enforce a strict 30s limit for all sovereign stories."}</p>
+                 <p className="text-[11px] text-zinc-500 font-bold leading-relaxed">{isRtl ? "لا نقبل فيديوهات تتجاوز 30 ثانية. القوة في الإيجاز." : "Max 30s limit for all sovereign stories."}</p>
               </div>
-           </div>
-           <div className="pt-4 border-t border-zinc-900/50 flex justify-between items-center">
-              <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{isRtl ? "تكلفة النشر" : "Publishing Cost"}</span>
-              <span className="text-xs font-black text-red-500">-50 Points</span>
            </div>
         </div>
 

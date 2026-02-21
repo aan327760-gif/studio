@@ -42,10 +42,10 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white max-w-md mx-auto relative shadow-2xl border-x border-zinc-900">
-      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 pt-4 pb-2 border-b border-zinc-900 shadow-xl shadow-black/20">
+      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 pt-4 pb-2 border-b border-zinc-900 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-2xl rotate-3 group-active:rotate-0 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-2xl rotate-3">
                <span className="text-white font-black text-xl italic leading-none">ق</span>
             </div>
             <div className="flex flex-col">
@@ -58,7 +58,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             {profile && (
-              <Badge variant="outline" className="border-primary/30 text-primary h-8 px-3 rounded-full flex gap-2 items-center bg-primary/5 shadow-inner">
+              <Badge variant="outline" className="border-primary/30 text-primary h-8 px-3 rounded-full flex gap-2 items-center bg-primary/5">
                 <Award className="h-3 w-3" />
                 <span className="font-black text-[10px] tracking-widest">{profile.points}</span>
               </Badge>
@@ -71,7 +71,7 @@ export default function Home() {
             variant="ghost" 
             size="sm" 
             onClick={() => setActiveSection("All")}
-            className={cn("rounded-full h-9 text-[10px] font-black uppercase px-5 tracking-widest transition-all", activeSection === "All" ? "bg-white text-black shadow-lg" : "bg-zinc-900 text-zinc-500")}
+            className={cn("rounded-full h-9 text-[10px] font-black uppercase px-5 tracking-widest transition-all", activeSection === "All" ? "bg-white text-black" : "bg-zinc-900 text-zinc-500")}
           >
             {isRtl ? "الأهم عالمياً" : "Global Pulse"}
           </Button>
@@ -81,7 +81,7 @@ export default function Home() {
               variant="ghost" 
               size="sm"
               onClick={() => setActiveSection(s.id)}
-              className={cn("rounded-full h-9 text-[10px] font-black uppercase px-5 shrink-0 tracking-widest transition-all", activeSection === s.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-zinc-900 text-zinc-500")}
+              className={cn("rounded-full h-9 text-[10px] font-black uppercase px-5 shrink-0 tracking-widest transition-all", activeSection === s.id ? "bg-primary text-white" : "bg-zinc-900 text-zinc-500")}
             >
               {isRtl ? s.label.ar : s.label.en}
             </Button>
@@ -98,11 +98,11 @@ export default function Home() {
                <Loader2 className="h-12 w-12 animate-spin text-primary opacity-50" />
                <Sparkles className="h-4 w-4 text-primary absolute inset-0 m-auto animate-pulse" />
             </div>
-            <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-30 animate-pulse">Synchronizing Sovereign Data</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-30 animate-pulse">Synchronizing Data</p>
           </div>
         ) : (
-          <div className="flex flex-col animate-in fade-in duration-700">
-            {articles && articles.length > 0 ? articles.map((article: any) => (
+          <div className="flex flex-col">
+            {(articles && articles.length > 0) ? articles.map((article: any) => (
               <ArticleCard 
                 key={article.id}
                 id={article.id}
@@ -126,10 +126,7 @@ export default function Home() {
             )) : (
               <div className="py-48 text-center opacity-20 flex flex-col items-center gap-6 px-10">
                 <Newspaper className="h-20 w-20 stroke-[1px]" />
-                <div className="space-y-2">
-                   <p className="text-sm font-black uppercase tracking-[0.3em]">{isRtl ? "السجل القومي خاوٍ" : "National Record Empty"}</p>
-                   <p className="text-[10px] font-bold leading-relaxed">{isRtl ? "كن أول من يخط فكره في تاريخ الجريدة." : "Be the first to write in the newspaper's history."}</p>
-                </div>
+                <p className="text-sm font-black uppercase tracking-[0.3em]">{isRtl ? "السجل خاوٍ" : "Record Empty"}</p>
               </div>
             )}
           </div>
